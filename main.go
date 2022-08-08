@@ -10,8 +10,8 @@ import (
 )
 
 func main() {
-	fileAddress := "/home/nisarg/tbr.tar"
-	imageNameTag := "nitroimg:latest"
+	fileAddress := "/home/nisarg/startup.eif"
+	// imageNameTag := "nitroimg:latest"
 	keyPairName := "auto-enclave"
 	keyStoreLocation := "/home/nisarg/auto-enclave.pem"
 	profile := "marlin-one"
@@ -35,15 +35,16 @@ func main() {
 	} else {
 		SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
 		fmt.Println("SETUP COMPLETE!")
-		TransferAndLoadDockerImage(client, *(instance.PublicIpAddress), fileAddress, imageNameTag, "/home/ubuntu/docker_image.tar")
+		// TransferAndLoadDockerImage(client, *(instance.PublicIpAddress), fileAddress, imageNameTag, "/home/ubuntu/docker_image.tar")
+		connect.TransferFile(client.Config, *(instance.PublicIpAddress), fileAddress, "/home/ubuntu/startup.eif")
 		fmt.Println("DOCKER IMAGE SET UP!")
-		BuildAndRunEnclave(client, imageNameTag)
+		BuildAndRunEnclave(client)
 	}
 	fmt.Println("DONE!")
 }
 
-func BuildAndRunEnclave(client *connect.SshClient, image string) {
-	RunCommand(client, "nitro-cli build-enclave --docker-uri " + image + " --output-file startup.eif")
+func BuildAndRunEnclave(client *connect.SshClient) {
+	// RunCommand(client, "nitro-cli build-enclave --docker-uri " + image + " --output-file startup.eif")
 	RunCommand(client, "nitro-cli run-enclave --cpu-count 2 --memory 4500 --eif-path startup.eif --debug-mode")
 }
 

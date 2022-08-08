@@ -35,6 +35,10 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
                 Key:   aws.String("Name"),
                 Value: aws.String("TestRunner"),
             },
+			{
+				Key: aws.String("managedBy"),
+				Value: aws.String("marlin"),
+			},
         },
     })
 	if errtag != nil {
