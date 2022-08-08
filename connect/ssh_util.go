@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -16,7 +17,7 @@ type SshClient struct {
 	Server string
 }
 
-func NewSshClient(user string, host string, port int, privateKeyPath string) (*SshClient, error) {
+func NewSshClient(user string, host string, port int, privateKeyPath string) (*SshClient) {
 	config := SetClientConfig(user, privateKeyPath)
 
 	client := &SshClient{
@@ -24,19 +25,19 @@ func NewSshClient(user string, host string, port int, privateKeyPath string) (*S
 		Server: fmt.Sprintf("%v:%v", host, port),
 	}
 
-	return client, nil
+	return client
 }
 
 func SetClientConfig(user string, privateKeyPath string) (*ssh.ClientConfig){
 	pemBytes, err := ioutil.ReadFile(privateKeyPath)
 	if err != nil {
-		fmt.Println("Reading private key file failed %v", err)
+		log.Error("Reading private key file failed %v", err)
 		return nil 
 	}
 	// create signer
 	signer, err := signerFromPem(pemBytes)
 	if err != nil {
-		fmt.Println(err)
+		log.Error("Error signing with private key: ", err)
 		return nil
 	}
 	// build SSH client config

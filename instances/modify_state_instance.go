@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	log "github.com/sirupsen/logrus"
 )
 
 func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string) (*ec2.Reservation, error) {
@@ -42,7 +43,7 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
         },
     })
 	if errtag != nil {
-        fmt.Println("Could not create tags for instance", res.Instances[0].InstanceId, errtag)
+        log.Warn("Could not create tags for instance", res.Instances[0].InstanceId, errtag)
     }
 	return res, nil
 }
@@ -57,7 +58,7 @@ func LaunchInstance(keyPairName string, profile string, region string) (*string)
 	})
 
 	if err != nil {
-		fmt.Printf("Failed to initialize new session: %v", err)
+		log.Error("Failed to initialize new session: %v", err)
 		return nil
 	}
 
@@ -70,12 +71,12 @@ func LaunchInstance(keyPairName string, profile string, region string) (*string)
 	imageId := "ami-05ba3a39a75be1ec4"
 	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName)
 	if err != nil {
-		fmt.Printf("Couldn't create new instance: %v", err)
+		log.Error("Couldn't create new instance: %v", err)
 		return nil
 	}
 	instanceID := newInstance.Instances[0].InstanceId
 
-	fmt.Println("Instance ID: ", instanceID)
+	log.Info("Instance Created: ")
 	fmt.Printf("Created new instance: %v\n", newInstance.Instances)
 
 	// uncomment to store details of newly created instance :
@@ -94,7 +95,7 @@ func RebootInstance(instanceID string, profile string, region string) {
 	})
 
 	if err != nil {
-		fmt.Printf("Failed to initialize new session: %v", err)
+		log.Error("Failed to initialize new session: %v", err)
 		return
 	}
 
@@ -119,11 +120,11 @@ func RebootInstance(instanceID string, profile string, region string) {
         input.DryRun = aws.Bool(false)
         result, err = svc.RebootInstances(input)
         if err != nil {
-            fmt.Println("Error", err)
+            log.Error("Error rebooting instance: ", err)
         } else {
-            fmt.Println("Reboot Success!", result)
+            log.Info("Reboot Success!", result)
         }
     } else { // This could be due to a lack of permissions
-        fmt.Println("Error", err)
+        log.Warn("Error in reboot dry run: ", err)
     }
 }

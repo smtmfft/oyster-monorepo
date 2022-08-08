@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	log "github.com/sirupsen/logrus"
 )
 
 func GetRunningInstances(client *ec2.EC2) (*ec2.DescribeInstancesOutput, error) {
@@ -39,7 +40,7 @@ func ListRunningInstances(profile string, region string) {
 	})
 
 	if err != nil {
-		fmt.Printf("Failed to initialize new session: %v", err)
+		log.Warn("Failed to initialize new session: %v", err)
 		return
 	}
 
@@ -47,7 +48,7 @@ func ListRunningInstances(profile string, region string) {
 
 	runningInstances, err := GetRunningInstances(ec2Client)
 	if err != nil {
-		fmt.Printf("Couldn't retrieve running instances: %v", err)
+		log.Warn("Couldn't retrieve running instances: %v", err)
 		return
 	}
 
@@ -55,7 +56,6 @@ func ListRunningInstances(profile string, region string) {
 		for _, instance := range reservation.Instances {
 			fmt.Println(instance)
 		}
-		
 	}	
 }
 
@@ -68,7 +68,7 @@ func GetInstanceDetails(instanceID string, profile string, region string) (*ec2.
 	})
 
 	if err != nil {
-		fmt.Printf("Failed to initialize new session: %v", err)
+		log.Error("Failed to initialize new session: %v", err)
 		return nil
 	}
 
@@ -76,7 +76,7 @@ func GetInstanceDetails(instanceID string, profile string, region string) (*ec2.
 
 	runningInstances, err := GetRunningInstances(ec2Client)
 	if err != nil {
-		fmt.Printf("Couldn't retrieve running instances: %v", err)
+		log.Error("Couldn't retrieve running instances: %v", err)
 		return nil
 	}
 

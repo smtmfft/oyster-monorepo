@@ -1,13 +1,13 @@
 package keypairs
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	log "github.com/sirupsen/logrus"
 )
 
 func CreateKeyPair(client *ec2.EC2, keyName string) (*ec2.CreateKeyPairOutput, error) {
@@ -37,7 +37,7 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 	})
 
 	if err != nil {
-		fmt.Printf("Failed to initialize new session: %v", err)
+		log.Error("Failed to initialize new session: %v", err)
 		return
 	}
 
@@ -46,16 +46,16 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 	keyName := keyPairName
 	createRes, err := CreateKeyPair(ec2Client, keyName)
 	if err != nil {
-		fmt.Printf("Couldn't create key pair: %v", err)
+		log.Error("Couldn't create key pair: %v", err)
 		return
 	}
 
 	err = WriteKey(keyStoreLocation, createRes.KeyMaterial)
 	if err != nil {
-		fmt.Printf("Couldn't write key pair to file: %v", err)
+		log.Error("Couldn't write key pair to file: %v", err)
 		return
 	}
-	fmt.Println("Created key pair: ", *createRes.KeyName)
+	log.Info("Created key pair: ", *createRes.KeyName)
 }
 
 func DeleteKeyPair(keyPair string, profile string, region string) {
@@ -67,7 +67,7 @@ func DeleteKeyPair(keyPair string, profile string, region string) {
 	})
 
 	if err != nil {
-		fmt.Printf("Failed to initialize new session: %v", err)
+		log.Warn("Failed to initialize new session: %v", err)
 		return
 	}
 
@@ -77,10 +77,10 @@ func DeleteKeyPair(keyPair string, profile string, region string) {
     })
     if err != nil {
         if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "InvalidKeyPair.Duplicate" {
-            fmt.Println("Key pair %q does not exist.", keyPair)
+            log.Warn("Key pair %q does not exist.", keyPair)
         }
-        fmt.Println("Unable to delete key pair: %s, %v.", keyPair, err)
+        log.Debug("Unable to delete key pair: %s, %v.", keyPair, err)
     }
 
-    fmt.Printf("Successfully deleted %q key pair\n", keyPair)
+    log.Info("Successfully deleted %q key pair\n", keyPair)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	log "github.com/sirupsen/logrus"
 )
 
 func GetKeyPairs(client *ec2.EC2) (*ec2.DescribeKeyPairsOutput, error) {
@@ -27,7 +28,7 @@ func DescribeKeyPairs(profile string, region string) {
 	})
 
 	if err != nil {
-		fmt.Printf("Failed to initialize new session: %v", err)
+		log.Warn("Failed to initialize new session: %v", err)
 		return
 	}
 
@@ -35,11 +36,11 @@ func DescribeKeyPairs(profile string, region string) {
 
 	keyPairRes, err := GetKeyPairs(ec2Client)
 	if err != nil {
-		fmt.Printf("Couldn't fetch key pairs: %v", err)
+		log.Warn("Couldn't fetch key pairs: %v", err)
 		return
 	}
 
-	fmt.Println("Key Pairs: ")
+	log.Info("Key Pairs: ")
 	for _, pair := range keyPairRes.KeyPairs {
 		fmt.Printf("	%s \n ---- \n", *pair.KeyName)
 	}
@@ -54,7 +55,7 @@ func CheckForKeyPair(keyPair string, profile string, region string) (bool) {
 	})
 
 	if err != nil {
-		fmt.Printf("Failed to initialize new session: %v", err)
+		log.Warn("Failed to initialize new session: %v", err)
 		return false
 	}
 
@@ -62,7 +63,7 @@ func CheckForKeyPair(keyPair string, profile string, region string) (bool) {
 
 	keyPairRes, err := GetKeyPairs(ec2Client)
 	if err != nil {
-		fmt.Printf("Couldn't fetch key pairs: %v", err)
+		log.Warn("Couldn't fetch key pairs: %v", err)
 		return false
 	}
 

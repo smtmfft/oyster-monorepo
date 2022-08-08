@@ -1,17 +1,19 @@
 package connect
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 
 	scp "github.com/bramvdbogaerde/go-scp"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
 func TransferFile(clientConfig *ssh.ClientConfig, host string, fileSource string, fileDestination string) {
 	fmt.Println("=============================================================================================")
-	fmt.Println("FILE TRANSFER: " + fileSource + " -> " + fileDestination)
+	log.Info("FILE TRANSFER: " + fileSource + " -> " + fileDestination)
 	fmt.Println("")
 	
 	// Create a new SCP client
@@ -20,7 +22,18 @@ func TransferFile(clientConfig *ssh.ClientConfig, host string, fileSource string
 	// Connect to the remote server
 	err := client.Connect()
 	if err != nil {
-		fmt.Println("Couldn't establish a connection to the remote server ", err)
+		log.Warn("Couldn't establish a connection to the remote server ", err)
+		
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Retry? ")
+		line, _ := reader.ReadString('\n')
+
+		if line == "Y\n" || line == "yes\n" {
+			TransferFile(clientConfig, host, fileSource, fileDestination)
+		} else if line != "continue\n" {
+			os.Exit(1)
+		}
+
 		return
 	}
 
@@ -39,6 +52,16 @@ func TransferFile(clientConfig *ssh.ClientConfig, host string, fileSource string
 	err = client.CopyFromFile(context.Background(), *f, fileDestination, "0655")
 
 	if err != nil {
-		fmt.Println("Error while copying file ", err)
+		log.Warn("Error while copying file ", err)
+		
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Retry? ")
+		line, _ := reader.ReadString('\n')
+
+		if line == "Y\n" || line == "yes\n" {
+			TransferFile(clientConfig, host, fileSource, fileDestination)
+		} else if line != "continue\n" {
+			os.Exit(1)
+		}
 	}
 }

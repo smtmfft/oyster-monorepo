@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"time"
 
 	"EnclaveLauncher/connect"
 	"EnclaveLauncher/instances"
 	"EnclaveLauncher/keypairs"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -22,25 +26,22 @@ func main() {
 	time.Sleep(2 * time.Minute)
 	instance := instances.GetInstanceDetails(*newInstanceID, profile, region)
 	// instance := instances.GetInstanceDetails("i-0e8ee6f053059f3a9", profile, region)
-	fmt.Println("IP: ", *(instance.PublicIpAddress))
+	log.Info("IP: ", *(instance.PublicIpAddress))
 
-	client, err := connect.NewSshClient(
+	client := connect.NewSshClient(
 		"ubuntu",
 		*(instance.PublicIpAddress),
 		22,
 		keyStoreLocation,
 	)
-	if err != nil {
-		fmt.Println("SSH Error: ", err)
-	} else {
-		SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
-		fmt.Println("SETUP COMPLETE!")
-		// TransferAndLoadDockerImage(client, *(instance.PublicIpAddress), fileAddress, imageNameTag, "/home/ubuntu/docker_image.tar")
-		connect.TransferFile(client.Config, *(instance.PublicIpAddress), fileAddress, "/home/ubuntu/startup.eif")
-		fmt.Println("DOCKER IMAGE SET UP!")
-		BuildAndRunEnclave(client)
-	}
-	fmt.Println("DONE!")
+	
+	SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
+	log.Debug("INSTANCE SETUP COMPLETE!")
+	// TransferAndLoadDockerImage(client, *(instance.PublicIpAddress), fileAddress, imageNameTag, "/home/ubuntu/docker_image.tar")
+	connect.TransferFile(client.Config, *(instance.PublicIpAddress), fileAddress, "/home/ubuntu/startup.eif")
+	// log.Debug("DOCKER IMAGE SET UP!")
+	BuildAndRunEnclave(client)
+	log.Debug("DONE!")
 }
 
 func BuildAndRunEnclave(client *connect.SshClient) {
@@ -90,22 +91,24 @@ func TransferAndLoadDockerImage(client *connect.SshClient, host string, file str
 
 func RunCommand(client *connect.SshClient, cmd string) (string) {
 	fmt.Println("============================================================================================")
-	fmt.Println(cmd)
+	log.Info(cmd)
 	fmt.Println("")
 
 	output, err := client.RunCommand(cmd)
 	
 	fmt.Println(output)
 	if err != nil {
-		fmt.Printf("SSH run command error %v", err)
-	}
+		log.Warn("SSH run command error %v", err)
+		
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Retry? ")
+		line, _ := reader.ReadString('\n')
 
-	// reader := bufio.NewReader(os.Stdin)
-	// fmt.Print("Enter text: ")
-	// text, _ := reader.ReadString('\n')
-	
-	// if text == "STOP" {
-	// 	os.Exit(1)
-	// }
+		if line == "Y\n" || line == "yes\n" {
+			return RunCommand(client, cmd)
+		} else if line != "continue\n" {
+			os.Exit(1)
+		}
+	}
 	return output
 }
