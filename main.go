@@ -14,10 +14,23 @@ import (
 )
 
 func main() {
-	fileAddress := "/home/nisarg/startup.eif"
+	// f, err := os.OpenFile("./testlogrus.json", os.O_APPEND | os.O_CREATE | os.O_RDWR, 0666)
+    // if err != nil {
+    //     fmt.Printf("error opening file: %v", err)
+    // }
+	// defer f.Close()
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: false,
+	})
+	// log.SetOutput(f)
+	log.SetLevel(log.DebugLevel)
+	// log.Info("HERE")
+	// return
+	startTime := time.Now()
+	// fileAddress := "/home/nisarg/Desktop/startup.eif"
 	// imageNameTag := "nitroimg:latest"
-	keyPairName := "auto-enclave"
-	keyStoreLocation := "/home/nisarg/auto-enclave.pem"
+	keyPairName := "enclave-launcher"
+	keyStoreLocation := "/home/nisarg/enclave-launcher.pem"
 	profile := "marlin-one"
 	region := "ap-south-1"
 
@@ -34,14 +47,16 @@ func main() {
 		22,
 		keyStoreLocation,
 	)
-	
-	SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
-	log.Debug("INSTANCE SETUP COMPLETE!")
+	curTime := time.Now()
+	// SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
+	// log.Debug("INSTANCE SETUP COMPLETE! :", time.Now().Sub(curTime).Seconds())
 	// TransferAndLoadDockerImage(client, *(instance.PublicIpAddress), fileAddress, imageNameTag, "/home/ubuntu/docker_image.tar")
-	connect.TransferFile(client.Config, *(instance.PublicIpAddress), fileAddress, "/home/ubuntu/startup.eif")
+	// connect.TransferFile(client.Config, *(instance.PublicIpAddress), fileAddress, "/home/ubuntu/startup.eif")
 	// log.Debug("DOCKER IMAGE SET UP!")
+	// curTime = time.Now()
 	BuildAndRunEnclave(client)
-	log.Debug("DONE!")
+	log.Debug("IMAGE RUN : ", time.Now().Sub(curTime).Seconds())
+	log.Debug("DONE IN: ", time.Now().Sub(startTime).Minutes())
 }
 
 func BuildAndRunEnclave(client *connect.SshClient) {
@@ -53,7 +68,6 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo apt-get -y update")
 	RunCommand(client, "sudo apt-get -y install sniproxy")
 	RunCommand(client, "sudo service sniproxy start")
-	RunCommand(client, "sudo usermod -aG ne ubuntu")
 	RunCommand(client, "sudo apt-get -y install build-essential")
 	RunCommand(client, "grep /boot/config-$(uname -r) -e NITRO_ENCLAVES")
 	RunCommand(client, "sudo apt-get -y install linux-modules-extra-aws")
@@ -79,6 +93,7 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo cp allocator.yaml /etc/nitro_enclaves/allocator.yaml")
 	instances.RebootInstance(instanceID, profile, region)
 	time.Sleep(2 * time.Minute)
+	RunCommand(client, "sudo systemctl start nitro-enclaves-allocator.service")
 	RunCommand(client, "sudo systemctl enable nitro-enclaves-allocator.service")
 }
 
@@ -90,13 +105,16 @@ func TransferAndLoadDockerImage(client *connect.SshClient, host string, file str
 }
 
 func RunCommand(client *connect.SshClient, cmd string) (string) {
+	curTime := time.Now()
 	fmt.Println("============================================================================================")
 	log.Info(cmd)
 	fmt.Println("")
 
 	output, err := client.RunCommand(cmd)
 	
-	fmt.Println(output)
+	// fmt.Println(output)
+	dur := time.Now().Sub(curTime)
+	log.Debug("Time : ", dur.Seconds())
 	if err != nil {
 		log.Warn("SSH run command error %v", err)
 		

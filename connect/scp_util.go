@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	scp "github.com/bramvdbogaerde/go-scp"
 	log "github.com/sirupsen/logrus"
@@ -12,6 +13,7 @@ import (
 )
 
 func TransferFile(clientConfig *ssh.ClientConfig, host string, fileSource string, fileDestination string) {
+	curTime := time.Now()
 	fmt.Println("=============================================================================================")
 	log.Info("FILE TRANSFER: " + fileSource + " -> " + fileDestination)
 	fmt.Println("")
@@ -50,7 +52,8 @@ func TransferFile(clientConfig *ssh.ClientConfig, host string, fileSource string
 	// Usage: CopyFile(fileReader, remotePath, permission)
 
 	err = client.CopyFromFile(context.Background(), *f, fileDestination, "0655")
-
+	dur := time.Now().Sub(curTime)
+	log.Debug("Time : ", dur.Seconds())
 	if err != nil {
 		log.Warn("Error while copying file ", err)
 		

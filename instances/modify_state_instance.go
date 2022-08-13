@@ -1,7 +1,7 @@
 package instances
 
 import (
-	"fmt"
+
 	// "encoding/json"
 	// "io/ioutil"
 
@@ -50,6 +50,7 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
 
 
 func LaunchInstance(keyPairName string, profile string, region string) (*string) {
+	log.Info("Launching Instance.")
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
 		Config: aws.Config{
@@ -68,7 +69,7 @@ func LaunchInstance(keyPairName string, profile string, region string) (*string)
 	instanceType := "c6a.xlarge"
 	minCount := 1
 	maxCount := 1
-	imageId := "ami-05ba3a39a75be1ec4"
+	imageId := "ami-04ce962f738443165"
 	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName)
 	if err != nil {
 		log.Error("Couldn't create new instance: %v", err)
@@ -76,8 +77,8 @@ func LaunchInstance(keyPairName string, profile string, region string) (*string)
 	}
 	instanceID := newInstance.Instances[0].InstanceId
 
-	log.Info("Instance Created: ")
-	fmt.Printf("Created new instance: %v\n", newInstance.Instances)
+	log.Info("Instance Created!")
+	// fmt.Printf("Created new instance: %v\n", newInstance.Instances)
 
 	// uncomment to store details of newly created instance :
 	// file, _ := json.MarshalIndent(newInstance.Instances[0], "", " ")
@@ -87,6 +88,7 @@ func LaunchInstance(keyPairName string, profile string, region string) (*string)
 }
 
 func RebootInstance(instanceID string, profile string, region string) {
+	log.Info("Rebooting")
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
 		Config: aws.Config{
@@ -127,4 +129,5 @@ func RebootInstance(instanceID string, profile string, region string) {
     } else { // This could be due to a lack of permissions
         log.Warn("Error in reboot dry run: ", err)
     }
+	log.Info("Reboot Successful!")
 }
