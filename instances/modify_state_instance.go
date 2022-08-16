@@ -131,3 +131,30 @@ func RebootInstance(instanceID string, profile string, region string) {
     }
 	log.Info("Reboot Successful!")
 }
+
+func TerminateInstance(instanceID string, profile string, region string) {
+	log.Info("Terminating : " + instanceID)
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Profile: profile,
+		Config: aws.Config{
+			Region: aws.String(region),
+		},
+	})
+
+	if err != nil {
+		log.Error("Failed to initialize new session: %v", err)
+		return
+	}
+
+    // Create new EC2 client
+    svc := ec2.New(sess)
+
+    _, err = svc.TerminateInstances(&ec2.TerminateInstancesInput{
+		InstanceIds: []*string{&instanceID},
+	})
+	if err != nil {
+		log.Warn("Couldn't terimate instance: ", err)
+	}
+    
+	log.Info("Termination Successful!")
+}

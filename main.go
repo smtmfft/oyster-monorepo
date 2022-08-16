@@ -130,3 +130,9 @@ func RunCommand(client *connect.SshClient, cmd string) (string) {
 	}
 	return output
 }
+
+func TearDown(client *connect.SshClient, enclaveID string, instanceID string, profile string, region string) {
+	RunCommand(client, "nitro-cli terminate-enclave --enclave-id " + enclaveID)
+
+	instances.TerminateInstance(instanceID, profile, region)
+}
