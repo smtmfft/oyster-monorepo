@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/user"
 	"time"
 
 	"EnclaveLauncher/connect"
@@ -14,32 +15,35 @@ import (
 )
 
 func main() {
-	// f, err := os.OpenFile("./testlogrus.json", os.O_APPEND | os.O_CREATE | os.O_RDWR, 0666)
-    // if err != nil {
-    //     fmt.Printf("error opening file: %v", err)
-    // }
-	// defer f.Close()
+
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: false,
 	})
-	// log.SetOutput(f)
 	log.SetLevel(log.DebugLevel)
-	// log.Info("HERE")
-	// return
-	startTime := time.Now()
-	// fileAddress := "/home/nisarg/Desktop/startup.eif"
-	// imageNameTag := "nitroimg:latest"
-	keyPairName := "enclave-launcher"
-	keyStoreLocation := "/home/nisarg/enclave-launcher.pem"
-	profile := "marlin-one"
-	region := "ap-south-1"
+	
+
+	keyPairName, exist := os.LookupEnv("KEY")
+	if !exist {
+		log.Panic("Key not set")
+	} 
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Panic(err.Error())
+	}
+	keyStoreLocation := "/home/" + currentUser.Username + "/" + keyPairName + ".pem"
+	profile, exist := os.LookupEnv("PROFILE")
+	if !exist {
+		log.Panic("Profile not set")
+	} 
+	region, exist := os.LookupEnv("REGION")
+	if !exist {
+		log.Panic("Region not set")
+	}
 
 	keypairs.SetupKeys(keyPairName, keyStoreLocation, profile, region)
 	newInstanceID := instances.LaunchInstance(keyPairName, profile, region)
 	time.Sleep(2 * time.Minute)
 	instance := instances.GetInstanceDetails(*newInstanceID, profile, region)
-	// instance := instances.GetInstanceDetails("i-0e8ee6f053059f3a9", profile, region)
-	log.Info("IP: ", *(instance.PublicIpAddress))
 
 	client := connect.NewSshClient(
 		"ubuntu",
@@ -47,22 +51,12 @@ func main() {
 		22,
 		keyStoreLocation,
 	)
-	curTime := time.Now()
-	// SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
-	// log.Debug("INSTANCE SETUP COMPLETE! :", time.Now().Sub(curTime).Seconds())
-	// TransferAndLoadDockerImage(client, *(instance.PublicIpAddress), fileAddress, imageNameTag, "/home/ubuntu/docker_image.tar")
-	// connect.TransferFile(client.Config, *(instance.PublicIpAddress), fileAddress, "/home/ubuntu/startup.eif")
-	// log.Debug("DOCKER IMAGE SET UP!")
-	// curTime = time.Now()
-	BuildAndRunEnclave(client)
-	log.Debug("IMAGE RUN : ", time.Now().Sub(curTime).Seconds())
-	log.Debug("DONE IN: ", time.Now().Sub(startTime).Minutes())
+	SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
+
+	instances.CreateAMI(*newInstanceID, profile, region)
+	TearDown(*newInstanceID, profile, region)
 }
 
-func BuildAndRunEnclave(client *connect.SshClient) {
-	// RunCommand(client, "nitro-cli build-enclave --docker-uri " + image + " --output-file startup.eif")
-	RunCommand(client, "nitro-cli run-enclave --cpu-count 2 --memory 4500 --eif-path startup.eif --debug-mode")
-}
 
 func SetupPreRequisites(client *connect.SshClient, host string, instanceID string, profile string, region string) {
 	RunCommand(client, "sudo apt-get -y update")
@@ -97,24 +91,14 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo systemctl enable nitro-enclaves-allocator.service")
 }
 
-func TransferAndLoadDockerImage(client *connect.SshClient, host string, file string, image string, destination string) {
-	connect.TransferFile(client.Config, host, file, destination)
-
-	RunCommand(client, "docker load < docker_image.tar")
-	// RunCommand(client, "docker run " + image)
-}
 
 func RunCommand(client *connect.SshClient, cmd string) (string) {
-	curTime := time.Now()
 	fmt.Println("============================================================================================")
 	log.Info(cmd)
 	fmt.Println("")
 
 	output, err := client.RunCommand(cmd)
 	
-	// fmt.Println(output)
-	dur := time.Now().Sub(curTime)
-	log.Debug("Time : ", dur.Seconds())
 	if err != nil {
 		log.Warn("SSH run command error %v", err)
 		
@@ -131,8 +115,6 @@ func RunCommand(client *connect.SshClient, cmd string) (string) {
 	return output
 }
 
-func TearDown(client *connect.SshClient, enclaveID string, instanceID string, profile string, region string) {
-	RunCommand(client, "nitro-cli terminate-enclave --enclave-id " + enclaveID)
-
+func TearDown(instanceID string, profile string, region string) {
 	instances.TerminateInstance(instanceID, profile, region)
 }
