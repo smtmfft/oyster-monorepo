@@ -20,12 +20,12 @@ func main() {
 		FullTimestamp: false,
 	})
 	log.SetLevel(log.DebugLevel)
-	
+
 
 	keyPairName, exist := os.LookupEnv("KEY")
 	if !exist {
 		log.Panic("Key not set")
-	} 
+	}
 	currentUser, err := user.Current()
 	if err != nil {
 		log.Panic(err.Error())
@@ -34,7 +34,7 @@ func main() {
 	profile, exist := os.LookupEnv("PROFILE")
 	if !exist {
 		log.Panic("Profile not set")
-	} 
+	}
 	region, exist := os.LookupEnv("REGION")
 	if !exist {
 		log.Panic("Region not set")
@@ -54,14 +54,13 @@ func main() {
 	SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
 
 	instances.CreateAMI(*newInstanceID, profile, region)
+	time.Sleep(5 * time.Minute)
 	TearDown(*newInstanceID, profile, region)
 }
 
 
 func SetupPreRequisites(client *connect.SshClient, host string, instanceID string, profile string, region string) {
 	RunCommand(client, "sudo apt-get -y update")
-	RunCommand(client, "sudo apt-get -y install sniproxy")
-	RunCommand(client, "sudo service sniproxy start")
 	RunCommand(client, "sudo apt-get -y install build-essential")
 	RunCommand(client, "grep /boot/config-$(uname -r) -e NITRO_ENCLAVES")
 	RunCommand(client, "sudo apt-get -y install linux-modules-extra-aws")
@@ -74,21 +73,33 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "cd aws-nitro-enclaves-cli && export NITRO_CLI_INSTALL_DIR=/")
 	RunCommand(client, "cd aws-nitro-enclaves-cli && make nitro-cli")
 	RunCommand(client, "cd aws-nitro-enclaves-cli && make vsock-proxy")
-	RunCommand(client, `cd aws-nitro-enclaves-cli && 
+	RunCommand(client, `cd aws-nitro-enclaves-cli &&
 						sudo make NITRO_CLI_INSTALL_DIR=/ install &&
-						source /etc/profile.d/nitro-cli-env.sh && 
-						echo source /etc/profile.d/nitro-cli-env.sh >> ~/.bashrc && 
+						source /etc/profile.d/nitro-cli-env.sh &&
+						echo source /etc/profile.d/nitro-cli-env.sh >> ~/.bashrc &&
 						nitro-cli-config -i`)
 
 	connect.TransferFile(client.Config, host, "./allocator.yaml", "allocator.yaml")
 
-	
+
 	RunCommand(client, "sudo systemctl start nitro-enclaves-allocator.service")
 	RunCommand(client, "sudo cp allocator.yaml /etc/nitro_enclaves/allocator.yaml")
 	instances.RebootInstance(instanceID, profile, region)
 	time.Sleep(2 * time.Minute)
 	RunCommand(client, "sudo systemctl start nitro-enclaves-allocator.service")
 	RunCommand(client, "sudo systemctl enable nitro-enclaves-allocator.service")
+
+	// proxies
+	RunCommand(client, "wget -O vsock-to-ip-transparent http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-transparent_v1.0.0_linux_amd64")
+	RunCommand(client, "chmod +x vsock-to-ip-transparent")
+	RunCommand(client, "wget -O port-to-vsock-transparent http://public.artifacts.marlin.pro/projects/enclaves/port-to-vsock-transparent_v1.0.0_linux_amd64")
+	RunCommand(client, "chmod +x port-to-vsock-transparent")
+
+	// supervisord
+	RunCommand(client, "sudo apt-get -y install supervisor")
+	connect.TransferFile(client.Config, host, "./proxies.conf", "/home/ubuntu/proxies.conf")
+	RunCommand(client, "sudo mv /home/ubuntu/proxies.conf /etc/supervisor/conf.d/proxies.conf")
+	RunCommand(client, "sudo supervisorctl reload")
 }
 
 
@@ -98,10 +109,10 @@ func RunCommand(client *connect.SshClient, cmd string) (string) {
 	fmt.Println("")
 
 	output, err := client.RunCommand(cmd)
-	
+
 	if err != nil {
 		log.Warn("SSH run command error %v", err)
-		
+
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Retry? ")
 		line, _ := reader.ReadString('\n')
