@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"sync"
 	"time"
 
 	"EnclaveLauncher/connect"
@@ -41,7 +42,18 @@ func main() {
 	}
 
 	keypairs.SetupKeys(keyPairName, keyStoreLocation, profile, region)
-	newInstanceID := instances.LaunchInstance(keyPairName, profile, region)
+	var wg sync.WaitGroup;
+	wg.Add(1)
+	go create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
+	wg.Add(1)
+	go create_ami(keyPairName, keyStoreLocation, profile, region, "amd")
+	wg.Wait()
+}
+
+func create_ami(keyPairName string, keyStoreLocation string, profile string, region string, arch string) {
+	log.Info("Creataing AMI for " + arch)
+	
+	newInstanceID := instances.LaunchInstance(keyPairName, profile, region, arch)
 	time.Sleep(2 * time.Minute)
 	instance := instances.GetInstanceDetails(*newInstanceID, profile, region)
 
@@ -53,8 +65,8 @@ func main() {
 	)
 	SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
 
-	instances.CreateAMI(*newInstanceID, profile, region)
-	time.Sleep(5 * time.Minute)
+	instances.CreateAMI(*newInstanceID, profile, region, arch)
+	time.Sleep(7*time.Minute)
 	TearDown(*newInstanceID, profile, region)
 }
 
@@ -81,12 +93,9 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 
 	connect.TransferFile(client.Config, host, "./allocator.yaml", "allocator.yaml")
 
-
 	RunCommand(client, "sudo systemctl start nitro-enclaves-allocator.service")
 	RunCommand(client, "sudo cp allocator.yaml /etc/nitro_enclaves/allocator.yaml")
-	instances.RebootInstance(instanceID, profile, region)
-	time.Sleep(2 * time.Minute)
-	RunCommand(client, "sudo systemctl start nitro-enclaves-allocator.service")
+	RunCommand(client, "sudo systemctl restart nitro-enclaves-allocator.service")
 	RunCommand(client, "sudo systemctl enable nitro-enclaves-allocator.service")
 
 	// proxies
@@ -100,6 +109,9 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	connect.TransferFile(client.Config, host, "./proxies.conf", "/home/ubuntu/proxies.conf")
 	RunCommand(client, "sudo mv /home/ubuntu/proxies.conf /etc/supervisor/conf.d/proxies.conf")
 	RunCommand(client, "sudo supervisorctl reload")
+	
+	RunCommand(client, "rm /home/ubuntu/allocator.yaml")
+	RunCommand(client, "sudo rm -r /home/ubuntu/aws-nitro-enclaves-cli")
 }
 
 

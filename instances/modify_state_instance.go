@@ -21,7 +21,7 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
 		KeyName:      aws.String(keyName),
 		EnclaveOptions: &ec2.EnclaveOptionsRequest{Enabled: &[]bool{true}[0]},
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
-			Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{25}[0]}}[0],
+			Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{15}[0]}}[0],
 			DeviceName: &[]string{"/dev/sda1"}[0],
 		}},
 	})
@@ -49,16 +49,24 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
 }
 
 
-func LaunchInstance(keyPairName string, profile string, region string) (*string) {
+func LaunchInstance(keyPairName string, profile string, region string, arch string) (*string) {
 	log.Info("Launching Instance.")
 
 	ec2Client := GetClient(profile, region)
 
 	keyName := keyPairName
 	instanceType := "c6a.xlarge"
+	imageId := "ami-05ba3a39a75be1ec4"
+	if arch == "amd" {
+		instanceType = "c6g.xlarge"
+		imageId = "ami-0296ecdacc0d49d5a"
+	}
+	// instanceType := "c6a.xlarge"
+	// instanceType := "c6g.xlarge"
 	minCount := 1
 	maxCount := 1
-	imageId := "ami-05ba3a39a75be1ec4"
+	// imageId := "ami-05ba3a39a75be1ec4" //x86
+	// imageId := "ami-0296ecdacc0d49d5a" //arm
 	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName)
 	if err != nil {
 		log.Error("Couldn't create new instance: %v", err)
@@ -117,14 +125,18 @@ func TerminateInstance(instanceID string, profile string, region string) {
 	log.Info("Termination Successful!")
 }
 
-func CreateAMI(instanceID string, profile string, region string) {
+func CreateAMI(instanceID string, profile string, region string, arch string) {
 	client := GetClient(profile, region)
 	resource := ec2.ResourceTypeImage
+	amiName := "MarlinLauncherx86_64"
+	if arch == "amd" {
+		amiName = "MarlinLauncherARM64"
+	}
 	res, err := client.CreateImage(&ec2.CreateImageInput{
 		InstanceId:      aws.String(instanceID),
-		Name:     aws.String("MarlinLauncher"),
+		Name:     aws.String(amiName),
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
-			Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{25}[0]}}[0],
+			Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{15}[0]}}[0],
 			DeviceName: &[]string{"/dev/sda1"}[0],
 		}},
 		TagSpecifications: []*ec2.TagSpecification{&ec2.TagSpecification{
