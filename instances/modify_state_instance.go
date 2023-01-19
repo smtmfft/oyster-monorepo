@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string) (*ec2.Reservation, error) {
+func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string, arch string) (*ec2.Reservation, error) {
 	res, err := client.RunInstances(&ec2.RunInstancesInput{
 		ImageId:      aws.String(imageId),
 		MinCount:     aws.Int64(int64(minCount)),
@@ -29,12 +29,18 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
 	if err != nil {
 		return nil, err
 	}
+
+	name:= "AMISetup_x86"
+	if arch == "arm" {
+		name = "AMISetup_ARM"
+	} 
+
 	_, errtag := client.CreateTags(&ec2.CreateTagsInput{
         Resources: []*string{res.Instances[0].InstanceId},
         Tags: []*ec2.Tag{
             {
                 Key:   aws.String("Name"),
-                Value: aws.String("TestRunner"),
+                Value: aws.String(name),
             },
 			{
 				Key: aws.String("managedBy"),
@@ -57,7 +63,7 @@ func LaunchInstance(keyPairName string, profile string, region string, arch stri
 	keyName := keyPairName
 	instanceType := "c6a.xlarge"
 	imageId := "ami-05ba3a39a75be1ec4"
-	if arch == "amd" {
+	if arch == "arm" {
 		instanceType = "c6g.xlarge"
 		imageId = "ami-0296ecdacc0d49d5a"
 	}
@@ -67,7 +73,7 @@ func LaunchInstance(keyPairName string, profile string, region string, arch stri
 	maxCount := 1
 	// imageId := "ami-05ba3a39a75be1ec4" //x86
 	// imageId := "ami-0296ecdacc0d49d5a" //arm
-	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName)
+	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName, arch)
 	if err != nil {
 		log.Error("Couldn't create new instance: %v", err)
 		return nil
@@ -129,7 +135,7 @@ func CreateAMI(instanceID string, profile string, region string, arch string) {
 	client := GetClient(profile, region)
 	resource := ec2.ResourceTypeImage
 	amiName := "MarlinLauncherx86_64"
-	if arch == "amd" {
+	if arch == "arm" {
 		amiName = "MarlinLauncherARM64"
 	}
 	res, err := client.CreateImage(&ec2.CreateImageInput{

@@ -42,32 +42,59 @@ func main() {
 	}
 
 	keypairs.SetupKeys(keyPairName, keyStoreLocation, profile, region)
-	var wg sync.WaitGroup;
-	wg.Add(1)
-	go create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
-	wg.Add(1)
-	go create_ami(keyPairName, keyStoreLocation, profile, region, "amd")
-	wg.Wait()
+
+	exist_x86 := instances.CheckAMIFromNameTag("MarlinLauncherx86_64", profile, region)
+	exist_arm := instances.CheckAMIFromNameTag("MarlinLauncherARM64", profile, region)
+
+	if !exist_arm && !exist_x86 {
+		var wg sync.WaitGroup;
+		wg.Add(1)
+		go create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
+		wg.Add(1)
+		go create_ami(keyPairName, keyStoreLocation, profile, region, "arm")
+		wg.Wait()
+	} else if exist_arm && !exist_x86 {
+		log.Info("ARM AMI already exists.")
+		create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
+	} else if exist_x86 && !exist_arm{
+		log.Info("x86 AMI already exists.")
+		create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
+	} else {
+		log.Info("AMI's already exist.")
+		return
+	}
+
 }
 
 func create_ami(keyPairName string, keyStoreLocation string, profile string, region string, arch string) {
 	log.Info("Creataing AMI for " + arch)
+	name:= "AMISetup_x86"
+	if arch == "arm" {
+		name = "AMISetup_ARM"
+	}
+	newInstanceID := ""
+	exist, instance := instances.GetInstanceFromNameTag(name, profile, region)
+	if exist {
+		log.Info("Found Existing instance for ", arch)
+		newInstanceID = *instance.InstanceId
+	} else {
+		newInstanceID = *instances.LaunchInstance(keyPairName, profile, region, arch)
+		time.Sleep(3 * time.Minute)
+		instance = instances.GetInstanceDetails(newInstanceID, profile, region)
+	}
 	
-	newInstanceID := instances.LaunchInstance(keyPairName, profile, region, arch)
-	time.Sleep(2 * time.Minute)
-	instance := instances.GetInstanceDetails(*newInstanceID, profile, region)
-
+	
 	client := connect.NewSshClient(
 		"ubuntu",
 		*(instance.PublicIpAddress),
 		22,
 		keyStoreLocation,
 	)
-	SetupPreRequisites(client, *(instance.PublicIpAddress), *newInstanceID, profile, region)
+	SetupPreRequisites(client, *(instance.PublicIpAddress), newInstanceID, profile, region)
 
-	instances.CreateAMI(*newInstanceID, profile, region, arch)
+	instances.CreateAMI(newInstanceID, profile, region, arch)
 	time.Sleep(7*time.Minute)
-	TearDown(*newInstanceID, profile, region)
+	TearDown(newInstanceID, profile, region)
 }
 
 

@@ -96,3 +96,80 @@ func GetInstanceDetails(instanceID string, profile string, region string) (*ec2.
 	}	
 	return nil
 }
+
+func GetInstanceFromNameTag(name string, profile string, region string) (bool, *ec2.Instance){
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Profile: profile,
+		Config: aws.Config{
+			Region: aws.String(region),
+		},
+	})
+
+	if err != nil {
+		log.Error("Failed to initialize new session: %v", err)
+		return false, nil
+	}
+
+	ec2Client := ec2.New(sess)
+
+	runningInstances, err := GetRunningInstances(ec2Client)
+	if err != nil {
+		log.Error("Couldn't retrieve running instances: %v", err)
+		return false, nil
+	}
+
+
+	for _, reservation := range runningInstances.Reservations {
+		for _, instance := range reservation.Instances {
+			for _, tagpair := range instance.Tags {
+				if *(tagpair.Key) ==  "Name" && *(tagpair.Value) == name{
+					return true, instance
+				}
+			}
+		}
+		
+	}	
+	return false, nil
+}
+
+
+func CheckAMIFromNameTag(amiName string, profile string, region string) (bool){
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Profile: profile,
+		Config: aws.Config{
+			Region: aws.String(region),
+		},
+	})
+
+	if err != nil {
+		log.Error("Failed to initialize new session: %v", err)
+		return false
+	}
+
+	ec2Client := ec2.New(sess)
+	result, err := ec2Client.DescribeImages(&ec2.DescribeImagesInput{
+		Owners: []*string {
+			aws.String("self"),
+		},
+		Filters: []*ec2.Filter{
+			{
+				Name: aws.String("name"),
+				Values: []*string{
+					aws.String(amiName),
+				},
+			},
+		},
+	})
+	for _, ami := range result.Images {
+		
+		if *ami.Name == amiName {
+			return true
+		}
+	}
+	if err != nil {
+		log.Error("Couldn't retrieve running instances: %v", err)
+		return false
+	}
+
+	return false
+}
