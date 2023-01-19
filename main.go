@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Panic(err.Error())
 	}
-	keyStoreLocation := "/home/" + currentUser.Username + "/" + keyPairName + ".pem"
+	keyStoreLocation := "/home/" + currentUser.Username + "/.ssh/" + keyPairName + ".pem"
 	profile, exist := os.LookupEnv("PROFILE")
 	if !exist {
 		log.Panic("Profile not set")
