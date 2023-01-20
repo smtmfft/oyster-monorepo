@@ -173,3 +173,30 @@ func CheckAMIFromNameTag(amiName string, profile string, region string) (bool){
 
 	return false
 }
+
+func GetSecurityGroup(client *ec2.EC2) (*ec2.SecurityGroup) {
+	result, err := client.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
+		Filters: []*ec2.Filter{
+			&ec2.Filter{
+				Name: aws.String("tag:project"),
+				Values: []*string {
+					aws.String("oyster"),
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		log.Error("Error fetching security group: ", err)
+	}
+
+	for _, group := range result.SecurityGroups {
+		for _, tag := range group.Tags {
+			if *tag.Key == "project" && *tag.Value == "oyster" {
+				return group
+			}
+		}
+	}
+
+	return nil
+}

@@ -12,46 +12,101 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string, arch string) (*ec2.Reservation, error) {
-	res, err := client.RunInstances(&ec2.RunInstancesInput{
-		ImageId:      aws.String(imageId),
-		MinCount:     aws.Int64(int64(minCount)),
-		MaxCount:     aws.Int64(int64(maxCount)),
-		InstanceType: aws.String(instanceType),
-		KeyName:      aws.String(keyName),
-		EnclaveOptions: &ec2.EnclaveOptionsRequest{Enabled: &[]bool{true}[0]},
-		BlockDeviceMappings: []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
-			Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{15}[0]}}[0],
-			DeviceName: &[]string{"/dev/sda1"}[0],
-		}},
-	})
+func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string, arch string, secGroupID string) (*ec2.Reservation, error) {
 
-	if err != nil {
-		return nil, err
-	}
+	
+	if secGroupID == "" {
+		res, err := client.RunInstances(&ec2.RunInstancesInput{
+			ImageId:      aws.String(imageId),
+			MinCount:     aws.Int64(int64(minCount)),
+			MaxCount:     aws.Int64(int64(maxCount)),
+			InstanceType: aws.String(instanceType),
+			KeyName:      aws.String(keyName),
+			EnclaveOptions: &ec2.EnclaveOptionsRequest{Enabled: &[]bool{true}[0]},
+			BlockDeviceMappings: []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
+				Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{15}[0]}}[0],
+				DeviceName: &[]string{"/dev/sda1"}[0],
+			}},
+		})
 
-	name:= "AMISetup_x86"
-	if arch == "arm" {
-		name = "AMISetup_ARM"
-	} 
-
-	_, errtag := client.CreateTags(&ec2.CreateTagsInput{
-        Resources: []*string{res.Instances[0].InstanceId},
-        Tags: []*ec2.Tag{
-            {
-                Key:   aws.String("Name"),
-                Value: aws.String(name),
-            },
-			{
-				Key: aws.String("managedBy"),
-				Value: aws.String("marlin"),
+		if err != nil {
+			return nil, err
+		}
+	
+		name:= "AMISetup_x86"
+		if arch == "arm" {
+			name = "AMISetup_ARM"
+		} 
+	
+		_, errtag := client.CreateTags(&ec2.CreateTagsInput{
+			Resources: []*string{res.Instances[0].InstanceId},
+			Tags: []*ec2.Tag{
+				{
+					Key:   aws.String("Name"),
+					Value: aws.String(name),
+				},
+				{
+					Key: aws.String("managedBy"),
+					Value: aws.String("marlin"),
+				},
+				{
+					Key: aws.String("project"),
+					Value: aws.String("oyster"),
+				},
 			},
-        },
-    })
-	if errtag != nil {
-        log.Warn("Could not create tags for instance", res.Instances[0].InstanceId, errtag)
-    }
-	return res, nil
+		})
+		if errtag != nil {
+			log.Warn("Could not create tags for instance", res.Instances[0].InstanceId, errtag)
+		}
+		return res, nil
+	} else {
+		res, err := client.RunInstances(&ec2.RunInstancesInput{
+			ImageId:      aws.String(imageId),
+			MinCount:     aws.Int64(int64(minCount)),
+			MaxCount:     aws.Int64(int64(maxCount)),
+			InstanceType: aws.String(instanceType),
+			KeyName:      aws.String(keyName),
+			EnclaveOptions: &ec2.EnclaveOptionsRequest{Enabled: &[]bool{true}[0]},
+			BlockDeviceMappings: []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
+				Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{15}[0]}}[0],
+				DeviceName: &[]string{"/dev/sda1"}[0],
+			}},
+			SecurityGroupIds: []*string {
+				aws.String(secGroupID),
+			},
+		})
+
+		if err != nil {
+			return nil, err
+		}
+	
+		name:= "AMISetup_x86"
+		if arch == "arm" {
+			name = "AMISetup_ARM"
+		} 
+	
+		_, errtag := client.CreateTags(&ec2.CreateTagsInput{
+			Resources: []*string{res.Instances[0].InstanceId},
+			Tags: []*ec2.Tag{
+				{
+					Key:   aws.String("Name"),
+					Value: aws.String(name),
+				},
+				{
+					Key: aws.String("managedBy"),
+					Value: aws.String("marlin"),
+				},
+				{
+					Key: aws.String("project"),
+					Value: aws.String("oyster"),
+				},
+			},
+		})
+		if errtag != nil {
+			log.Warn("Could not create tags for instance", res.Instances[0].InstanceId, errtag)
+		}
+		return res, nil
+	}
 }
 
 
@@ -73,7 +128,13 @@ func LaunchInstance(keyPairName string, profile string, region string, arch stri
 	maxCount := 1
 	// imageId := "ami-05ba3a39a75be1ec4" //x86
 	// imageId := "ami-0296ecdacc0d49d5a" //arm
-	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName, arch)
+	securityGroup := GetSecurityGroup(ec2Client)
+	
+	securityGroupID := ""
+	if securityGroup != nil {
+		securityGroupID = *securityGroup.GroupId
+	}
+	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName, arch, securityGroupID)
 	if err != nil {
 		log.Error("Couldn't create new instance: %v", err)
 		return nil
@@ -151,6 +212,10 @@ func CreateAMI(instanceID string, profile string, region string, arch string) {
 				{
 					Key: aws.String("managedBy"),
 					Value: aws.String("marlin"),
+				},
+				{
+					Key: aws.String("project"),
+					Value: aws.String("oyster"),
 				},
 			},
 		}},
