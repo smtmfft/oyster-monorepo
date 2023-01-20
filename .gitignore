@@ -1,3 +1,6 @@
 EnclaveLauncher
 go.sum
-*.json
+instance.json
+/bin/
+/node_modules/
+Pulumi.*.yaml
