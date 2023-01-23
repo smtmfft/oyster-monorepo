@@ -1,3 +1,4 @@
+
 # Setup AWS EC2 AMI's and VPC for oyster
 Following is the description of the process to perform preliminary setups including setting up Base Amazon Machine Images and VPC to run a provider. The AMI's and VPC setup by this tutorial is used by oyster to run enclaves for jobs in EC2 instances.
 
@@ -12,6 +13,16 @@ This setup requires you to setup a named profile using AWS CLI
  - To install AWS CLI on your system please follow ["Installing or updating the latest version of the AWS CLI"](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
  - Next configure the AWS CLI and setup a named profile by following ["Configuring the AWS CLI"](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)
 
+### Install Go
+This project requires Go version 1.18.1+ to run, to install go on your system, run the following command
+
+    sudo apt install golang-go
+You can then check the version by running 
+
+    go version
+
+ 
+
 ### Pulumi preliminaries
 
 ## Setting up the VPC
@@ -22,9 +33,9 @@ Clone the repository containing code base to run the setup by running the follow
 
     git clone git@github.com:marlinprotocol/EnclaveLauncher.git && cd EnclaveLauncher
 ### Step 2: Build the executable
-Run the following command
+Run the following commands
 
-    go build
+    go get && go build
 ### Step 3: Run the executable
 The executable requires a few environment variables to run, to set those up run the following commands. 
 
