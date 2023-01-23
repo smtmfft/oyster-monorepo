@@ -56,7 +56,7 @@ func ListRunningInstances(profile string, region string) {
 		for _, instance := range reservation.Instances {
 			fmt.Println(instance)
 		}
-	}	
+	}
 }
 
 func GetInstanceDetails(instanceID string, profile string, region string) (*ec2.Instance){
@@ -86,14 +86,14 @@ func GetInstanceDetails(instanceID string, profile string, region string) (*ec2.
 
 			if *(instance.InstanceId) == instanceID {
 				file, _ := json.MarshalIndent(instance, "", " ")
- 
+
 				_ = ioutil.WriteFile("instance.json", file, 0644)
 				return instance
 			}
-			
+
 		}
-		
-	}	
+
+	}
 	return nil
 }
 
@@ -127,8 +127,8 @@ func GetInstanceFromNameTag(name string, profile string, region string) (bool, *
 				}
 			}
 		}
-		
-	}	
+
+	}
 	return false, nil
 }
 
@@ -161,7 +161,7 @@ func CheckAMIFromNameTag(amiName string, profile string, region string) (bool){
 		},
 	})
 	for _, ami := range result.Images {
-		
+
 		if *ami.Name == amiName {
 			return true
 		}
@@ -194,6 +194,33 @@ func GetSecurityGroup(client *ec2.EC2) (*ec2.SecurityGroup) {
 		for _, tag := range group.Tags {
 			if *tag.Key == "project" && *tag.Value == "oyster" {
 				return group
+			}
+		}
+	}
+
+	return nil
+}
+
+func GetSubnet(client *ec2.EC2) (*ec2.Subnet) {
+	result, err := client.DescribeSubnets(&ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{
+			&ec2.Filter{
+				Name: aws.String("tag:project"),
+				Values: []*string {
+					aws.String("oyster"),
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		log.Error("Error fetching subnets: ", err)
+	}
+
+	for _, subnet := range result.Subnets {
+		for _, tag := range subnet.Tags {
+			if *tag.Key == "project" && *tag.Value == "oyster" {
+				return subnet
 			}
 		}
 	}

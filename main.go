@@ -67,7 +67,7 @@ func main() {
 }
 
 func create_ami(keyPairName string, keyStoreLocation string, profile string, region string, arch string) {
-	log.Info("Creataing AMI for " + arch)
+	log.Info("Creating AMI for " + arch)
 	name:= "AMISetup_x86"
 	if arch == "arm" {
 		name = "AMISetup_ARM"
@@ -79,11 +79,11 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 		newInstanceID = *instance.InstanceId
 	} else {
 		newInstanceID = *instances.LaunchInstance(keyPairName, profile, region, arch)
-		time.Sleep(3 * time.Minute)
+		time.Sleep(1 * time.Minute)
 		instance = instances.GetInstanceDetails(newInstanceID, profile, region)
 	}
-	
-	
+
+
 	client := connect.NewSshClient(
 		"ubuntu",
 		*(instance.PublicIpAddress),
@@ -136,7 +136,7 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	connect.TransferFile(client.Config, host, "./proxies.conf", "/home/ubuntu/proxies.conf")
 	RunCommand(client, "sudo mv /home/ubuntu/proxies.conf /etc/supervisor/conf.d/proxies.conf")
 	RunCommand(client, "sudo supervisorctl reload")
-	
+
 	RunCommand(client, "rm /home/ubuntu/allocator.yaml")
 	RunCommand(client, "sudo rm -r /home/ubuntu/aws-nitro-enclaves-cli")
 }

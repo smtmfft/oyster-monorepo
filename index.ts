@@ -47,29 +47,7 @@ regions.forEach((region, ridx) => {
     // providers
     providers[region] = new aws.Provider(region, {
         region: region,
-    })
-
-    // amis
-    amis[region] = aws.ec2.getAmi({
-        mostRecent: true,
-        filters: [{
-            name: 'name',
-            values: ['ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-????????'],
-        }],
-        owners: ['099720109477'],  // canonical
-    }, {
-        provider: providers[region],
-    })
-
-    armAmis[region] = aws.ec2.getAmi({
-        mostRecent: true,
-        filters: [{
-            name: 'name',
-            values: ['ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-arm64-server-????????'],
-        }],
-        owners: ['099720109477'],  // canonical
-    }, {
-        provider: providers[region],
+		profile: new pulumi.Config('aws').get("profile"),
     })
 
     // vpcs
@@ -138,7 +116,7 @@ regions.forEach((region, ridx) => {
 		ingress: [{
             cidrBlocks: ['0.0.0.0/0'],
             fromPort: 0,
-            toPort: 0,
+            toPort: 65535,
             protocol: "tcp",
 		}],
         tags: tags,
