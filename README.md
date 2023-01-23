@@ -21,11 +21,35 @@ You can then check the version by running
 
     go version
 
- 
+ ### Install Node.js
+ If your system doesn't have Node.js installed, you can refer [here](https://nodejs.org/en/download/), you can also [install Node.js using the package manager](https://nodejs.org/en/download/package-manager/). This project uses node version 16.0.0+ and npm version 8.0.0+.
 
-### Pulumi preliminaries
+### Setup pulumi
+Install pulumi on your system by running the installation script by running the command, you can also refer the official docs [here](https://www.pulumi.com/docs/get-started/aws/begin/#before-you-begin) 
+
+    curl -fsSL https://get.pulumi.com | sh
+Restart the shell, for it to take effect. Next, please register an account on the pulumi website as it is required by the further process.  
 
 ## Setting up the VPC
+### Step 1: Install the npm packages
+Run the following command to install all the relevant npm modules and packages
+
+    npm install
+### Step 2: Set the AWS profile
+To set the named AWS profile, as an environment variable. Run
+
+    export AWS_PROFILE=/*profile name*/
+### Step 3: Review the code file
+Check the code file to review and possibly modify the regions that you want to launch VPC's to. 
+ 
+### Step 4: Run the pulumi project
+Run the following command
+
+    pulumi up
+This might ask you to log into your account that was previously created through the pulumi cli command, in which case log into your account. Now when prompted create a new stack and name it.
+Next, it will prompt you `Do you want to perform this update?`, Select `yes` 
+
+This will successfully setup the required VPC, subnet, security group etc. needed for running oyster as a provider. All resources will be tagged with **`project:oyster`** tag.
 
 ## Setting up default Amazon Machine Images
 ### Step 1: Setup the repository
