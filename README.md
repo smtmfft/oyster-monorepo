@@ -22,13 +22,13 @@ You can then check the version by running
     go version
 
  ### Install Node.js
- If your system doesn't have Node.js installed, you can refer [here](https://nodejs.org/en/download/), you can also [install Node.js using the package manager](https://nodejs.org/en/download/package-manager/). This project uses node version 16.0.0+ and npm version 8.0.0+.
+ If your system doesn't have Node.js installed, you can refer [here](https://nodejs.org/en/download/), you can also [install Node.js using the package manager](https://nodejs.org/en/download/package-manager/). This project uses node version 16.18.0+ and npm version 8.19.0+.
 
 ### Setup pulumi
 Install pulumi on your system by running the installation script by running the command, you can also refer the official docs [here](https://www.pulumi.com/docs/get-started/aws/begin/#before-you-begin) 
 
     curl -fsSL https://get.pulumi.com | sh
-Restart the shell, for it to take effect. Next, please register an account on the pulumi website as it is required by the further process.  
+Restart the shell, for it to take effect. 
 
 ## Setting up the VPC
 ### Step 1: Install the npm packages
@@ -43,10 +43,14 @@ To set the named AWS profile, as an environment variable. Run
 Check the code file to review and possibly modify the regions that you want to launch VPC's to. 
  
 ### Step 4: Run the pulumi project
+Perform a local login to the pulumi cli by running
+
+    pulumi login -l
+
 Run the following command
 
     pulumi up
-This might ask you to log into your account that was previously created through the pulumi cli command, in which case log into your account. Now when prompted create a new stack and name it.
+Now when prompted create a new stack and name it. You can also set a passphrase if you wish to.
 Next, it will prompt you `Do you want to perform this update?`, Select `yes` 
 
 This will successfully setup the required VPC, subnet, security group etc. needed for running oyster as a provider. All resources will be tagged with **`project:oyster`** tag.
@@ -55,7 +59,7 @@ This will successfully setup the required VPC, subnet, security group etc. neede
 ### Step 1: Setup the repository
 Clone the repository containing code base to run the setup by running the following commands
 
-    git clone git@github.com:marlinprotocol/EnclaveLauncher.git && cd EnclaveLauncher
+    git clone git@github.com:marlinprotocol/oyster-setup-aws.git && cd oyster-setup-aws
 ### Step 2: Build the executable
 Run the following commands
 
@@ -73,7 +77,7 @@ Set the AWS profile and the region of setup
     export REGION=/*region*/
 Now to run the executable
 
-    ./EnclaveLauncher
+    ./OysterSetupAWS
 This process takes a while to run, where it creates the base EC2 instance and creates AMI's from them, and then proceeds to terminate the EC2 instances. At the end of this, you will have two AMI's by the name of  **`MarlinLauncherx86_64`** for `x86_64` architecture and **`MarlinLauncherARM64`** for `arm_64` architecture. Both AMI's will be tagged by **`project:oyster`** tag.
 
  
