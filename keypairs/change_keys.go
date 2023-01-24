@@ -44,18 +44,27 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 	ec2Client := ec2.New(sess)
 
 	keyName := keyPairName
-	createRes, err := CreateKeyPair(ec2Client, keyName)
-	if err != nil {
-		log.Error("Couldn't create key pair: %v", err)
-		return
-	}
+	keyExists := CheckForKeyPair(keyName, profile, region)
+	_, err = os.Stat(keyStoreLocation)
+	if err == nil && keyExists {
+		return 
+	} else if os.IsNotExist(err) && !keyExists {
+		createRes, err := CreateKeyPair(ec2Client, keyName)
+		if err != nil {
+			log.Error("Couldn't create key pair: %v", err)
+			return
+		}
 
-	err = WriteKey(keyStoreLocation, createRes.KeyMaterial)
-	if err != nil {
-		log.Error("Couldn't write key pair to file: %v", err)
-		return
+		err = WriteKey(keyStoreLocation, createRes.KeyMaterial)
+		if err != nil {
+			log.Error("Couldn't write key pair to file: %v", err)
+			return
+		}
+		log.Info("Created key pair: ", *createRes.KeyName)
+	} else {
+		log.Panic("Either key exists or file exists but not both. try with a different keypair name", err)
 	}
-	log.Info("Created key pair: ", *createRes.KeyName)
+	
 }
 
 func DeleteKeyPair(keyPair string, profile string, region string) {

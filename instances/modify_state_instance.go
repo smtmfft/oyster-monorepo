@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string) (*ec2.Reservation, error) {
+func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string, arch string, subnetId string, secGroupID string) (*ec2.Reservation, error) {
 	res, err := client.RunInstances(&ec2.RunInstancesInput{
 		ImageId:      aws.String(imageId),
 		MinCount:     aws.Int64(int64(minCount)),
@@ -21,56 +21,81 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
 		KeyName:      aws.String(keyName),
 		EnclaveOptions: &ec2.EnclaveOptionsRequest{Enabled: &[]bool{true}[0]},
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
-			Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{25}[0]}}[0],
+			Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{15}[0]}}[0],
 			DeviceName: &[]string{"/dev/sda1"}[0],
 		}},
+		SecurityGroupIds: []*string {
+			aws.String(secGroupID),
+		},
+		SubnetId: &subnetId,
 	})
 
 	if err != nil {
 		return nil, err
 	}
+
+	name:= "AMISetup_x86"
+	if arch == "arm" {
+		name = "AMISetup_ARM"
+	}
+
 	_, errtag := client.CreateTags(&ec2.CreateTagsInput{
-        Resources: []*string{res.Instances[0].InstanceId},
-        Tags: []*ec2.Tag{
-            {
-                Key:   aws.String("Name"),
-                Value: aws.String("TestRunner"),
-            },
+		Resources: []*string{res.Instances[0].InstanceId},
+		Tags: []*ec2.Tag{
 			{
-				Key: aws.String("managedBy"),
+				Key:   aws.String("Name"),
+				Value: aws.String(name),
+			},
+			{
+				Key: aws.String("manager"),
 				Value: aws.String("marlin"),
 			},
-        },
-    })
+			{
+				Key: aws.String("project"),
+				Value: aws.String("oyster"),
+			},
+		},
+	})
 	if errtag != nil {
-        log.Warn("Could not create tags for instance", res.Instances[0].InstanceId, errtag)
-    }
+		log.Warn("Could not create tags for instance", res.Instances[0].InstanceId, errtag)
+	}
 	return res, nil
 }
 
 
-func LaunchInstance(keyPairName string, profile string, region string) (*string) {
+func LaunchInstance(keyPairName string, profile string, region string, arch string) (*string) {
 	log.Info("Launching Instance.")
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Profile: profile,
-		Config: aws.Config{
-			Region: aws.String(region),
-		},
-	})
 
-	if err != nil {
-		log.Error("Failed to initialize new session: %v", err)
-		return nil
-	}
-
-	ec2Client := ec2.New(sess)
+	ec2Client := GetClient(profile, region)
 
 	keyName := keyPairName
 	instanceType := "c6a.xlarge"
+	imageId := "ami-05ba3a39a75be1ec4"
+	if arch == "arm" {
+		instanceType = "c6g.xlarge"
+		imageId = "ami-0296ecdacc0d49d5a"
+	}
+	// instanceType := "c6a.xlarge"
+	// instanceType := "c6g.xlarge"
 	minCount := 1
 	maxCount := 1
-	imageId := "ami-04ce962f738443165"
-	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName)
+	// imageId := "ami-05ba3a39a75be1ec4" //x86
+	// imageId := "ami-0296ecdacc0d49d5a" //arm
+	subnet := GetSubnet(ec2Client)
+	if subnet == nil {
+		log.Error("Could not find subnet")
+		return nil
+	}
+
+	securityGroup := GetSecurityGroup(ec2Client)
+	if securityGroup == nil {
+		log.Error("Could not find security group")
+		return nil
+	}
+
+	subnetId := *subnet.SubnetId
+	securityGroupID := *securityGroup.GroupId
+	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName, arch, subnetId, securityGroupID)
 	if err != nil {
 		log.Error("Couldn't create new instance: %v", err)
 		return nil
@@ -78,31 +103,13 @@ func LaunchInstance(keyPairName string, profile string, region string) (*string)
 	instanceID := newInstance.Instances[0].InstanceId
 
 	log.Info("Instance Created!")
-	// fmt.Printf("Created new instance: %v\n", newInstance.Instances)
 
-	// uncomment to store details of newly created instance :
-	// file, _ := json.MarshalIndent(newInstance.Instances[0], "", " ")
-	// _ = ioutil.WriteFile("create_out.json", file, 0644)
-	
 	return instanceID
 }
 
 func RebootInstance(instanceID string, profile string, region string) {
-	log.Info("Rebooting")
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Profile: profile,
-		Config: aws.Config{
-			Region: aws.String(region),
-		},
-	})
-
-	if err != nil {
-		log.Error("Failed to initialize new session: %v", err)
-		return
-	}
-
     // Create new EC2 client
-    svc := ec2.New(sess)
+    svc := GetClient(profile, region)
 
     // We set DryRun to true to check to see if the instance exists and we have the
     // necessary permissions to monitor the instance.
@@ -133,7 +140,56 @@ func RebootInstance(instanceID string, profile string, region string) {
 }
 
 func TerminateInstance(instanceID string, profile string, region string) {
-	log.Info("Terminating : " + instanceID)
+    // Create new EC2 client
+    svc := GetClient(profile, region)
+
+    _, err := svc.TerminateInstances(&ec2.TerminateInstancesInput{
+		InstanceIds: []*string{&instanceID},
+	})
+	if err != nil {
+		log.Warn("Couldn't terimate instance: ", err)
+	}
+
+	log.Info("Termination Successful!")
+}
+
+func CreateAMI(instanceID string, profile string, region string, arch string) {
+	client := GetClient(profile, region)
+	resource := ec2.ResourceTypeImage
+	amiName := "MarlinLauncherx86_64"
+	if arch == "arm" {
+		amiName = "MarlinLauncherARM64"
+	}
+	res, err := client.CreateImage(&ec2.CreateImageInput{
+		InstanceId:      aws.String(instanceID),
+		Name:     aws.String(amiName),
+		BlockDeviceMappings: []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
+			Ebs: &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{15}[0]}}[0],
+			DeviceName: &[]string{"/dev/sda1"}[0],
+		}},
+		TagSpecifications: []*ec2.TagSpecification{&ec2.TagSpecification{
+			ResourceType: &resource,
+			Tags: []*ec2.Tag{
+				{
+					Key: aws.String("manager"),
+					Value: aws.String("marlin"),
+				},
+				{
+					Key: aws.String("project"),
+					Value: aws.String("oyster"),
+				},
+			},
+		}},
+	})
+	if err != nil {
+		log.Panic("Error creating image", err)
+	}
+
+	log.Info("Image created: ", res.ImageId)
+}
+
+func GetClient(profile string, region string) (*ec2.EC2){
+
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
 		Config: aws.Config{
@@ -143,18 +199,10 @@ func TerminateInstance(instanceID string, profile string, region string) {
 
 	if err != nil {
 		log.Error("Failed to initialize new session: %v", err)
-		return
+		return nil
 	}
 
-    // Create new EC2 client
-    svc := ec2.New(sess)
+	ec2Client := ec2.New(sess)
 
-    _, err = svc.TerminateInstances(&ec2.TerminateInstancesInput{
-		InstanceIds: []*string{&instanceID},
-	})
-	if err != nil {
-		log.Warn("Couldn't terimate instance: ", err)
-	}
-    
-	log.Info("Termination Successful!")
+	return ec2Client
 }
