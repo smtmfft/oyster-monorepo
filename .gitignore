@@ -4,3 +4,4 @@ instance.json
 /bin/
 /node_modules/
 Pulumi.*.yaml
+OysterSetupAWS

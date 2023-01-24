@@ -1,4 +1,4 @@
-module EnclaveLauncher
+module OysterSetupAWS
 
 go 1.18
 

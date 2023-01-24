@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"EnclaveLauncher/connect"
-	"EnclaveLauncher/instances"
-	"EnclaveLauncher/keypairs"
+	"OysterSetupAWS/connect"
+	"OysterSetupAWS/instances"
+	"OysterSetupAWS/keypairs"
 
 	log "github.com/sirupsen/logrus"
 )
