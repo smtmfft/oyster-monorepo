@@ -5,3 +5,4 @@ instance.json
 /node_modules/
 Pulumi.*.yaml
 OysterSetupAWS
+.gitsigners
