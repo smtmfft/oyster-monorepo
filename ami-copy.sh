@@ -1,14 +1,12 @@
 #!/bin/bash
 
-# Params : <profile> <source_region>
+# Params : <profile> <source_region> <destination_region1> <destination_region2> <destination_region3>...
 
 # set AWS_PROFILE 
 export AWS_PROFILE=$1
 
 # List of regions the ami's will be copied to
-regions=("ap-southeast-1" "us-east-1" "us-east-2" "us-west-1" "us-west-2" "ca-central-1"
-    \ "eu-north-1" "eu-west-3" "eu-west-2" "eu-west-1" "eu-central-1" "eu-south-1"
-    \ "ap-south-1" "ap-northeast-1" "ap-northeast-2" "ap-southeast-1" "ap-southeast-2" "ap-east-1")
+regions=("${@:3}")
 
 # Fetching ImageID for arm64 architecture
 ami_arm=$(aws ec2 describe-images --owners self --filters Name=name,Values=MarlinLauncherARM64 --no-paginate --query 'Images[0].ImageId')
