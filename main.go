@@ -49,9 +49,15 @@ func main() {
 	if !exist_arm && !exist_x86 {
 		var wg sync.WaitGroup;
 		wg.Add(1)
-		go create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
+		go func() {
+			defer wg.Done()
+			create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
+		}() 
 		wg.Add(1)
-		go create_ami(keyPairName, keyStoreLocation, profile, region, "arm")
+		go func() {
+			defer wg.Done()
+			create_ami(keyPairName, keyStoreLocation, profile, region, "arm")
+		}()
 		wg.Wait()
 	} else if exist_arm && !exist_x86 {
 		log.Info("ARM AMI already exists.")
@@ -95,6 +101,7 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 	instances.CreateAMI(newInstanceID, profile, region, arch)
 	time.Sleep(7*time.Minute)
 	TearDown(newInstanceID, profile, region)
+	return
 }
 
 
