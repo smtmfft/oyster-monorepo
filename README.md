@@ -80,5 +80,16 @@ Now to run the executable
     ./OysterSetupAWS
 This process takes a while to run, where it creates the base EC2 instance and creates AMI's from them, and then proceeds to terminate the EC2 instances. At the end of this, you will have two AMI's by the name of  **`MarlinLauncherx86_64`** for `x86_64` architecture and **`MarlinLauncherARM64`** for `arm_64` architecture. Both AMI's will be tagged by **`project:oyster`** tag.
 
+### Step 4: Copy AMI's across regions
+With the above mentioned steps you will have created two AMI's for architectures `arm_64` and `x86_64` respectively in the region specified by you. However, these AMI's can only be used in the region the were created in. To use the AMI's in a different region you will have to copy these AMI's as is, into the required regions. 
+You can run a simple script provided in the project to do so. Run the following commands
+
+    chmod +x ami-copy.sh
+ Next run the script by passing in the `aws_profile`, `source_region`, followed by the `destination regions` like
+ 
+
+    ./ami-copy.sh <profile> <source_region> <dest_region_1> <dest_region_2> <dest_region_3>...
+This will copy both the AMI's to all the regions supplied.
+
  
 
