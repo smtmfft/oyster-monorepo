@@ -2,8 +2,13 @@
 
 # Params : <profile> <source_region> <destination_region1> <destination_region2> <destination_region3>...
 
+set -e
+
 # set AWS_PROFILE 
 export AWS_PROFILE=$1
+
+# set AWS_DEFAULT_REGION 
+export AWS_DEFAULT_REGION=$2
 
 # List of regions the ami's will be copied to
 regions=("${@:3}")
