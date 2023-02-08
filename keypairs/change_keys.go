@@ -1,7 +1,10 @@
 package keypairs
 
 import (
+	"bytes"
+	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -61,10 +64,57 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 			return
 		}
 		log.Info("Created key pair: ", *createRes.KeyName)
+	} else if err == nil && !keyExists {
+		cmd := exec.Command("ssh-keygen", "-y", "-f", keyStoreLocation)
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err := cmd.Run()
+		if err != nil {
+			log.Error("key generation failed: ", err)
+			log.Panic(fmt.Sprint(err) + ": " + stderr.String())
+		}
+		err = os.WriteFile(keyStoreLocation + ".pub", []byte(out.Bytes()), 0400)
+		if err != nil {
+			log.Error("key generation failed: ", err)
+		}
+		importRes, err := ImportKeyPair(keyName, keyStoreLocation, profile, region)
+
+		if err != nil {
+			log.Panic(err)
+		} else {
+			log.Info("Created key pair: ", *importRes.KeyName)
+		}
 	} else {
-		log.Panic("Either key exists or file exists but not both. try with a different keypair name", err)
+		log.Panic("Key already exists, try with a different key name")
+	}
+}
+
+func ImportKeyPair(keyPairName string, keyStoreLocation string, profile string, region string) (*ec2.ImportKeyPairOutput, error) {
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Profile: profile,
+		Config: aws.Config{
+			Region: aws.String(region),
+		},
+	})
+
+	if err != nil {
+		return nil, err
 	}
 	
+	ec2Client := ec2.New(sess)
+
+	dat, err := os.ReadFile(keyStoreLocation + ".pub")
+    if err != nil {
+		return nil, err
+	}
+	result, err := ec2Client.ImportKeyPair(&ec2.ImportKeyPairInput{
+        KeyName: aws.String(keyPairName),
+		PublicKeyMaterial: dat,
+    })
+
+	return result, err
 }
 
 func DeleteKeyPair(keyPair string, profile string, region string) {

@@ -67,7 +67,7 @@ Run the following commands
 ### Step 3: Run the executable
 The executable requires a few environment variables to run, to set those up run the following commands. 
 
-Set the name of the key pair to be used, if the specified key and, the *.pem* file in the `.ssh` folder in your home directory, exist, then in that case the existing keypair would be used otherwise a new keypair with the name specified would be created. 
+Set the name of the key pair to be used, if the specified key and, the *private key* file in the `.ssh` folder in your home directory, exist, then in that case the existing keypair would be used otherwise a new keypair with the name specified would be created.
 
     export KEY=/*keyname*/
     

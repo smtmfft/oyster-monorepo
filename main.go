@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Panic(err.Error())
 	}
-	keyStoreLocation := "/home/" + currentUser.Username + "/.ssh/" + keyPairName + ".pem"
+	keyStoreLocation := "/home/" + currentUser.Username + "/.ssh/" + keyPairName
 	profile, exist := os.LookupEnv("PROFILE")
 	if !exist {
 		log.Panic("Profile not set")
@@ -101,7 +101,6 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 	instances.CreateAMI(newInstanceID, profile, region, arch)
 	time.Sleep(7*time.Minute)
 	TearDown(newInstanceID, profile, region)
-	return
 }
 
 
