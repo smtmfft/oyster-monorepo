@@ -1,4 +1,4 @@
-module https://radicle.lsqtech.org/hnrkem6rrjedoxaijrxsmpsyugcqg3mfzp1uo.git/attestation
+module radicle.lsqtech.org/hnrkem6rrjedoxaijrxsmpsyugcqg3mfzp1uo.git/attestation
 
 go 1.19
 
