@@ -1,10 +1,13 @@
 package attestation
 
 import (
-	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"time"
 
 	"crypto/x509"
@@ -40,14 +43,32 @@ type coseSign1 struct {
 	Signature   []byte
 }
 
-func Verify(data []byte, pcrs map[uint][]byte, rootCertPem []byte, minCpus uint64, minMem uint64, maxAge int64) ([]byte, error) {
-	coseObj := coseSign1{}
+func Verifier(endpoint string, pcrs map[uint]string, minCpus uint64, minMem uint64, maxAge int64) ([]byte, error) {
+	// get attestation document
+	doc, err := getAttestationDoc(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	// verify
+	return verify(doc, pcrs, minCpus, minMem, maxAge)
+}
 
+func getAttestationDoc(endpoint string) ([]byte, error) {
+	resp, err := http.Get(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
+}
+
+func verify(data []byte, pcrs map[uint]string, minCpus uint64, minMem uint64, maxAge int64) ([]byte, error) {
+	// parse attestation document
+	coseObj := coseSign1{}
 	err := cbor.Unmarshal(data, &coseObj)
 	if err != nil {
 		return nil, errors.New("cbor bad coseSign1")
 	}
-
 	doc := AttestationDocument{}
 	err = cbor.Unmarshal(coseObj.Payload, &doc)
 	if nil != err {
@@ -57,11 +78,10 @@ func Verify(data []byte, pcrs map[uint][]byte, rootCertPem []byte, minCpus uint6
 	// verify PCRs
 	for index, value := range pcrs {
 		doc_pcr, found := doc.PCRs[index]
-
 		if !found {
 			return nil, fmt.Errorf("pcr%d not found", index)
 		}
-		if !bytes.Equal(doc_pcr, value) {
+		if value != hex.EncodeToString(doc_pcr) {
 			return nil, fmt.Errorf("pcr%d match failed", index)
 		}
 	}
@@ -91,28 +111,13 @@ func Verify(data []byte, pcrs map[uint][]byte, rootCertPem []byte, minCpus uint6
 		return nil, errors.New("cose signature verfication failed")
 	}
 
-	// Validating signing certificate PKI
-	if rootCertPem != nil {
-		intermediates, err := x509.ParseCertificates(concatCerts(doc.CABundle))
-		if err != nil {
-			return nil, errors.New("CABundle parsing failed")
-		}
-		root := intermediates[0]
-
-		pool1 := x509.NewCertPool()
-		pool2 := x509.NewCertPool()
-
-		for _, intercert := range intermediates {
-			pool1.AddCert(intercert)
-		}
-		pool2.AddCert(root)
-		opts := x509.VerifyOptions{
-			Intermediates: pool1,
-			Roots:         pool2,
-		}
-		if _, err := cert.Verify(opts); err != nil {
-			return nil, errors.New("certificate chain verification failed")
-		}
+	// Validating certificate chain
+	rootCert, err := ioutil.ReadFile("aws.cert")
+	if err != nil {
+		return nil, errors.New("root certificate reading failed")
+	}
+	if err := verifyCertChain(cert, doc.CABundle, rootCert); err != nil {
+		return nil, err
 	}
 
 	// verify enclave size
@@ -135,6 +140,37 @@ func Verify(data []byte, pcrs map[uint][]byte, rootCertPem []byte, minCpus uint6
 
 	// return public key
 	return doc.PublicKey, nil
+}
+
+func verifyCertChain(cert *x509.Certificate, cabundle [][]byte, rootCertPem []byte) error {
+	intermediates, err := x509.ParseCertificates(concatCerts(cabundle))
+	if err != nil {
+		return errors.New("cabundle parsing failed")
+	}
+
+	root, err := x509.ParseCertificate(rootCertPem)
+	if err != nil {
+		return err
+	}
+	if !root.Equal(intermediates[0]) {
+		return errors.New("root certificate mismatch")
+	}
+
+	pool1 := x509.NewCertPool()
+	pool2 := x509.NewCertPool()
+
+	for _, intercert := range intermediates {
+		pool1.AddCert(intercert)
+	}
+	pool2.AddCert(root)
+	opts := x509.VerifyOptions{
+		Intermediates: pool1,
+		Roots:         pool2,
+	}
+	if _, err := cert.Verify(opts); err != nil {
+		return errors.New("certificate chain verification failed")
+	}
+	return nil
 }
 
 func concatCerts(x interface{}) []byte {
