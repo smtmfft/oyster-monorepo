@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	"crypto/x509"
@@ -112,7 +112,7 @@ func verify(data []byte, pcrs map[uint]string, minCpus uint64, minMem uint64, ma
 	}
 
 	// Validating certificate chain
-	rootCert, err := ioutil.ReadFile("aws.cert")
+	rootCert, err := os.ReadFile("aws.cert")
 	if err != nil {
 		return nil, errors.New("root certificate reading failed")
 	}
