@@ -30,7 +30,6 @@ func WriteKey(fileName string, fileData *string) error {
 	return err
 }
 
-
 func SetupKeys(keyPairName string, keyStoreLocation string, profile string, region string) {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
@@ -50,7 +49,7 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 	keyExists := CheckForKeyPair(keyName, profile, region)
 	_, err = os.Stat(keyStoreLocation)
 	if err == nil && keyExists {
-		return 
+		return
 	} else if os.IsNotExist(err) && !keyExists {
 		createRes, err := CreateKeyPair(ec2Client, keyName)
 		if err != nil {
@@ -75,7 +74,7 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 			log.Error("key generation failed: ", err)
 			log.Panic(fmt.Sprint(err) + ": " + stderr.String())
 		}
-		err = os.WriteFile(keyStoreLocation + ".pub", []byte(out.Bytes()), 0400)
+		err = os.WriteFile(keyStoreLocation+".pub", []byte(out.Bytes()), 0400)
 		if err != nil {
 			log.Error("key generation failed: ", err)
 		}
@@ -87,7 +86,7 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 			log.Info("Created key pair: ", *importRes.KeyName)
 		}
 	} else {
-		log.Panic("Key already exists, try with a different key name")
+		log.Panic("Key already exists, try with a different key name", err)
 	}
 }
 
@@ -102,17 +101,17 @@ func ImportKeyPair(keyPairName string, keyStoreLocation string, profile string, 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	ec2Client := ec2.New(sess)
 
 	dat, err := os.ReadFile(keyStoreLocation + ".pub")
-    if err != nil {
+	if err != nil {
 		return nil, err
 	}
 	result, err := ec2Client.ImportKeyPair(&ec2.ImportKeyPairInput{
-        KeyName: aws.String(keyPairName),
+		KeyName:           aws.String(keyPairName),
 		PublicKeyMaterial: dat,
-    })
+	})
 
 	return result, err
 }
@@ -132,14 +131,14 @@ func DeleteKeyPair(keyPair string, profile string, region string) {
 
 	ec2Client := ec2.New(sess)
 	_, err = ec2Client.DeleteKeyPair(&ec2.DeleteKeyPairInput{
-        KeyName: aws.String(keyPair),
-    })
-    if err != nil {
-        if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "InvalidKeyPair.Duplicate" {
-            log.Warn("Key pair %q does not exist.", keyPair)
-        }
-        log.Debug("Unable to delete key pair: %s, %v.", keyPair, err)
-    }
+		KeyName: aws.String(keyPair),
+	})
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "InvalidKeyPair.Duplicate" {
+			log.Warn("Key pair %q does not exist.", keyPair)
+		}
+		log.Debug("Unable to delete key pair: %s, %v.", keyPair, err)
+	}
 
-    log.Info("Successfully deleted %q key pair\n", keyPair)
+	log.Info("Successfully deleted %q key pair\n", keyPair)
 }

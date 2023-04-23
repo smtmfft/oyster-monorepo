@@ -16,26 +16,27 @@ import (
 )
 
 func main() {
-
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: false,
 	})
-
 	// log.SetLevel(log.DebugLevel)
 
 	keyPairName, exist := os.LookupEnv("KEY")
 	if !exist {
 		log.Panic("Key not set")
 	}
+
 	currentUser, err := user.Current()
 	if err != nil {
 		log.Panic(err.Error())
 	}
+
 	keyStoreLocation := "/home/" + currentUser.Username + "/.ssh/" + keyPairName + ".pem"
 	profile, exist := os.LookupEnv("PROFILE")
 	if !exist {
 		log.Panic("Profile not set")
 	}
+
 	region, exist := os.LookupEnv("REGION")
 	if !exist {
 		log.Panic("Region not set")
@@ -47,12 +48,12 @@ func main() {
 	exist_arm := instances.CheckAMIFromNameTag("MarlinLauncherARM64", profile, region)
 
 	if !exist_arm && !exist_x86 {
-		var wg sync.WaitGroup;
+		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
-		}() 
+		}()
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -62,7 +63,7 @@ func main() {
 	} else if exist_arm && !exist_x86 {
 		log.Info("ARM AMI already exists.")
 		create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
-	} else if exist_x86 && !exist_arm{
+	} else if exist_x86 && !exist_arm {
 		log.Info("x86 AMI already exists.")
 		create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
 	} else {
@@ -74,7 +75,7 @@ func main() {
 
 func create_ami(keyPairName string, keyStoreLocation string, profile string, region string, arch string) {
 	log.Info("Creating AMI for " + arch)
-	name:= "AMISetup_x86"
+	name := "AMISetup_x86"
 	if arch == "arm" {
 		name = "AMISetup_ARM"
 	}
@@ -89,7 +90,6 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 		instance = instances.GetInstanceDetails(newInstanceID, profile, region)
 	}
 
-
 	client := connect.NewSshClient(
 		"ubuntu",
 		*(instance.PublicIpAddress),
@@ -99,10 +99,9 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 	SetupPreRequisites(client, *(instance.PublicIpAddress), newInstanceID, profile, region)
 
 	instances.CreateAMI(newInstanceID, profile, region, arch)
-	time.Sleep(7*time.Minute)
+	time.Sleep(7 * time.Minute)
 	TearDown(newInstanceID, profile, region)
 }
-
 
 func SetupPreRequisites(client *connect.SshClient, host string, instanceID string, profile string, region string) {
 	RunCommand(client, "sudo apt-get -y update")
@@ -147,8 +146,7 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo rm -r /home/ubuntu/aws-nitro-enclaves-cli")
 }
 
-
-func RunCommand(client *connect.SshClient, cmd string) (string) {
+func RunCommand(client *connect.SshClient, cmd string) string {
 	fmt.Println("============================================================================================")
 	log.Info(cmd)
 	fmt.Println("")
