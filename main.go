@@ -20,8 +20,8 @@ func main() {
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: false,
 	})
-	log.SetLevel(log.DebugLevel)
 
+	// log.SetLevel(log.DebugLevel)
 
 	keyPairName, exist := os.LookupEnv("KEY")
 	if !exist {
@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Panic(err.Error())
 	}
-	keyStoreLocation := "/home/" + currentUser.Username + "/.ssh/" + keyPairName
+	keyStoreLocation := "/home/" + currentUser.Username + "/.ssh/" + keyPairName + ".pem"
 	profile, exist := os.LookupEnv("PROFILE")
 	if !exist {
 		log.Panic("Profile not set")
