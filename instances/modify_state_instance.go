@@ -21,7 +21,7 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
 		KeyName:        aws.String(keyName),
 		EnclaveOptions: &ec2.EnclaveOptionsRequest{Enabled: &[]bool{true}[0]},
 		BlockDeviceMappings: []*ec2.BlockDeviceMapping{{
-			Ebs:        &[]ec2.EbsBlockDevice{{VolumeSize: &[]int64{15}[0]}}[0],
+			Ebs:        &[]ec2.EbsBlockDevice{{VolumeSize: &[]int64{8}[0]}}[0],
 			DeviceName: &[]string{"/dev/sda1"}[0],
 		}},
 		SecurityGroupIds: []*string{
@@ -156,11 +156,11 @@ func CreateAMI(instanceID string, profile string, region string, arch string) {
 	res, err := client.CreateImage(&ec2.CreateImageInput{
 		InstanceId: aws.String(instanceID),
 		Name:       aws.String(amiName),
-		BlockDeviceMappings: []*ec2.BlockDeviceMapping{&ec2.BlockDeviceMapping{
-			Ebs:        &[]ec2.EbsBlockDevice{ec2.EbsBlockDevice{VolumeSize: &[]int64{15}[0]}}[0],
+		BlockDeviceMappings: []*ec2.BlockDeviceMapping{{
+			Ebs:        &[]ec2.EbsBlockDevice{{VolumeSize: &[]int64{8}[0]}}[0],
 			DeviceName: &[]string{"/dev/sda1"}[0],
 		}},
-		TagSpecifications: []*ec2.TagSpecification{&ec2.TagSpecification{
+		TagSpecifications: []*ec2.TagSpecification{{
 			ResourceType: &resource,
 			Tags: []*ec2.Tag{
 				{
