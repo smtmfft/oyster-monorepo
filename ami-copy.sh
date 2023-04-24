@@ -14,18 +14,18 @@ export AWS_DEFAULT_REGION=$2
 regions=("${@:3}")
 
 # Fetching ImageID for arm64 architecture
-ami_arm=$(aws ec2 describe-images --owners self --filters Name=name,Values=MarlinLauncherARM64 --no-paginate --query 'Images[0].ImageId')
+ami_arm=$(aws ec2 describe-images --owners self --filters Name=name,Values=oyster_arm64 --no-paginate --query 'Images[0].ImageId')
 ami_arm=$(echo $ami_arm| cut -d'"' -f 2)
 echo "Source image id for ARM64 : $ami_arm"
 
 # Fetching ImageID for x86_64 architecture
-ami_amd=$(aws ec2 describe-images --owners self --filters Name=name,Values=MarlinLauncherx86_64 --no-paginate --query 'Images[0].ImageId')
+ami_amd=$(aws ec2 describe-images --owners self --filters Name=name,Values=oyster_amd64 --no-paginate --query 'Images[0].ImageId')
 ami_amd=$(echo $ami_amd| cut -d'"' -f 2)
 echo "Source image id for x86_64 : $ami_amd"
 
 # Copying both AMI's to each of the secified regions
 for r in ${regions[@]}; do 
     echo "Copying for region : $r"
-    aws ec2 copy-image --name MarlinLauncherARM64 --source-image-id $ami_arm --source-region $2 --region $r --copy-image-tags
-    aws ec2 copy-image --name MarlinLauncherx86_64 --source-image-id $ami_amd --source-region $2 --region $r --copy-image-tags
+    # aws ec2 copy-image --name oyster_arm64 --source-image-id $ami_arm --source-region $2 --region $r --copy-image-tags
+    # aws ec2 copy-image --name oyster_amd64 --source-image-id $ami_amd --source-region $2 --region $r --copy-image-tags
 done    

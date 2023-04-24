@@ -44,30 +44,30 @@ func main() {
 
 	keypairs.SetupKeys(keyPairName, keyStoreLocation, profile, region)
 
-	exist_x86 := instances.CheckAMIFromNameTag("MarlinLauncherx86_64", profile, region)
-	exist_arm := instances.CheckAMIFromNameTag("MarlinLauncherARM64", profile, region)
+	exist_amd64 := instances.CheckAMIFromNameTag("oyster_amd64", profile, region)
+	exist_arm64 := instances.CheckAMIFromNameTag("oyster_arm64", profile, region)
 
-	if !exist_arm && !exist_x86 {
+	if !exist_arm64 && !exist_amd64 {
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
+			create_ami(keyPairName, keyStoreLocation, profile, region, "amd64")
 		}()
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			create_ami(keyPairName, keyStoreLocation, profile, region, "arm")
+			create_ami(keyPairName, keyStoreLocation, profile, region, "arm64")
 		}()
 		wg.Wait()
-	} else if exist_arm && !exist_x86 {
-		log.Info("ARM AMI already exists.")
-		create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
-	} else if exist_x86 && !exist_arm {
-		log.Info("x86 AMI already exists.")
-		create_ami(keyPairName, keyStoreLocation, profile, region, "x86")
+	} else if exist_arm64 && !exist_amd64 {
+		log.Info("arm64 AMI already exists.")
+		create_ami(keyPairName, keyStoreLocation, profile, region, "amd64")
+	} else if exist_amd64 && !exist_arm64 {
+		log.Info("amd64 AMI already exists.")
+		create_ami(keyPairName, keyStoreLocation, profile, region, "arm64")
 	} else {
-		log.Info("AMI's already exist.")
+		log.Info("AMIs already exist.")
 		return
 	}
 
@@ -75,10 +75,7 @@ func main() {
 
 func create_ami(keyPairName string, keyStoreLocation string, profile string, region string, arch string) {
 	log.Info("Creating AMI for " + arch)
-	name := "AMISetup_x86"
-	if arch == "arm" {
-		name = "AMISetup_ARM"
-	}
+	name := "oyster_" + arch
 	newInstanceID := ""
 	exist, instance := instances.GetInstanceFromNameTag(name, profile, region)
 	if exist {
@@ -96,14 +93,14 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 		22,
 		keyStoreLocation,
 	)
-	SetupPreRequisites(client, *(instance.PublicIpAddress), newInstanceID, profile, region)
+	SetupPreRequisites(client, *(instance.PublicIpAddress), newInstanceID, profile, region, arch)
 
 	instances.CreateAMI(newInstanceID, profile, region, arch)
 	time.Sleep(7 * time.Minute)
 	TearDown(newInstanceID, profile, region)
 }
 
-func SetupPreRequisites(client *connect.SshClient, host string, instanceID string, profile string, region string) {
+func SetupPreRequisites(client *connect.SshClient, host string, instanceID string, profile string, region string, arch string) {
 	RunCommand(client, "sudo apt-get -y update")
 	RunCommand(client, "sudo apt-get -y install build-essential")
 	RunCommand(client, "grep /boot/config-$(uname -r) -e NITRO_ENCLAVES")
@@ -131,9 +128,9 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo systemctl enable nitro-enclaves-allocator.service")
 
 	// proxies
-	RunCommand(client, "wget -O vsock-to-ip-transparent http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-transparent_v1.0.0_linux_amd64")
+	RunCommand(client, "wget -O vsock-to-ip-transparent http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-transparent_v1.0.0_linux_"+arch)
 	RunCommand(client, "chmod +x vsock-to-ip-transparent")
-	RunCommand(client, "wget -O port-to-vsock-transparent http://public.artifacts.marlin.pro/projects/enclaves/port-to-vsock-transparent_v1.0.0_linux_amd64")
+	RunCommand(client, "wget -O port-to-vsock-transparent http://public.artifacts.marlin.pro/projects/enclaves/port-to-vsock-transparent_v1.0.0_linux_"+arch)
 	RunCommand(client, "chmod +x port-to-vsock-transparent")
 
 	// supervisord

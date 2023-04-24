@@ -34,10 +34,7 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
 		return nil, err
 	}
 
-	name:= "AMISetup_x86"
-	if arch == "arm" {
-		name = "AMISetup_ARM"
-	}
+	name := "oyster_" + arch
 
 	_, errtag := client.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{res.Instances[0].InstanceId},
@@ -70,7 +67,7 @@ func LaunchInstance(keyPairName string, profile string, region string, arch stri
 	keyName := keyPairName
 	instanceType := "c6a.xlarge"
 	imageId := "ami-05ba3a39a75be1ec4"
-	if arch == "arm" {
+	if arch == "arm64" {
 		instanceType = "c6g.xlarge"
 		imageId = "ami-0296ecdacc0d49d5a"
 	}
@@ -155,10 +152,7 @@ func TerminateInstance(instanceID string, profile string, region string) {
 func CreateAMI(instanceID string, profile string, region string, arch string) {
 	client := GetClient(profile, region)
 	resource := ec2.ResourceTypeImage
-	amiName := "MarlinLauncherx86_64"
-	if arch == "arm" {
-		amiName = "MarlinLauncherARM64"
-	}
+	amiName := "oyster_" + arch
 	res, err := client.CreateImage(&ec2.CreateImageInput{
 		InstanceId: aws.String(instanceID),
 		Name:       aws.String(amiName),
