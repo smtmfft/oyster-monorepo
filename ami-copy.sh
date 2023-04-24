@@ -16,16 +16,27 @@ regions=("${@:3}")
 # Fetching ImageID for arm64 architecture
 ami_arm=$(aws ec2 describe-images --owners self --filters Name=name,Values=oyster_arm64 --no-paginate --query 'Images[0].ImageId')
 ami_arm=$(echo $ami_arm| cut -d'"' -f 2)
-echo "Source image id for ARM64 : $ami_arm"
+echo "Source image id for arm64: $ami_arm"
 
-# Fetching ImageID for x86_64 architecture
+# Fetching ImageID for amd64 architecture
 ami_amd=$(aws ec2 describe-images --owners self --filters Name=name,Values=oyster_amd64 --no-paginate --query 'Images[0].ImageId')
 ami_amd=$(echo $ami_amd| cut -d'"' -f 2)
-echo "Source image id for x86_64 : $ami_amd"
+echo "Source image id for amd64: $ami_amd"
 
 # Copying both AMI's to each of the secified regions
-for r in ${regions[@]}; do 
-    echo "Copying for region : $r"
-    # aws ec2 copy-image --name oyster_arm64 --source-image-id $ami_arm --source-region $2 --region $r --copy-image-tags
-    # aws ec2 copy-image --name oyster_amd64 --source-image-id $ami_amd --source-region $2 --region $r --copy-image-tags
+for r in ${regions[@]}; do
+    old_ami_amd=$(AWS_REGION=$r aws ec2 describe-images --owners self --filters Name=name,Values=oyster_amd64 --no-paginate --query 'Images[0].ImageId')
+    old_ami_arm=$(AWS_REGION=$r aws ec2 describe-images --owners self --filters Name=name,Values=oyster_arm64 --no-paginate --query 'Images[0].ImageId')
+    if [[ $old_ami_amd = null ]]; then 
+        echo "Copying amd64 for region: $r"
+        aws ec2 copy-image --name oyster_amd64 --source-image-id $ami_amd --source-region $2 --region $r --copy-image-tags
+    else
+        echo "Found existing amd64 image in $r: $old_ami_amd"
+    fi
+    if [[ $old_ami_arm = null ]]; then 
+        echo "Copying arm64 for region: $r"
+        aws ec2 copy-image --name oyster_arm64 --source-image-id $ami_arm --source-region $2 --region $r --copy-image-tags
+    else
+        echo "Found existing arm64 image in $r: $old_ami_arm"
+    fi
 done    
