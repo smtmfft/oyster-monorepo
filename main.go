@@ -119,12 +119,6 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 						source /etc/profile.d/nitro-cli-env.sh &&
 						echo source /etc/profile.d/nitro-cli-env.sh >> ~/.bashrc &&
 						nitro-cli-config -i`)
-
-	connect.TransferFile(client.Config, host, "./allocator.yaml", "allocator.yaml")
-
-	RunCommand(client, "sudo systemctl start nitro-enclaves-allocator.service")
-	RunCommand(client, "sudo cp allocator.yaml /etc/nitro_enclaves/allocator.yaml")
-	RunCommand(client, "sudo systemctl restart nitro-enclaves-allocator.service")
 	RunCommand(client, "sudo systemctl enable nitro-enclaves-allocator.service")
 
 	// proxies
@@ -139,7 +133,6 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo mv /home/ubuntu/proxies.conf /etc/supervisor/conf.d/proxies.conf")
 	RunCommand(client, "sudo supervisorctl reload")
 
-	RunCommand(client, "rm /home/ubuntu/allocator.yaml")
 	RunCommand(client, "sudo rm -r /home/ubuntu/aws-nitro-enclaves-cli")
 }
 
