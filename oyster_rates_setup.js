@@ -75,9 +75,9 @@ async function getEc2Prices(instanceType) {
         }).map((instance) => ({
             region: instance.product.attributes.regionCode,
             instance: instance.product.attributes.instanceType,
-            min_rate: parseFloat(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
+            min_rate: parseInt(parseFloat(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
                 .priceDimensions[Object.keys(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
-                    .priceDimensions)[0]].pricePerUnit.USD).toFixed(6) * 1e6
+                    .priceDimensions)[0]].pricePerUnit.USD).toFixed(6) * 1e6)
         }))
 
 
