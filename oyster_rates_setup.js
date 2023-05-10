@@ -24,16 +24,28 @@ async function getAllInstanceTypesWithNitro() {
     try {
         const response = await ec2Client.send(command);
 
-        const instanceTypes = response.InstanceTypes.filter((instanceType) => {
+        let instanceTypes = response.InstanceTypes.filter((instanceType) => {
             return (instanceType.Hypervisor === 'nitro') && (instanceType.VCpuInfo.DefaultVCpus >= 2);
         }).map((instanceType) => {
-            return {
-                instanceType: instanceType.InstanceType,
-                vCpus: instanceType.VCpuInfo.DefaultVCpus
-            };
-        });
+            return instanceType.InstanceType
 
-        return instanceTypes.map(i => i.instanceType);
+        });
+        let remaining = response.NextToken;
+        while (remaining != null) {
+            const input = {
+                NextToken: remaining
+            };
+            const command = new DescribeInstanceTypesCommand(input);
+            const response = await ec2Client.send(command);
+            const data = response.InstanceTypes.filter((instanceType) => {
+                return (instanceType.Hypervisor === 'nitro') && (instanceType.VCpuInfo.DefaultVCpus >= 2);
+            }).map((instanceType) => {
+                return instanceType.InstanceType
+            });
+            instanceTypes.push(...data);
+            remaining = response.NextToken;
+        }
+        return instanceTypes;
     } catch (error) {
         console.error(error);
         return [];
@@ -92,7 +104,13 @@ async function getEc2Prices(instanceType) {
 }
 
 async function run() {
+    const args = process.argv;
+    const location = args[2];
 
+    if (location == null) {
+        console.log("Please pass the file location");
+        process.exit(1);
+    }
     const ec2InstanceTypes = await getAllInstanceTypesWithNitro();
 
     const excludedRegions = [];
@@ -130,7 +148,7 @@ async function run() {
 
     // Write to .marlin folder
     const data = JSON.stringify(result);
-    fs.writeFile('/home/' + require("os").userInfo().username + '/.marlin/rates.json', data, (error) => {
+    fs.writeFile(location, data, (error) => {
         if (error) {
             console.error(error);
 
