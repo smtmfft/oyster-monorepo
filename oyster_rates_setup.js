@@ -92,7 +92,13 @@ async function getEc2Prices(instanceType) {
 }
 
 async function run() {
+    const args = process.argv;
+    const location = args[2];
 
+    if (location == null) {
+        console.log("Please pass the file location");
+        process.exit(1);
+    }
     const ec2InstanceTypes = await getAllInstanceTypesWithNitro();
 
     const excludedRegions = [];
@@ -130,7 +136,7 @@ async function run() {
 
     // Write to .marlin folder
     const data = JSON.stringify(result);
-    fs.writeFile('/home/' + require("os").userInfo().username + '/.marlin/rates.json', data, (error) => {
+    fs.writeFile(location, data, (error) => {
         if (error) {
             console.error(error);
 
