@@ -25,7 +25,9 @@ async function getAllInstanceTypesWithNitro() {
         const response = await ec2Client.send(command);
 
         let instanceTypes = response.InstanceTypes.filter((instanceType) => {
-            return (instanceType.Hypervisor === 'nitro') && (instanceType.VCpuInfo.DefaultVCpus >= 2);
+            return (instanceType.Hypervisor === 'nitro') &&
+                ((instanceType.ProcessorInfo.SupportedArchitectures[0] === 'x86_64' && instanceType.VCpuInfo.DefaultVCpus >= 4)
+                    || (instanceType.ProcessorInfo.SupportedArchitectures[0] === 'arm64' && instanceType.VCpuInfo.DefaultVCpus >= 2));
         }).map((instanceType) => {
             return instanceType.InstanceType
 
