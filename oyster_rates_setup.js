@@ -25,7 +25,9 @@ async function getAllInstanceTypesWithNitro() {
         const response = await ec2Client.send(command);
 
         let instanceTypes = response.InstanceTypes.filter((instanceType) => {
-            return (instanceType.Hypervisor === 'nitro') && (instanceType.VCpuInfo.DefaultVCpus >= 2);
+            return (instanceType.Hypervisor === 'nitro') &&
+                ((instanceType.ProcessorInfo.SupportedArchitectures[0] === 'x86_64' && instanceType.VCpuInfo.DefaultVCpus >= 4)
+                    || (instanceType.ProcessorInfo.SupportedArchitectures[0] === 'arm64' && instanceType.VCpuInfo.DefaultVCpus >= 2));
         }).map((instanceType) => {
             return instanceType.InstanceType
 
@@ -38,7 +40,9 @@ async function getAllInstanceTypesWithNitro() {
             const command = new DescribeInstanceTypesCommand(input);
             const response = await ec2Client.send(command);
             const data = response.InstanceTypes.filter((instanceType) => {
-                return (instanceType.Hypervisor === 'nitro') && (instanceType.VCpuInfo.DefaultVCpus >= 2);
+                return (instanceType.Hypervisor === 'nitro') &&
+                    ((instanceType.ProcessorInfo.SupportedArchitectures[0] === 'x86_64' && instanceType.VCpuInfo.DefaultVCpus >= 4)
+                        || (instanceType.ProcessorInfo.SupportedArchitectures[0] === 'arm64' && instanceType.VCpuInfo.DefaultVCpus >= 2));
             }).map((instanceType) => {
                 return instanceType.InstanceType
             });
@@ -87,9 +91,9 @@ async function getEc2Prices(instanceType) {
         }).map((instance) => ({
             region: instance.product.attributes.regionCode,
             instance: instance.product.attributes.instanceType,
-            min_rate: parseInt(parseFloat(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
+            min_rate: Math.ceil(parseFloat(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
                 .priceDimensions[Object.keys(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
-                    .priceDimensions)[0]].pricePerUnit.USD).toFixed(6) * 1e6)
+                    .priceDimensions)[0]].pricePerUnit.USD).toFixed(6) * 1e6 / 3600)
         }))
 
 
