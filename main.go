@@ -120,6 +120,7 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 						echo source /etc/profile.d/nitro-cli-env.sh >> ~/.bashrc &&
 						nitro-cli-config -i`)
 	RunCommand(client, "sudo systemctl enable nitro-enclaves-allocator.service")
+	RunCommand(client, "sudo apt -y install network-manager")
 
 	// proxies
 	RunCommand(client, "wget -O vsock-to-ip-transparent http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-transparent_v1.0.0_linux_"+arch)
