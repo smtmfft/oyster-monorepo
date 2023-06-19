@@ -1,11 +1,7 @@
-#!/usr/bin/env node
-
 // Script to setup rates file for oyster.
 
 // Pre : npm install @aws-sdk/client-pricing && npm install @aws-sdk/client-ec2
 // Pre : make it executable : chmod +x oyster_rates_setup.js
-
-// Rates file written in the /home/user/.marlin folder
 
 // To use for or exclude certain regions and instance types modify the run function as needed
 
@@ -30,7 +26,6 @@ async function getAllInstanceTypesWithNitro() {
                     || (instanceType.ProcessorInfo.SupportedArchitectures[0] === 'arm64' && instanceType.VCpuInfo.DefaultVCpus >= 2));
         }).map((instanceType) => {
             return instanceType.InstanceType
-
         });
         let remaining = response.NextToken;
         while (remaining != null) {
@@ -57,7 +52,7 @@ async function getAllInstanceTypesWithNitro() {
 }
 
 // Function to get the price of DedicatedUsage of an instance type in all supported regions 
-async function getEc2Prices(instanceType) {
+async function getEc2Prices(instanceType, premium) {
     const params = {
         ServiceCode: 'AmazonEC2',
         Filters: [
@@ -93,7 +88,7 @@ async function getEc2Prices(instanceType) {
             instance: instance.product.attributes.instanceType,
             min_rate: Math.ceil(parseFloat(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
                 .priceDimensions[Object.keys(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
-                    .priceDimensions)[0]].pricePerUnit.USD).toFixed(6) * 1e6 / 3600)
+                    .priceDimensions)[0]].pricePerUnit.USD).toFixed(6) * 1e6 * (100 + premium) / 360000)
         }))
 
 
@@ -110,11 +105,23 @@ async function getEc2Prices(instanceType) {
 async function run() {
     const args = process.argv;
     const location = args[2];
+    let premium = args[3];
 
     if (location == null) {
         console.log("Please pass the file location");
         process.exit(1);
     }
+
+    if (premium == null) {
+        console.log("Please pass the premium");
+        process.exit(1);
+    } else if (isNaN(premium)) {
+        console.log("Please pass a valid number for premium");
+        process.exit(1);
+    }
+
+    premium = parseInt(premium);
+
     const ec2InstanceTypes = await getAllInstanceTypesWithNitro();
 
     const excludedRegions = [];
@@ -126,7 +133,7 @@ async function run() {
 
     let products = [];
     for (let i = 0; i < ec2InstanceTypes.length; i++) {
-        const res = await getEc2Prices(ec2InstanceTypes[i]);
+        const res = await getEc2Prices(ec2InstanceTypes[i], premium);
         products.push(...res);
     }
 
@@ -151,7 +158,7 @@ async function run() {
     // console.log(util.inspect(result, false, null, true))
 
     // Write to .marlin folder
-    const data = JSON.stringify(result);
+    const data = JSON.stringify(result, null, 2);
     fs.writeFile(location, data, (error) => {
         if (error) {
             console.error(error);
@@ -159,7 +166,7 @@ async function run() {
             throw error;
         }
 
-        console.log('rates.json written correctly');
+        console.log('rates file written correctly');
     });
 }
 

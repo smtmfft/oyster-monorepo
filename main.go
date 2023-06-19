@@ -109,17 +109,18 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo systemctl start docker")
 	RunCommand(client, "sudo systemctl enable docker")
 	RunCommand(client, "sudo usermod -aG docker ubuntu")
-	RunCommand(client, "git clone https://github.com/aws/aws-nitro-enclaves-cli.git")
+	RunCommand(client, "rm -rf aws-nitro-enclaves-cli && git clone https://github.com/aws/aws-nitro-enclaves-cli.git")
 	RunCommand(client, "cd aws-nitro-enclaves-cli && THIS_USER=\"$(whoami)\"")
 	RunCommand(client, "cd aws-nitro-enclaves-cli && export NITRO_CLI_INSTALL_DIR=/")
-	RunCommand(client, "cd aws-nitro-enclaves-cli && make nitro-cli")
-	RunCommand(client, "cd aws-nitro-enclaves-cli && make vsock-proxy")
-	RunCommand(client, `cd aws-nitro-enclaves-cli &&
+	RunCommand(client, "cd aws-nitro-enclaves-cli && (docker ps -a -q | xargs -r sudo docker stop) && (docker ps -a -q | xargs -r sudo docker rm) && sudo docker image prune --all -f && make nitro-cli")
+	RunCommand(client, "cd aws-nitro-enclaves-cli && (docker ps -a -q | xargs -r sudo docker stop) && (docker ps -a -q | xargs -r sudo docker rm) && sudo docker image prune --all -f  && make vsock-proxy")
+	RunCommand(client, `cd aws-nitro-enclaves-cli && (docker ps -a -q | xargs -r sudo docker stop) && (docker ps -a -q | xargs -r sudo docker rm) && sudo docker image prune --all -f  &&
 						sudo make NITRO_CLI_INSTALL_DIR=/ install &&
 						source /etc/profile.d/nitro-cli-env.sh &&
 						echo source /etc/profile.d/nitro-cli-env.sh >> ~/.bashrc &&
 						nitro-cli-config -i`)
 	RunCommand(client, "sudo systemctl enable nitro-enclaves-allocator.service")
+	RunCommand(client, "sudo apt -y install network-manager")
 
 	// proxies
 	RunCommand(client, "wget -O vsock-to-ip-transparent http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-transparent_v1.0.0_linux_"+arch)
