@@ -1,11 +1,7 @@
-#!/usr/bin/env node
-
 // Script to setup rates file for oyster.
 
 // Pre : npm install @aws-sdk/client-pricing && npm install @aws-sdk/client-ec2
 // Pre : make it executable : chmod +x oyster_rates_setup.js
-
-// Rates file written in the /home/user/.marlin folder
 
 // To use for or exclude certain regions and instance types modify the run function as needed
 
@@ -30,7 +26,6 @@ async function getAllInstanceTypesWithNitro() {
                     || (instanceType.ProcessorInfo.SupportedArchitectures[0] === 'arm64' && instanceType.VCpuInfo.DefaultVCpus >= 2));
         }).map((instanceType) => {
             return instanceType.InstanceType
-
         });
         let remaining = response.NextToken;
         while (remaining != null) {
@@ -163,7 +158,7 @@ async function run() {
     // console.log(util.inspect(result, false, null, true))
 
     // Write to .marlin folder
-    const data = JSON.stringify(result);
+    const data = JSON.stringify(result, null, 2);
     fs.writeFile(location, data, (error) => {
         if (error) {
             console.error(error);
