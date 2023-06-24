@@ -31,7 +31,7 @@ func main() {
 		log.Panic(err.Error())
 	}
 
-	keyStoreLocation := "/home/" + currentUser.Username + "/.ssh/" + keyPairName + ".pem"
+	keyStoreLocation := "/home/" + currentUser.Username + "/.ssh/"
 	profile, exist := os.LookupEnv("PROFILE")
 	if !exist {
 		log.Panic("Profile not set")
@@ -43,6 +43,7 @@ func main() {
 	}
 
 	keypairs.SetupKeys(keyPairName, keyStoreLocation, profile, region)
+	privateKeyLocation := keyStoreLocation + "/" + keyPairName + ".pem"
 
 	exist_amd64 := instances.CheckAMIFromNameTag("oyster_amd64", profile, region)
 	exist_arm64 := instances.CheckAMIFromNameTag("oyster_arm64", profile, region)
@@ -52,20 +53,20 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			create_ami(keyPairName, keyStoreLocation, profile, region, "amd64")
+			create_ami(keyPairName, privateKeyLocation, profile, region, "amd64")
 		}()
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			create_ami(keyPairName, keyStoreLocation, profile, region, "arm64")
+			create_ami(keyPairName, privateKeyLocation, profile, region, "arm64")
 		}()
 		wg.Wait()
 	} else if exist_arm64 && !exist_amd64 {
 		log.Info("arm64 AMI already exists.")
-		create_ami(keyPairName, keyStoreLocation, profile, region, "amd64")
+		create_ami(keyPairName, privateKeyLocation, profile, region, "amd64")
 	} else if exist_amd64 && !exist_arm64 {
 		log.Info("amd64 AMI already exists.")
-		create_ami(keyPairName, keyStoreLocation, profile, region, "arm64")
+		create_ami(keyPairName, privateKeyLocation, profile, region, "arm64")
 	} else {
 		log.Info("AMIs already exist.")
 		return
