@@ -7,7 +7,6 @@ import (
 	"os/exec"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
@@ -117,31 +116,4 @@ func ImportKeyPair(keyPairName string, publicKeyLocation string, profile string,
 	})
 
 	return result, err
-}
-
-func DeleteKeyPair(keyPair string, profile string, region string) {
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Profile: profile,
-		Config: aws.Config{
-			Region: aws.String(region),
-		},
-	})
-
-	if err != nil {
-		log.Warn("Failed to initialize new session: %v", err)
-		return
-	}
-
-	ec2Client := ec2.New(sess)
-	_, err = ec2Client.DeleteKeyPair(&ec2.DeleteKeyPairInput{
-		KeyName: aws.String(keyPair),
-	})
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "InvalidKeyPair.Duplicate" {
-			log.Warn("Key pair %q does not exist.", keyPair)
-		}
-		log.Debug("Unable to delete key pair: %s, %v.", keyPair, err)
-	}
-
-	log.Info("Successfully deleted %q key pair\n", keyPair)
 }
