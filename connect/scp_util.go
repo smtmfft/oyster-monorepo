@@ -17,15 +17,15 @@ func TransferFile(clientConfig *ssh.ClientConfig, host string, fileSource string
 	fmt.Println("=============================================================================================")
 	log.Info("FILE TRANSFER: " + fileSource + " -> " + fileDestination)
 	fmt.Println("")
-	
+
 	// Create a new SCP client
-	client := scp.NewClient(host + ":22", clientConfig)
+	client := scp.NewClient(host+":22", clientConfig)
 
 	// Connect to the remote server
 	err := client.Connect()
 	if err != nil {
 		log.Warn("Couldn't establish a connection to the remote server ", err)
-		
+
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Retry? ")
 		line, _ := reader.ReadString('\n')
@@ -56,7 +56,7 @@ func TransferFile(clientConfig *ssh.ClientConfig, host string, fileSource string
 	log.Debug("Time : ", dur.Seconds())
 	if err != nil {
 		log.Warn("Error while copying file ", err)
-		
+
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Retry? ")
 		line, _ := reader.ReadString('\n')

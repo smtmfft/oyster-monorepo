@@ -17,7 +17,7 @@ type SshClient struct {
 	Server string
 }
 
-func NewSshClient(user string, host string, port int, privateKeyPath string) (*SshClient) {
+func NewSshClient(user string, host string, port int, privateKeyPath string) *SshClient {
 	config := SetClientConfig(user, privateKeyPath)
 
 	client := &SshClient{
@@ -28,11 +28,11 @@ func NewSshClient(user string, host string, port int, privateKeyPath string) (*S
 	return client
 }
 
-func SetClientConfig(user string, privateKeyPath string) (*ssh.ClientConfig){
+func SetClientConfig(user string, privateKeyPath string) *ssh.ClientConfig {
 	pemBytes, err := ioutil.ReadFile(privateKeyPath)
 	if err != nil {
 		log.Error("Reading private key file failed %v", err)
-		return nil 
+		return nil
 	}
 	// create signer
 	signer, err := signerFromPem(pemBytes)

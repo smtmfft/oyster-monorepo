@@ -18,7 +18,6 @@ func GetKeyPairs(client *ec2.EC2) (*ec2.DescribeKeyPairsOutput, error) {
 	return result, err
 }
 
-
 func DescribeKeyPairs(profile string, region string) {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
@@ -46,7 +45,7 @@ func DescribeKeyPairs(profile string, region string) {
 	}
 }
 
-func CheckForKeyPair(keyPair string, profile string, region string) (bool) {
+func CheckForKeyPair(keyPair string, profile string, region string) bool {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
 		Config: aws.Config{

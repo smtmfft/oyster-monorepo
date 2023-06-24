@@ -30,7 +30,6 @@ func GetRunningInstances(client *ec2.EC2) (*ec2.DescribeInstancesOutput, error) 
 	return result, err
 }
 
-
 func ListRunningInstances(profile string, region string) {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
@@ -59,7 +58,7 @@ func ListRunningInstances(profile string, region string) {
 	}
 }
 
-func GetInstanceDetails(instanceID string, profile string, region string) (*ec2.Instance){
+func GetInstanceDetails(instanceID string, profile string, region string) *ec2.Instance {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
 		Config: aws.Config{
@@ -79,7 +78,6 @@ func GetInstanceDetails(instanceID string, profile string, region string) (*ec2.
 		log.Error("Couldn't retrieve running instances: %v", err)
 		return nil
 	}
-
 
 	for _, reservation := range runningInstances.Reservations {
 		for _, instance := range reservation.Instances {
@@ -97,7 +95,7 @@ func GetInstanceDetails(instanceID string, profile string, region string) (*ec2.
 	return nil
 }
 
-func GetInstanceFromNameTag(name string, profile string, region string) (bool, *ec2.Instance){
+func GetInstanceFromNameTag(name string, profile string, region string) (bool, *ec2.Instance) {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
 		Config: aws.Config{
@@ -118,11 +116,10 @@ func GetInstanceFromNameTag(name string, profile string, region string) (bool, *
 		return false, nil
 	}
 
-
 	for _, reservation := range runningInstances.Reservations {
 		for _, instance := range reservation.Instances {
 			for _, tagpair := range instance.Tags {
-				if *(tagpair.Key) ==  "Name" && *(tagpair.Value) == name{
+				if *(tagpair.Key) == "Name" && *(tagpair.Value) == name {
 					return true, instance
 				}
 			}
@@ -132,8 +129,7 @@ func GetInstanceFromNameTag(name string, profile string, region string) (bool, *
 	return false, nil
 }
 
-
-func CheckAMIFromNameTag(amiName string, profile string, region string) (bool){
+func CheckAMIFromNameTag(amiName string, profile string, region string) bool {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
 		Config: aws.Config{
@@ -148,7 +144,7 @@ func CheckAMIFromNameTag(amiName string, profile string, region string) (bool){
 
 	ec2Client := ec2.New(sess)
 	result, err := ec2Client.DescribeImages(&ec2.DescribeImagesInput{
-		Owners: []*string {
+		Owners: []*string{
 			aws.String("self"),
 		},
 		Filters: []*ec2.Filter{
@@ -174,12 +170,12 @@ func CheckAMIFromNameTag(amiName string, profile string, region string) (bool){
 	return false
 }
 
-func GetSecurityGroup(client *ec2.EC2) (*ec2.SecurityGroup) {
+func GetSecurityGroup(client *ec2.EC2) *ec2.SecurityGroup {
 	result, err := client.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		Filters: []*ec2.Filter{
 			&ec2.Filter{
 				Name: aws.String("tag:project"),
-				Values: []*string {
+				Values: []*string{
 					aws.String("oyster"),
 				},
 			},
@@ -201,12 +197,12 @@ func GetSecurityGroup(client *ec2.EC2) (*ec2.SecurityGroup) {
 	return nil
 }
 
-func GetSubnet(client *ec2.EC2) (*ec2.Subnet) {
+func GetSubnet(client *ec2.EC2) *ec2.Subnet {
 	result, err := client.DescribeSubnets(&ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
 			&ec2.Filter{
 				Name: aws.String("tag:project"),
-				Values: []*string {
+				Values: []*string{
 					aws.String("oyster"),
 				},
 			},
