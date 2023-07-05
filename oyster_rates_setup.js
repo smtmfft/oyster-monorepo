@@ -131,6 +131,8 @@ async function run() {
 
     const excludedRegions = [];
     const excludedInstances = [];
+    const selectInstanceFamiliesOnly = true;
+    const selectInstanceFamilies = ["A1.", "M5.", "M5a.", "M5ad.", "M5d.", "M5dn.", "M5n.", "M5zn.", "M6a.", "M6g.", "M6gd.", "M6i.", "M6id.", "M6idn.", "M6in.", "M7g.", "T3.", "T3a.", "T4g.", "C5.", "C5a.", "C5ad.", "C5d.", "C5n.", "C6a.", "C6g.", "C6gd.", "C6gn.", "C6i.", "C6id.", "C6in.", "C7g.", "C7gn.", "Hpc6a.", "Hpc7g.",];
     const selectInstanceFamiliesOnly = false;
     const selectInstanceFamilies = ['c6a.',];
     const selectRegionsOnly = false;
