@@ -7,7 +7,6 @@ import (
 	"os/exec"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
@@ -26,11 +25,14 @@ func CreateKeyPair(client *ec2.EC2, keyName string) (*ec2.CreateKeyPairOutput, e
 }
 
 func WriteKey(fileName string, fileData *string) error {
-	err := os.WriteFile(fileName, []byte(*fileData), 0400)
+	err := os.WriteFile(fileName, []byte(*fileData), 0600)
 	return err
 }
 
 func SetupKeys(keyPairName string, keyStoreLocation string, profile string, region string) {
+	privateKeyLocation := keyStoreLocation + "/" + keyPairName + ".pem"
+	publicKeyLocation := keyStoreLocation + "/" + keyPairName + ".pub"
+
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
 		Config: aws.Config{
@@ -47,7 +49,7 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 
 	keyName := keyPairName
 	keyExists := CheckForKeyPair(keyName, profile, region)
-	_, err = os.Stat(keyStoreLocation)
+	_, err = os.Stat(privateKeyLocation)
 	if err == nil && keyExists {
 		return
 	} else if os.IsNotExist(err) && !keyExists {
@@ -57,14 +59,14 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 			return
 		}
 
-		err = WriteKey(keyStoreLocation, createRes.KeyMaterial)
+		err = WriteKey(privateKeyLocation, createRes.KeyMaterial)
 		if err != nil {
 			log.Error("Couldn't write key pair to file: %v", err)
 			return
 		}
 		log.Info("Created key pair: ", *createRes.KeyName)
 	} else if err == nil && !keyExists {
-		cmd := exec.Command("ssh-keygen", "-y", "-f", keyStoreLocation)
+		cmd := exec.Command("ssh-keygen", "-y", "-f", privateKeyLocation)
 		var out bytes.Buffer
 		var stderr bytes.Buffer
 		cmd.Stdout = &out
@@ -74,11 +76,11 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 			log.Error("key generation failed: ", err)
 			log.Panic(fmt.Sprint(err) + ": " + stderr.String())
 		}
-		err = os.WriteFile(keyStoreLocation+".pub", []byte(out.Bytes()), 0400)
+		err = os.WriteFile(publicKeyLocation, []byte(out.Bytes()), 0600)
 		if err != nil {
 			log.Error("key generation failed: ", err)
 		}
-		importRes, err := ImportKeyPair(keyName, keyStoreLocation, profile, region)
+		importRes, err := ImportKeyPair(keyName, publicKeyLocation, profile, region)
 
 		if err != nil {
 			log.Panic(err)
@@ -90,7 +92,7 @@ func SetupKeys(keyPairName string, keyStoreLocation string, profile string, regi
 	}
 }
 
-func ImportKeyPair(keyPairName string, keyStoreLocation string, profile string, region string) (*ec2.ImportKeyPairOutput, error) {
+func ImportKeyPair(keyPairName string, publicKeyLocation string, profile string, region string) (*ec2.ImportKeyPairOutput, error) {
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Profile: profile,
 		Config: aws.Config{
@@ -104,7 +106,7 @@ func ImportKeyPair(keyPairName string, keyStoreLocation string, profile string, 
 
 	ec2Client := ec2.New(sess)
 
-	dat, err := os.ReadFile(keyStoreLocation + ".pub")
+	dat, err := os.ReadFile(publicKeyLocation)
 	if err != nil {
 		return nil, err
 	}
@@ -114,31 +116,4 @@ func ImportKeyPair(keyPairName string, keyStoreLocation string, profile string, 
 	})
 
 	return result, err
-}
-
-func DeleteKeyPair(keyPair string, profile string, region string) {
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Profile: profile,
-		Config: aws.Config{
-			Region: aws.String(region),
-		},
-	})
-
-	if err != nil {
-		log.Warn("Failed to initialize new session: %v", err)
-		return
-	}
-
-	ec2Client := ec2.New(sess)
-	_, err = ec2Client.DeleteKeyPair(&ec2.DeleteKeyPairInput{
-		KeyName: aws.String(keyPair),
-	})
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "InvalidKeyPair.Duplicate" {
-			log.Warn("Key pair %q does not exist.", keyPair)
-		}
-		log.Debug("Unable to delete key pair: %s, %v.", keyPair, err)
-	}
-
-	log.Info("Successfully deleted %q key pair\n", keyPair)
 }
