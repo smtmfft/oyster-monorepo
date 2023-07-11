@@ -128,10 +128,10 @@ async function run() {
     const excludedInstances = [];
     // Listed General purpose and compute optimized instances except the ones soring volumes
     const selectInstanceFamiliesOnly = true;
-    const selectInstanceFamilies = ["M5.", "M5a.", "M5n.", "M5zn.", "M6a.", "M6g.", "M6i.", "M6in.", "M7g.", "C5.", "C5a.", "C5n.", "C6a.", "C6g.", "C6gn.", "C6i.", "C6in.", "C7g.", "C7gn.", "Hpc6a.", "Hpc7g.",];
 
     const selectRegionsOnly = false;
     const selectRegions = [];
+    const selectInstanceFamilies = ["m5.", "m5a.", "m5n.", "m5zn.", "m6a.", "m6g.", "m6i.", "m6in.", "m7g.", "c5.", "c5a.", "c5n.", "c6a.", "c6g.", "c6gn.", "c6i.", "c6in.", "c7g.", "c7gn.", "hpc6a.", "hpc7g.",];
     let products = [];
     for (let i = 0; i < ec2InstanceTypes.length; i++) {
         const res = await getEc2Prices(ec2InstanceTypes[i], premium);
