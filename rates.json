@@ -1,0 +1,4889 @@
+[
+  {
+    "region": "us-east-1",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 1479
+      },
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1179
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 107
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 1571
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 219
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 437
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 213
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 852
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1344
+      },
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 134
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2142
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 73
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1746
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 1747
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 673
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 786
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 874
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 110
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 888
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 222
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "c5n.4xlarge",
+        "min_rate": 268
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 50
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 222
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 873
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 393
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 191
+      },
+      {
+        "instance": "c6g.xlarge",
+        "min_rate": 43
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 53
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 22
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 583
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 146
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1165
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 590
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 986
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 197
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 888
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 474
+      },
+      {
+        "instance": "m6g.16xlarge",
+        "min_rate": 762
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 247
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 381
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 572
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 50
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 238
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 426
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 105
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 1972
+      },
+      {
+        "instance": "m5.2xlarge",
+        "min_rate": 119
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 791
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 444
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 124
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 85
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 55
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 99
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1331
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 2420
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 1775
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 639
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 666
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 54
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 96
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 62
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1277
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 444
+      }
+    ]
+  },
+  {
+    "region": "ap-northeast-3",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 1910
+      },
+      {
+        "instance": "c6i.24xlarge",
+        "min_rate": 1648
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 550
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 71
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 62
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1998
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 803
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 138
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 1122
+      },
+      {
+        "instance": "c5n.4xlarge",
+        "min_rate": 337
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 794
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1498
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 1099
+      },
+      {
+        "instance": "c6g.xlarge",
+        "min_rate": 54
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 67
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 757
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 841
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 141
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 596
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 319
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 491
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 737
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 36
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2315
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 561
+      },
+      {
+        "instance": "c6i.12xlarge",
+        "min_rate": 824
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 160
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 69
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 955
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 84
+      }
+    ]
+  },
+  {
+    "region": "ap-south-1",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 1556
+      },
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 720
+      },
+      {
+        "instance": "c6i.24xlarge",
+        "min_rate": 1309
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 69
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 960
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 219
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 437
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 551
+      },
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 135
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 501
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 1309
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 73
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1587
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 212
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 480
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 110
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 223
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 72
+      },
+      {
+        "instance": "c5n.4xlarge",
+        "min_rate": 269
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 634
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 143
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 61
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 873
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 240
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 121
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 16
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 53
+      },
+      {
+        "instance": "c6g.12xlarge",
+        "min_rate": 317
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 604
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 583
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 146
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 667
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1165
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 362
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 724
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 360
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1037
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 120
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 571
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 112
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2117
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 260
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 30
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1134
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 276
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2074
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 292
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 445
+      },
+      {
+        "instance": "c6i.12xlarge",
+        "min_rate": 655
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 130
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 53
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 55
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 778
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 36
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 242
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 856
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 1556
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 1141
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 413
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 428
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 35
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 65
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 826
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 286
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 211
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 106
+      }
+    ]
+  },
+  {
+    "region": "ap-east-1",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 2033
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 555
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 74
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 654
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 66
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 139
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 1176
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 294
+      },
+      {
+        "instance": "c5n.4xlarge",
+        "min_rate": 354
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 802
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1512
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 125
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 1109
+      },
+      {
+        "instance": "c6g.xlarge",
+        "min_rate": 54
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 27
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 882
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 82
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 747
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1356
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 147
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 604
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 339
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 525
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 787
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1308
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 37
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 135
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2464
+      },
+      {
+        "instance": "m5.2xlarge",
+        "min_rate": 164
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 588
+      },
+      {
+        "instance": "c6i.12xlarge",
+        "min_rate": 832
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 170
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 107
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 70
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 1017
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 498
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1134
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 85
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 213
+      }
+    ]
+  },
+  {
+    "region": "ap-south-2",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 1556
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 219
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1414
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 500
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 32
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 398
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 631
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 873
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 519
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 16
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 53
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 14
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1037
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 260
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 105
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 1886
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 130
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 55
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 893
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 65
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 106
+      }
+    ]
+  },
+  {
+    "region": "us-east-2",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 1479
+      },
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1179
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 107
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 1571
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 219
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 213
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 852
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1344
+      },
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 134
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 476
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2142
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 73
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 48
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 211
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 1747
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 786
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 874
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 888
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1262
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 222
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 873
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 393
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 191
+      },
+      {
+        "instance": "c6g.xlarge",
+        "min_rate": 43
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 198
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 24
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 22
+      },
+      {
+        "instance": "c6g.12xlarge",
+        "min_rate": 505
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 602
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 583
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 146
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 666
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 593
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 590
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 197
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 888
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2117
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 247
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 381
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 28
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 50
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 426
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 106
+      },
+      {
+        "instance": "m5.2xlarge",
+        "min_rate": 119
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 791
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 292
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 444
+      },
+      {
+        "instance": "c6i.12xlarge",
+        "min_rate": 655
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 85
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 55
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 740
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 99
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1331
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 2420
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 1775
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 639
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 666
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 54
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 67
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 444
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 169
+      }
+    ]
+  },
+  {
+    "region": "eu-west-2",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 1710
+      },
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1400
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 1867
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 260
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 249
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 996
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1554
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2546
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 55
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1886
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 252
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 2070
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 934
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 130
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 264
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 129
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 754
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 59
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1507
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 257
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 117
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 1037
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 467
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 570
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 234
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 28
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "c6g.12xlarge",
+        "min_rate": 600
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 713
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 690
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1380
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 70
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 701
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1402
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 700
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1140
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 234
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 1026
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 132
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 565
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2509
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 440
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1106
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 33
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 59
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1344
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 498
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 935
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 345
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 100
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 855
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 65
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 117
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 468
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1539
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 2798
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 2052
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 747
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 770
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1061
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 80
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 72
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1494
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 513
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 400
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 200
+      }
+    ]
+  },
+  {
+    "region": "eu-south-1",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 1725
+      },
+      {
+        "instance": "m5.12xlarge",
+        "min_rate": 831
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 125
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 250
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 1000
+      },
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 160
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1886
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 250
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 2086
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 800
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 1043
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 130
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 1060
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 265
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 575
+      },
+      {
+        "instance": "c6g.xlarge",
+        "min_rate": 50
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 234
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 718
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 795
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 701
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1402
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1150
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 133
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2529
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 444
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1109
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 34
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1355
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 125
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2091
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 935
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 348
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 530
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 100
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 863
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 468
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 80
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 72
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1499
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 400
+      }
+    ]
+  },
+  {
+    "region": "ap-southeast-2",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 1848
+      },
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1539
+      },
+      {
+        "instance": "c6i.24xlarge",
+        "min_rate": 1710
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 135
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 2052
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 285
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 570
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 269
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1680
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 598
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2798
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 95
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 2072
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 2280
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 1026
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 1140
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 139
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 65
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 278
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 129
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 513
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 616
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 257
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 69
+      },
+      {
+        "instance": "c6g.12xlarge",
+        "min_rate": 659
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 190
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 871
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1520
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 770
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 770
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 257
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 1109
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 146
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 619
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2764
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 713
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 37
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 65
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1481
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 299
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 138
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2464
+      },
+      {
+        "instance": "m5.2xlarge",
+        "min_rate": 150
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 380
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 581
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 154
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 110
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 70
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 129
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 514
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1664
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 3024
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 2218
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 806
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 832
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1166
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 88
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 555
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 440
+      }
+    ]
+  },
+  {
+    "region": "ap-northeast-2",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 1818
+      },
+      {
+        "instance": "m5.12xlarge",
+        "min_rate": 875
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 131
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 262
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1652
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 59
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1792
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 239
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 762
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 124
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 251
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 716
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 233
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 221
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 24
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 663
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1325
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 126
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 537
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 32
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1281
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 292
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2423
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 501
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 62
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 909
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 787
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 66
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 117
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 76
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1573
+      }
+    ]
+  },
+  {
+    "region": "me-south-1",
+    "rate_cards": [
+      {
+        "instance": "m6i.24xlarge",
+        "min_rate": 2033
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 272
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1648
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 69
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1972
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 263
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 794
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 1084
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 1101
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 276
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 784
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 61
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1479
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 1085
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 678
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 233
+      },
+      {
+        "instance": "c6g.xlarge",
+        "min_rate": 53
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 244
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 723
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 181
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 826
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1445
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1463
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1356
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 138
+      },
+      {
+        "instance": "m6g.16xlarge",
+        "min_rate": 931
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2627
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 466
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 698
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 35
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 294
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 132
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2464
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 976
+      },
+      {
+        "instance": "c6i.12xlarge",
+        "min_rate": 814
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 68
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 1017
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 85
+      }
+    ]
+  },
+  {
+    "region": "eu-central-1",
+    "rate_cards": [
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1345
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 130
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 1793
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 498
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 259
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 1037
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 64
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2445
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 57
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1811
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 1989
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 897
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 125
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 254
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 133
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 266
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 449
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 228
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 224
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 25
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 689
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 166
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 760
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1326
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1340
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 673
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1181
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 225
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 1063
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1147
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 32
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 57
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 287
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 519
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 121
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 332
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 148
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 67
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 113
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 447
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1594
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 2898
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 2126
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 778
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 797
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 65
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1019
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 77
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1555
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 532
+      }
+    ]
+  },
+  {
+    "region": "sa-east-1",
+    "rate_cards": [
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1816
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 171
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 2421
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 337
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 673
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 341
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 2142
+      },
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 206
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 86
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 3302
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 112
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 2446
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 1211
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 1343
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 169
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 1366
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 177
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 980
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 76
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 354
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 152
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 1345
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 606
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 786
+      },
+      {
+        "instance": "c6g.xlarge",
+        "min_rate": 65
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 303
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 82
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 33
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 924
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 895
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 224
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 1025
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1790
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 909
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1818
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 908
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 303
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 1414
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 171
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 735
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 3254
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 909
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 43
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 76
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1743
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 681
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 1212
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 683
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 130
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 1179
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 89
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 152
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 606
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 2121
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 3856
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 2828
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 1021
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 1061
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 86
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 152
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1376
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 103
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 99
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 2041
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 707
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 519
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 260
+      }
+    ]
+  },
+  {
+    "region": "ap-northeast-1",
+    "rate_cards": [
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1484
+      },
+      {
+        "instance": "c6i.24xlarge",
+        "min_rate": 1648
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 140
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 1978
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 279
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 1115
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1736
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 70
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 618
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2697
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 2200
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 989
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 1100
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 280
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 144
+      },
+      {
+        "instance": "c5n.4xlarge",
+        "min_rate": 339
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 801
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 287
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 124
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 1099
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 495
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 245
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 247
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 67
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 763
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 734
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 184
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 840
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1467
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 740
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1479
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 742
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1274
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 248
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 1146
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 140
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 601
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2666
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 319
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 490
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1235
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 35
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 62
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 558
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2547
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 367
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 560
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 69
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 955
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 72
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 124
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 493
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1719
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 3125
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 2292
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 836
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 860
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 123
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 85
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1672
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 573
+      }
+    ]
+  },
+  {
+    "region": "us-west-2",
+    "rate_cards": [
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1179
+      },
+      {
+        "instance": "c6i.24xlarge",
+        "min_rate": 1309
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 107
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 1571
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 219
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 437
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 852
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2142
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 73
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1746
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 211
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 673
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 786
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 631
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1262
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 222
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 393
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 191
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 198
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 24
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 22
+      },
+      {
+        "instance": "c6g.12xlarge",
+        "min_rate": 505
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 583
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 666
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 593
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 590
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 986
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 197
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 888
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 474
+      },
+      {
+        "instance": "m6g.16xlarge",
+        "min_rate": 762
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 951
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 50
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1134
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 238
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 426
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 791
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 444
+      },
+      {
+        "instance": "c6i.12xlarge",
+        "min_rate": 655
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 124
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 85
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 740
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 99
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1331
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 2420
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 1775
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 639
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 666
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 54
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 67
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 62
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1277
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 444
+      }
+    ]
+  },
+  {
+    "region": "us-west-1",
+    "rate_cards": [
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1470
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 127
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 1959
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 273
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 545
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 1011
+      },
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 168
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 70
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2672
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 839
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 980
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 278
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 130
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1581
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 259
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 1089
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 490
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 222
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 244
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 27
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 755
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 832
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 70
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 732
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1463
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 735
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1150
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 245
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 1035
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 139
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 288
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 444
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 665
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 62
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 505
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2300
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 976
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 105
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 69
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 863
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 65
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 123
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 488
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1553
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 2823
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 2070
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 758
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 777
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1113
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 72
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1515
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 518
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 420
+      }
+    ]
+  },
+  {
+    "region": "ap-southeast-1",
+    "rate_cards": [
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1359
+      },
+      {
+        "instance": "m5.12xlarge",
+        "min_rate": 892
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 1812
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 504
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 1071
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2470
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 776
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 906
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 1003
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 1017
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 139
+      },
+      {
+        "instance": "c5n.4xlarge",
+        "min_rate": 308
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 57
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 278
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 113
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 1007
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 453
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 616
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 238
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 25
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 669
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 75
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 678
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1356
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 680
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1232
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 227
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 1109
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 548
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2431
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 308
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1190
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 57
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1302
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 536
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2464
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 904
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 335
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 509
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 924
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 70
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 114
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 452
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1664
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 3024
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 2218
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 803
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 832
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 67
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 119
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1029
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 77
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 77
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1606
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 555
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 388
+      }
+    ]
+  },
+  {
+    "region": "eu-west-1",
+    "rate_cards": [
+      {
+        "instance": "c6a.24xlarge",
+        "min_rate": 1265
+      },
+      {
+        "instance": "c6i.24xlarge",
+        "min_rate": 1405
+      },
+      {
+        "instance": "m5.12xlarge",
+        "min_rate": 800
+      },
+      {
+        "instance": "c6a.32xlarge",
+        "min_rate": 1686
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 235
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 957
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 533
+      },
+      {
+        "instance": "c6a.48xlarge",
+        "min_rate": 2299
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 83
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 54
+      },
+      {
+        "instance": "c6i.32xlarge",
+        "min_rate": 1873
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 1973
+      },
+      {
+        "instance": "c6a.16xlarge",
+        "min_rate": 843
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 987
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 1003
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 251
+      },
+      {
+        "instance": "m6a.2xlarge",
+        "min_rate": 124
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 56
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1433
+      },
+      {
+        "instance": "m6a.4xlarge",
+        "min_rate": 248
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 111
+      },
+      {
+        "instance": "c6a.8xlarge",
+        "min_rate": 422
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 550
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 213
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 221
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 23
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 683
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 658
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 165
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1316
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 67
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 663
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1325
+      },
+      {
+        "instance": "c6a.12xlarge",
+        "min_rate": 633
+      },
+      {
+        "instance": "c6a.4xlarge",
+        "min_rate": 211
+      },
+      {
+        "instance": "m6a.16xlarge",
+        "min_rate": 989
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 537
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 275
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 426
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1066
+      },
+      {
+        "instance": "c6a.xlarge",
+        "min_rate": 53
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1281
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 267
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 479
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 120
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 883
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 329
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 502
+      },
+      {
+        "instance": "c6i.12xlarge",
+        "min_rate": 703
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 91
+      },
+      {
+        "instance": "m6a.xlarge",
+        "min_rate": 62
+      },
+      {
+        "instance": "c6a.2xlarge",
+        "min_rate": 106
+      },
+      {
+        "instance": "m6a.24xlarge",
+        "min_rate": 1484
+      },
+      {
+        "instance": "m6a.48xlarge",
+        "min_rate": 2697
+      },
+      {
+        "instance": "m6a.32xlarge",
+        "min_rate": 1978
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 718
+      },
+      {
+        "instance": "m6a.12xlarge",
+        "min_rate": 742
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 107
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1435
+      },
+      {
+        "instance": "m6a.8xlarge",
+        "min_rate": 495
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 362
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 181
+      }
+    ]
+  },
+  {
+    "region": "eu-north-1",
+    "rate_cards": [
+      {
+        "instance": "c6i.24xlarge",
+        "min_rate": 1402
+      },
+      {
+        "instance": "m5.12xlarge",
+        "min_rate": 762
+      },
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 234
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 468
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1428
+      },
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 144
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 508
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 79
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 227
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 1876
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 938
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 955
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 239
+      },
+      {
+        "instance": "c5n.4xlarge",
+        "min_rate": 287
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 106
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 524
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 203
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 26
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 23
+      },
+      {
+        "instance": "c6g.12xlarge",
+        "min_rate": 542
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 626
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 157
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 717
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1251
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 64
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 632
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1263
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 120
+      },
+      {
+        "instance": "m6g.16xlarge",
+        "min_rate": 812
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 262
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1016
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 255
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 114
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 1904
+      },
+      {
+        "instance": "m5.2xlarge",
+        "min_rate": 127
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 842
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 313
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 478
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 131
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 421
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 102
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 956
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 181
+      }
+    ]
+  },
+  {
+    "region": "me-central-1",
+    "rate_cards": [
+      {
+        "instance": "m5.12xlarge",
+        "min_rate": 874
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 583
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 784
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 234
+      },
+      {
+        "instance": "c6g.xlarge",
+        "min_rate": 50
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 30
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 25
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 588
+      },
+      {
+        "instance": "m6g.16xlarge",
+        "min_rate": 936
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 303
+      },
+      {
+        "instance": "m6g.8xlarge",
+        "min_rate": 468
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 702
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1165
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 100
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 117
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1109
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 76
+      }
+    ]
+  },
+  {
+    "region": "ap-southeast-4",
+    "rate_cards": [
+      {
+        "instance": "m5.12xlarge",
+        "min_rate": 924
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 30
+      },
+      {
+        "instance": "c6g.12xlarge",
+        "min_rate": 659
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 618
+      },
+      {
+        "instance": "m6g.16xlarge",
+        "min_rate": 950
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1232
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 308
+      },
+      {
+        "instance": "m5.2xlarge",
+        "min_rate": 154
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 110
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 119
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1166
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 440
+      }
+    ]
+  },
+  {
+    "region": "ca-central-1",
+    "rate_cards": [
+      {
+        "instance": "m5.12xlarge",
+        "min_rate": 795
+      },
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 119
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 238
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 951
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1498
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 80
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 53
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 972
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 243
+      },
+      {
+        "instance": "c5n.4xlarge",
+        "min_rate": 293
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 693
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 54
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1386
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 108
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 955
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 550
+      },
+      {
+        "instance": "c6g.xlarge",
+        "min_rate": 46
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 216
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 27
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 58
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 660
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 637
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 160
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 729
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1273
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 647
+      },
+      {
+        "instance": "c5a.24xlarge",
+        "min_rate": 1294
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1099
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 122
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 520
+      },
+      {
+        "instance": "m6g.16xlarge",
+        "min_rate": 847
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 636
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 31
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1239
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 265
+      },
+      {
+        "instance": "m5a.8xlarge",
+        "min_rate": 476
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 319
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 486
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 713
+      },
+      {
+        "instance": "m5a.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 106
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 69
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1426
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 185
+      }
+    ]
+  },
+  {
+    "region": "eu-central-2",
+    "rate_cards": [
+      {
+        "instance": "m5.12xlarge",
+        "min_rate": 939
+      },
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1771
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 626
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 2192
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 1096
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 251
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 731
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1461
+      },
+      {
+        "instance": "m6g.16xlarge",
+        "min_rate": 1002
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2657
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 313
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 366
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 126
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1121
+      }
+    ]
+  },
+  {
+    "region": "eu-west-3",
+    "rate_cards": [
+      {
+        "instance": "m5a.2xlarge",
+        "min_rate": 126
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 519
+      },
+      {
+        "instance": "m5a.4xlarge",
+        "min_rate": 252
+      },
+      {
+        "instance": "m5a.16xlarge",
+        "min_rate": 1006
+      },
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 159
+      },
+      {
+        "instance": "c6gn.xlarge",
+        "min_rate": 66
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 252
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 801
+      },
+      {
+        "instance": "c6gn.16xlarge",
+        "min_rate": 1053
+      },
+      {
+        "instance": "c6gn.4xlarge",
+        "min_rate": 264
+      },
+      {
+        "instance": "c5a.xlarge",
+        "min_rate": 59
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 117
+      },
+      {
+        "instance": "c6i.16xlarge",
+        "min_rate": 1037
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 575
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 234
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 28
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 26
+      },
+      {
+        "instance": "c6g.12xlarge",
+        "min_rate": 601
+      },
+      {
+        "instance": "c5n.9xlarge",
+        "min_rate": 713
+      },
+      {
+        "instance": "c6gn.12xlarge",
+        "min_rate": 790
+      },
+      {
+        "instance": "m5.xlarge",
+        "min_rate": 70
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 701
+      },
+      {
+        "instance": "m6i.16xlarge",
+        "min_rate": 1150
+      },
+      {
+        "instance": "c6gn.2xlarge",
+        "min_rate": 132
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 565
+      },
+      {
+        "instance": "m6g.16xlarge",
+        "min_rate": 891
+      },
+      {
+        "instance": "m6i.4xlarge",
+        "min_rate": 288
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 668
+      },
+      {
+        "instance": "c6gn.large",
+        "min_rate": 33
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1344
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 126
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2300
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 935
+      },
+      {
+        "instance": "c6gn.8xlarge",
+        "min_rate": 527
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 144
+      },
+      {
+        "instance": "c6i.xlarge",
+        "min_rate": 65
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 863
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 468
+      },
+      {
+        "instance": "m5a.12xlarge",
+        "min_rate": 755
+      },
+      {
+        "instance": "c5.18xlarge",
+        "min_rate": 1061
+      },
+      {
+        "instance": "m5a.24xlarge",
+        "min_rate": 1509
+      }
+    ]
+  },
+  {
+    "region": "af-south-1",
+    "rate_cards": [
+      {
+        "instance": "c6i.4xlarge",
+        "min_rate": 293
+      },
+      {
+        "instance": "c6i.8xlarge",
+        "min_rate": 586
+      },
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 180
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 629
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 98
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 63
+      },
+      {
+        "instance": "c5.4xlarge",
+        "min_rate": 283
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 2348
+      },
+      {
+        "instance": "c6in.12xlarge",
+        "min_rate": 1174
+      },
+      {
+        "instance": "c6i.2xlarge",
+        "min_rate": 147
+      },
+      {
+        "instance": "c5a.2xlarge",
+        "min_rate": 133
+      },
+      {
+        "instance": "c5a.4xlarge",
+        "min_rate": 265
+      },
+      {
+        "instance": "c6in.8xlarge",
+        "min_rate": 783
+      },
+      {
+        "instance": "c6in.2xlarge",
+        "min_rate": 196
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1566
+      },
+      {
+        "instance": "c5a.12xlarge",
+        "min_rate": 794
+      },
+      {
+        "instance": "c6in.32xlarge",
+        "min_rate": 2846
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 754
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1257
+      },
+      {
+        "instance": "c5n.18xlarge",
+        "min_rate": 1525
+      },
+      {
+        "instance": "c5.2xlarge",
+        "min_rate": 141
+      },
+      {
+        "instance": "m6i.32xlarge",
+        "min_rate": 2371
+      },
+      {
+        "instance": "c5a.16xlarge",
+        "min_rate": 1058
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 392
+      },
+      {
+        "instance": "m6i.12xlarge",
+        "min_rate": 978
+      },
+      {
+        "instance": "c5a.8xlarge",
+        "min_rate": 529
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 126
+      },
+      {
+        "instance": "c5n.xlarge",
+        "min_rate": 90
+      },
+      {
+        "instance": "m6i.xlarge",
+        "min_rate": 82
+      }
+    ]
+  },
+  {
+    "region": "eu-south-2",
+    "rate_cards": [
+      {
+        "instance": "m5.24xlarge",
+        "min_rate": 1498
+      },
+      {
+        "instance": "m6g.xlarge",
+        "min_rate": 54
+      },
+      {
+        "instance": "c5.12xlarge",
+        "min_rate": 713
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1344
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 213
+      },
+      {
+        "instance": "c5.xlarge",
+        "min_rate": 60
+      },
+      {
+        "instance": "c6g.large",
+        "min_rate": 23
+      },
+      {
+        "instance": "m6g.12xlarge",
+        "min_rate": 638
+      },
+      {
+        "instance": "m5.16xlarge",
+        "min_rate": 1059
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 265
+      },
+      {
+        "instance": "c6g.2xlarge",
+        "min_rate": 91
+      },
+      {
+        "instance": "m6g.2xlarge",
+        "min_rate": 107
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 362
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 181
+      }
+    ]
+  },
+  {
+    "region": "ap-southeast-3",
+    "rate_cards": [
+      {
+        "instance": "c5n.2xlarge",
+        "min_rate": 154
+      },
+      {
+        "instance": "m5.8xlarge",
+        "min_rate": 594
+      },
+      {
+        "instance": "c6in.xlarge",
+        "min_rate": 84
+      },
+      {
+        "instance": "c6in.24xlarge",
+        "min_rate": 2006
+      },
+      {
+        "instance": "c6g.16xlarge",
+        "min_rate": 732
+      },
+      {
+        "instance": "c5.24xlarge",
+        "min_rate": 1372
+      },
+      {
+        "instance": "m6i.8xlarge",
+        "min_rate": 616
+      },
+      {
+        "instance": "m6g.4xlarge",
+        "min_rate": 238
+      },
+      {
+        "instance": "m6g.large",
+        "min_rate": 30
+      },
+      {
+        "instance": "c6in.16xlarge",
+        "min_rate": 1337
+      },
+      {
+        "instance": "c5.9xlarge",
+        "min_rate": 546
+      },
+      {
+        "instance": "m5.4xlarge",
+        "min_rate": 297
+      },
+      {
+        "instance": "c6in.4xlarge",
+        "min_rate": 335
+      },
+      {
+        "instance": "m6i.2xlarge",
+        "min_rate": 154
+      },
+      {
+        "instance": "c6g.8xlarge",
+        "min_rate": 388
+      },
+      {
+        "instance": "c6g.4xlarge",
+        "min_rate": 194
+      }
+    ]
+  }
+]
