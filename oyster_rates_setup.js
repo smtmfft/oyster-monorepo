@@ -1,8 +1,5 @@
 // Script to setup rates file for oyster.
 
-// Pre : npm install @aws-sdk/client-pricing && npm install @aws-sdk/client-ec2
-// Pre : make it executable : chmod +x oyster_rates_setup.js
-
 // To use for or exclude certain regions and instance types modify the run function as needed
 
 const fs = require("fs");

@@ -1,6 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
-import * as awsx from "@pulumi/awsx";
 
 
 let nidx = 192;
@@ -40,24 +39,21 @@ let regions: aws.Region[] = [
     "ap-east-1",
 ]
 
-let providers: {[key: string]: aws.Provider} = {}
+let providers: { [key: string]: aws.Provider } = {}
 export let publicDNS: aws.route53.Zone;
-let privateDNS: aws.route53.Zone;
-let amis: {[key: string]: Promise<aws.GetAmiResult>} = {}
-let armAmis: {[key: string]: Promise<aws.GetAmiResult>} = {}
-let vpcs: {[key: string]: aws.ec2.Vpc} = {}
-let subnets: {[key: string]: aws.ec2.Subnet} = {}
-let igs: {[key: string]: aws.ec2.InternetGateway} = {}
-let rts: {[key: string]: aws.ec2.RouteTable} = {}
-let rtas: {[key: string]: aws.ec2.RouteTableAssociation} = {}
-let sgs: {[key: string]: {[key: string]: aws.ec2.SecurityGroup}} = {}
+let vpcs: { [key: string]: aws.ec2.Vpc } = {}
+let subnets: { [key: string]: aws.ec2.Subnet } = {}
+let igs: { [key: string]: aws.ec2.InternetGateway } = {}
+let rts: { [key: string]: aws.ec2.RouteTable } = {}
+let rtas: { [key: string]: aws.ec2.RouteTableAssociation } = {}
+let sgs: { [key: string]: { [key: string]: aws.ec2.SecurityGroup } } = {}
 
 
 regions.forEach((region, ridx) => {
     // providers
     providers[region] = new aws.Provider(region, {
         region: region,
-		profile: new pulumi.Config('aws').get("profile"),
+        profile: new pulumi.Config('aws').get("profile"),
     })
 
     // vpcs
@@ -71,14 +67,14 @@ regions.forEach((region, ridx) => {
     })
 
     // subnets
-	subnets[`${region}-s0`] = new aws.ec2.Subnet(`${tags.project}-${region}-s0`, {
-		cidrBlock: `10.${nidx}.${ridx}.0/24`,
-		mapPublicIpOnLaunch: true,
-		tags: tags,
-		vpcId: vpcs[region].id,
-	}, {
-		provider: providers[region],
-	});
+    subnets[`${region}-s0`] = new aws.ec2.Subnet(`${tags.project}-${region}-s0`, {
+        cidrBlock: `10.${nidx}.${ridx}.0/24`,
+        mapPublicIpOnLaunch: true,
+        tags: tags,
+        vpcId: vpcs[region].id,
+    }, {
+        provider: providers[region],
+    });
 
     // internet gateways
     igs[region] = new aws.ec2.InternetGateway(`${tags.project}-${region}-ig`, {
@@ -106,12 +102,12 @@ regions.forEach((region, ridx) => {
     })
 
     // route table associations
-	rtas[region] = new aws.ec2.RouteTableAssociation(`${tags.project}-${region}-s0-rta`, {
-		subnetId: subnets[`${region}-s0`].id,
-		routeTableId: rts[region].id,
-	}, {
-		provider: providers[region],
-	});
+    rtas[region] = new aws.ec2.RouteTableAssociation(`${tags.project}-${region}-s0-rta`, {
+        subnetId: subnets[`${region}-s0`].id,
+        routeTableId: rts[region].id,
+    }, {
+        provider: providers[region],
+    });
 
     // security groups
     sgs[region] = {}
@@ -123,12 +119,12 @@ regions.forEach((region, ridx) => {
             toPort: 0,
             protocol: "-1",
         }],
-		ingress: [{
+        ingress: [{
             cidrBlocks: ['0.0.0.0/0'],
             fromPort: 0,
             toPort: 65535,
             protocol: "tcp",
-		}],
+        }],
         tags: tags,
     }, {
         provider: providers[region],
