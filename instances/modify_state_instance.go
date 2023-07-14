@@ -68,11 +68,26 @@ func LaunchInstance(keyPairName string, profile string, region string, arch stri
 	ec2Client := GetClient(profile, region)
 
 	keyName := keyPairName
+	owner := "099720109477" // Canonical/Ubuntu
+	fname := "name"
+	fvalues := "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-" + arch + "-server-????????"
+	imageRes, err := ec2Client.DescribeImages(&ec2.DescribeImagesInput{
+		Owners: []*string{&owner},
+		Filters: []*ec2.Filter{{
+			Name:   &fname,
+			Values: []*string{&fvalues},
+		}},
+	})
+	if err != nil {
+		log.Error("Could not find image", err)
+		return nil
+	}
+
+	imageId := *imageRes.Images[0].ImageId
+
 	instanceType := "c6a.xlarge"
-	imageId := "ami-05ba3a39a75be1ec4"
 	if arch == "arm64" {
 		instanceType = "c6g.xlarge"
-		imageId = "ami-0296ecdacc0d49d5a"
 	}
 	// instanceType := "c6a.xlarge"
 	// instanceType := "c6g.xlarge"
