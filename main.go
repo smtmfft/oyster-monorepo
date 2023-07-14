@@ -136,6 +136,7 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo supervisorctl reload")
 
 	RunCommand(client, "sudo rm -r /home/ubuntu/aws-nitro-enclaves-cli")
+	RunCommand(client, "sudo rm /home/ubuntu/.ssh/authorized_keys /root/.ssh/authorized_keys")
 }
 
 func RunCommand(client *connect.SshClient, cmd string) string {
