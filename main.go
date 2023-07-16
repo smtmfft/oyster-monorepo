@@ -102,7 +102,7 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 }
 
 func SetupPreRequisites(client *connect.SshClient, host string, instanceID string, profile string, region string, arch string) {
-	RunCommand(client, "sudo apt-get -y update")
+	RunCommand(client, "sudo apt-get -y update && sudo apt-get -y upgrade")
 	RunCommand(client, "sudo apt-get -y install build-essential")
 	RunCommand(client, "grep /boot/config-$(uname -r) -e NITRO_ENCLAVES")
 	RunCommand(client, "sudo apt-get -y install linux-modules-extra-aws")
@@ -136,6 +136,7 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo supervisorctl reload")
 
 	RunCommand(client, "sudo rm -r /home/ubuntu/aws-nitro-enclaves-cli")
+	RunCommand(client, "sudo rm /home/ubuntu/.ssh/authorized_keys /root/.ssh/authorized_keys")
 }
 
 func RunCommand(client *connect.SshClient, cmd string) string {
