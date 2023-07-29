@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string, arch string, subnetId string, secGroupID string) (*ec2.Reservation, error) {
@@ -170,7 +171,7 @@ func TerminateInstance(instanceID string, profile string, region string) {
 func CreateAMI(instanceID string, profile string, region string, arch string) {
 	client := GetClient(profile, region)
 	resource := ec2.ResourceTypeImage
-	amiName := "oyster_" + arch
+	amiName := "marlin/oyster/worker-" + arch + "-" + time.Now().UTC().Format("20060102")
 	res, err := client.CreateImage(&ec2.CreateImageInput{
 		InstanceId: aws.String(instanceID),
 		Name:       aws.String(amiName),
