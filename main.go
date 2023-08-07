@@ -45,8 +45,8 @@ func main() {
 	keypairs.SetupKeys(keyPairName, keyStoreLocation, profile, region)
 	privateKeyLocation := keyStoreLocation + "/" + keyPairName + ".pem"
 
-	exist_amd64 := instances.CheckAMIFromNameTag("oyster_amd64", profile, region)
-	exist_arm64 := instances.CheckAMIFromNameTag("oyster_arm64", profile, region)
+	exist_amd64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-amd64-????????", profile, region)
+	exist_arm64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-arm64-????????", profile, region)
 
 	if !exist_arm64 && !exist_amd64 {
 		var wg sync.WaitGroup
