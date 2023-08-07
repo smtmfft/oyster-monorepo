@@ -80,16 +80,16 @@ async function getEc2Prices(instanceType, premium) {
 
         const productsFiltered = products.filter(i => {
             return i.product.attributes.usagetype.includes('DedicatedUsage')
-        }).map((instance) => ({
-            region: instance.product.attributes.regionCode,
-            instance: instance.product.attributes.instanceType,
-            min_rate: Math.ceil(parseFloat(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
-                .priceDimensions[Object.keys(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
-                    .priceDimensions)[0]].pricePerUnit.USD).toFixed(6) * 1e6 * (100 + premium) / 360000)
-        }))
-
-
-        // console.log(util.inspect(productsFiltered, false, null, true))
+        }).map((instance) => {
+            const on_demand_key = Object.keys(instance.terms.OnDemand)[0];
+            const price_dimension_key = Object.keys(instance.terms.OnDemand[on_demand_key].priceDimensions)[0];
+            return {
+                region: instance.product.attributes.regionCode,
+                instance: instance.product.attributes.instanceType,
+                min_rate: BigInt(parseFloat(instance.terms.OnDemand[on_demand_key]
+                    .priceDimensions[price_dimension_key].pricePerUnit.USD * 1e6 || 0).toFixed(0)) * BigInt(100 + premium) * BigInt(1e12) / BigInt(360000)
+            };
+        })
 
         const list = productsFiltered.filter(i => { return i.min_rate > 0 })
 
@@ -184,7 +184,7 @@ async function run() {
     // console.log(util.inspect(result, false, null, true))
 
     // Write to .marlin folder
-    const data = JSON.stringify(result, null, 2);
+    const data = JSON.stringify(result, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2);
     fs.writeFile(location, data, (error) => {
         if (error) {
             console.error(error);
