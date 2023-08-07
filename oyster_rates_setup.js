@@ -119,13 +119,13 @@ async function run() {
 
     premium = parseInt(premium);
 
-    const ec2InstanceTypes = await getAllInstanceTypesWithNitro();
-
     const excludedRegions = [];
     const excludedInstances = [];
     // Listed General purpose and compute optimized instances except the ones soring volumes
     const selectInstanceFamiliesOnly = true;
     const selectInstanceFamilies = ["m5.", "m5a.", "m5n.", "m5zn.", "m6a.", "m6g.", "m6i.", "m6in.", "m7g.", "c5.", "c5a.", "c5n.", "c6a.", "c6g.", "c6gn.", "c6i.", "c6in.", "c7g.", "c7gn.", "hpc6a.", "hpc7g.",];
+
+    const ec2InstanceTypes = (await getAllInstanceTypesWithNitro()).filter(type => !selectInstanceFamiliesOnly || selectInstanceFamilies.some(prefix => type.startsWith(prefix)));
 
     const selectRegionsOnly = true;
     const selectRegions = [
@@ -166,7 +166,6 @@ async function run() {
     // Change into [{region,[{instance,min_rate}]}] format
     const result = products.reduce((newProds, curr) => {
         if (excludedInstances.includes(curr.instance) || excludedRegions.includes(curr.region)) return newProds;
-        else if (selectInstanceFamiliesOnly && !selectInstanceFamilies.some(prefix => curr.instance.startsWith(prefix))) return newProds;
         else if (selectRegionsOnly && !selectRegions.includes(curr.region)) return newProds;
 
         const found = newProds.find(el => el.region === curr.region);
