@@ -53,7 +53,7 @@ async fn limit_status() {
     .context("Failed to get elastic ips quota")
     .unwrap();
     println!(
-        "VCPU: {}/{},\nElastic IP: {}/{}\n",
+        "VCPU: {}/{},\nElastic IP: {}/{}",
         no_vcpus, vcpu_limit, no_elastic_ips, elastic_ip_limit
     );
 }
