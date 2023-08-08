@@ -80,16 +80,16 @@ async function getEc2Prices(instanceType, premium) {
 
         const productsFiltered = products.filter(i => {
             return i.product.attributes.usagetype.includes('DedicatedUsage')
-        }).map((instance) => ({
-            region: instance.product.attributes.regionCode,
-            instance: instance.product.attributes.instanceType,
-            min_rate: Math.ceil(parseFloat(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
-                .priceDimensions[Object.keys(instance.terms.OnDemand[Object.keys(instance.terms.OnDemand)[0]]
-                    .priceDimensions)[0]].pricePerUnit.USD).toFixed(6) * 1e6 * (100 + premium) / 360000)
-        }))
-
-
-        // console.log(util.inspect(productsFiltered, false, null, true))
+        }).map((instance) => {
+            const on_demand_key = Object.keys(instance.terms.OnDemand)[0];
+            const price_dimension_key = Object.keys(instance.terms.OnDemand[on_demand_key].priceDimensions)[0];
+            return {
+                region: instance.product.attributes.regionCode,
+                instance: instance.product.attributes.instanceType,
+                min_rate: BigInt(parseFloat(instance.terms.OnDemand[on_demand_key]
+                    .priceDimensions[price_dimension_key].pricePerUnit.USD * 1e6 || 0).toFixed(0)) * BigInt(100 + premium) * BigInt(1e12) / BigInt(360000)
+            };
+        })
 
         const list = productsFiltered.filter(i => { return i.min_rate > 0 })
 
@@ -119,13 +119,13 @@ async function run() {
 
     premium = parseInt(premium);
 
-    const ec2InstanceTypes = await getAllInstanceTypesWithNitro();
-
     const excludedRegions = [];
     const excludedInstances = [];
     // Listed General purpose and compute optimized instances except the ones soring volumes
     const selectInstanceFamiliesOnly = true;
     const selectInstanceFamilies = ["m5.", "m5a.", "m5n.", "m5zn.", "m6a.", "m6g.", "m6i.", "m6in.", "m7g.", "c5.", "c5a.", "c5n.", "c6a.", "c6g.", "c6gn.", "c6i.", "c6in.", "c7g.", "c7gn.", "hpc6a.", "hpc7g.",];
+
+    const ec2InstanceTypes = (await getAllInstanceTypesWithNitro()).filter(type => !selectInstanceFamiliesOnly || selectInstanceFamilies.some(prefix => type.startsWith(prefix)));
 
     const selectRegionsOnly = true;
     const selectRegions = [
@@ -166,7 +166,6 @@ async function run() {
     // Change into [{region,[{instance,min_rate}]}] format
     const result = products.reduce((newProds, curr) => {
         if (excludedInstances.includes(curr.instance) || excludedRegions.includes(curr.region)) return newProds;
-        else if (selectInstanceFamiliesOnly && !selectInstanceFamilies.some(prefix => curr.instance.startsWith(prefix))) return newProds;
         else if (selectRegionsOnly && !selectRegions.includes(curr.region)) return newProds;
 
         const found = newProds.find(el => el.region === curr.region);
@@ -184,7 +183,7 @@ async function run() {
     // console.log(util.inspect(result, false, null, true))
 
     // Write to .marlin folder
-    const data = JSON.stringify(result, null, 2);
+    const data = JSON.stringify(result, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2);
     fs.writeFile(location, data, (error) => {
         if (error) {
             console.error(error);
