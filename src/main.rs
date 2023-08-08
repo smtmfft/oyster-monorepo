@@ -2,6 +2,8 @@ mod current_usage;
 mod service_quotas;
 mod utils;
 
+use std::collections::HashMap;
+
 use anyhow::Context;
 use chrono;
 use clap::Parser;
@@ -59,15 +61,25 @@ async fn limit_status() {
 }
 
 async fn limit_increase(quota_name: String, quota_value: f64) {
-    let possible_quota_names: [&str; 2] = ["ec2", "elastic_ip"];
+    let possible_quota_names: [&str; 2] = ["vcpu", "elastic_ip"];
     if possible_quota_names.contains(&quota_name.as_str()) {
         if quota_value == 0.0 {
             println!("Quota value must be greater than 0.");
             return;
         }
+        let mut quota_code_hash = HashMap::new();
+        quota_code_hash.insert("vcpu", service_quotas::VCPU_QUOTA_CODE.to_string());
+        quota_code_hash.insert(
+            "elastic_ip",
+            service_quotas::ELASTIC_IP_QUOTA_CODE.to_string(),
+        );
+
         let request_id = service_quotas::request_service_quota_increase(
             service_quotas::EC2_SERVICE_CODE.to_string(),
-            quota_name.to_string(),
+            quota_code_hash
+                .get(quota_name.as_str())
+                .unwrap()
+                .to_string(),
             quota_value,
         )
         .await
@@ -86,7 +98,7 @@ async fn limit_increase(quota_name: String, quota_value: f64) {
         println!("Service quota increase requested.");
         println!("Request ID: {}", request_id);
     } else {
-        println!("Quota name must be one of these:\n1. ec2\n2. elastic_ip");
+        println!("Quota name must be one of these:\n1. vcpu\n2. elastic_ip");
     }
 }
 

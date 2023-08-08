@@ -31,12 +31,12 @@ Requests an increase in the limit of any of the supported quotas. This also stor
 
 Requires two values - 
 
-1. `quota-name`: Value must be `ec2` or `elastic_ip`.
+1. `quota-name`: Value must be `vcpu` or `elastic_ip`.
 2. `quota-value`: Value must be a number/float greater than the current limit of the quota.
 
 Command Example -
 ```shell
-cargo run -- --limit-increase --quota-name ec2 --quota-value 36
+cargo run -- --limit-increase --quota-name vcpu --quota-value 36
 ```
 
 Output Format -
