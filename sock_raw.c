@@ -104,6 +104,7 @@ int main() {
   }
 
   close(raw_socket);
+  free(buf);
   printf("done\n");
 
   return 0;
