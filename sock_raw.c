@@ -7,6 +7,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+// sockaddr needs to be imported before it
+#include <linux/vm_sockets.h>
+
 int main() {
   int raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
   if (raw_socket < 0) {
@@ -17,6 +20,25 @@ int main() {
   int res = setsockopt(raw_socket, SOL_SOCKET, SO_BINDTODEVICE, "lo", 2);
   if (res < 0) {
     printf("bind error: %d, %s\n", res, strerror(errno));
+    return -1;
+  }
+
+  int vsock_socket = socket(AF_VSOCK, SOCK_DGRAM, 0);
+  if (vsock_socket < 0) {
+    printf("failed to create vsock socket\n");
+    return -1;
+  }
+
+  struct sockaddr_vm vsock_addr;
+  memset(&vsock_addr, 0, sizeof(vsock_addr));
+  vsock_addr.svm_family = AF_VSOCK;
+  vsock_addr.svm_port = 1200;
+  vsock_addr.svm_cid = 3;
+
+  res =
+      connect(vsock_socket, (struct sockaddr *)&vsock_addr, sizeof(vsock_addr));
+  if (res < 0) {
+    printf("connect error: %d, %s\n", res, strerror(errno));
     return -1;
   }
 
