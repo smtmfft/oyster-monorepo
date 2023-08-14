@@ -52,6 +52,11 @@ int main() {
     uint32_t src_addr = ntohl(*(uint32_t *)(buf + 12));
     uint32_t dst_addr = ntohl(*(uint32_t *)(buf + 16));
 
+    // ignore packets not originating from 127.0.0.1
+    if (src_addr != 0x7f000001) {
+      continue;
+    }
+
     printf("recvmsg %ld, ", res);
     for (ssize_t i = 0; i < res; i++) {
       printf("%02x", buf[i]);
