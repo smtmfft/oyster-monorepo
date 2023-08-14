@@ -23,7 +23,7 @@ int main() {
     return -1;
   }
 
-  int vsock_socket = socket(AF_VSOCK, SOCK_DGRAM, 0);
+  int vsock_socket = socket(AF_VSOCK, SOCK_STREAM, 0);
   if (vsock_socket < 0) {
     printf("failed to create vsock socket: %d, %s\n", vsock_socket,
            strerror(errno));
