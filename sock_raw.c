@@ -2,6 +2,7 @@
 #include <netinet/in.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -22,7 +23,7 @@ int main() {
   struct msghdr message_header;
   memset(&message_header, 0, sizeof(message_header));
 
-  uint8_t buf[10000];
+  uint8_t *buf = aligned_alloc(4, 1600);
   struct iovec iov;
   iov.iov_base = buf;
   iov.iov_len = 10000;
