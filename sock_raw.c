@@ -126,6 +126,7 @@ int main() {
     }
   }
 
+  close(vsock_socket);
   close(raw_socket);
   free(buf);
   printf("done\n");
