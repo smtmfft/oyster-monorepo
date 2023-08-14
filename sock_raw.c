@@ -120,10 +120,15 @@ int main() {
     }
 
     // send through vsock
-    ssize_t sent = sendmsg(vsock_socket, &message_header, 0);
-    if (sent < 0) {
-      printf("send error: %ld, %s\n", sent, strerror(errno));
-      break;
+    ssize_t total_sent = 0;
+    while (total_sent < res) {
+      ssize_t sent = send(vsock_socket, buf, res - total_sent, 0);
+      if (sent < 0) {
+        printf("send error: %ld, %s\n", sent, strerror(errno));
+        break;
+      }
+
+      total_sent += sent;
     }
   }
 
