@@ -11,18 +11,6 @@
 #include <linux/vm_sockets.h>
 
 int main() {
-  int raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-  if (raw_socket < 0) {
-    printf("failed to create socket: %d, %s\n", raw_socket, strerror(errno));
-    return -1;
-  }
-
-  int res = setsockopt(raw_socket, SOL_SOCKET, SO_BINDTODEVICE, "lo", 2);
-  if (res < 0) {
-    printf("bind error: %d, %s\n", res, strerror(errno));
-    return -1;
-  }
-
   int vsock_socket = socket(AF_VSOCK, SOCK_STREAM, 0);
   if (vsock_socket < 0) {
     printf("failed to create vsock socket: %d, %s\n", vsock_socket,
@@ -36,10 +24,22 @@ int main() {
   vsock_addr.svm_port = 1200;
   vsock_addr.svm_cid = 3;
 
-  res =
+  int res =
       connect(vsock_socket, (struct sockaddr *)&vsock_addr, sizeof(vsock_addr));
   if (res < 0) {
     printf("connect error: %d, %s\n", res, strerror(errno));
+    return -1;
+  }
+
+  int raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+  if (raw_socket < 0) {
+    printf("failed to create socket: %d, %s\n", raw_socket, strerror(errno));
+    return -1;
+  }
+
+  res = setsockopt(raw_socket, SOL_SOCKET, SO_BINDTODEVICE, "lo", 2);
+  if (res < 0) {
+    printf("bind error: %d, %s\n", res, strerror(errno));
     return -1;
   }
 
