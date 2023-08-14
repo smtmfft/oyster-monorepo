@@ -46,10 +46,10 @@ int main() {
   struct msghdr message_header;
   memset(&message_header, 0, sizeof(message_header));
 
-  uint8_t *buf = aligned_alloc(4, 1600);
+  uint8_t *buf = aligned_alloc(4, 65536);
   struct iovec iov;
   iov.iov_base = buf;
-  iov.iov_len = 1600;
+  iov.iov_len = 65536;
   message_header.msg_iov = &iov;
   message_header.msg_iovlen = 1;
 
