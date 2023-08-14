@@ -13,7 +13,7 @@
 int main() {
   int raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
   if (raw_socket < 0) {
-    printf("failed to create socket\n");
+    printf("failed to create socket: %d, %s\n", raw_socket, strerror(errno));
     return -1;
   }
 
@@ -25,7 +25,8 @@ int main() {
 
   int vsock_socket = socket(AF_VSOCK, SOCK_DGRAM, 0);
   if (vsock_socket < 0) {
-    printf("failed to create vsock socket\n");
+    printf("failed to create vsock socket: %d, %s\n", vsock_socket,
+           strerror(errno));
     return -1;
   }
 
