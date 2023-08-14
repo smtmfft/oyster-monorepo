@@ -47,6 +47,11 @@ int main() {
       break;
     }
 
+    // get src and dst addr
+    // NOTE: buf is aligned to 4 byte boundary, can directly cast and read
+    uint32_t src_addr = ntohl(*(uint32_t *)(buf + 12));
+    uint32_t dst_addr = ntohl(*(uint32_t *)(buf + 16));
+
     printf("recvmsg %ld, ", res);
     for (ssize_t i = 0; i < res; i++) {
       printf("%02x", buf[i]);
