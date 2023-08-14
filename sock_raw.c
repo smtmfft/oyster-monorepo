@@ -118,11 +118,12 @@ int main() {
       continue;
     }
 
-    printf("recvmsg %ld, ", res);
-    for (ssize_t i = 0; i < res; i++) {
-      printf("%02x", buf[i]);
+    // send through vsock
+    ssize_t sent = sendmsg(vsock_socket, &message_header, 0);
+    if (sent < 0) {
+      printf("send error: %ld, %s\n", sent, strerror(errno));
+      break;
     }
-    printf("\n");
   }
 
   close(raw_socket);
