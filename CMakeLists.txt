@@ -12,3 +12,5 @@ else()
 	add_link_options(-fsanitize=address -fsanitize=undefined)
 endif()
 
+add_subdirectory(vendor EXCLUDE_FROM_ALL)
+
