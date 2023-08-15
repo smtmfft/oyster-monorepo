@@ -21,3 +21,10 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   target_link_options(vsock-to-ip-raw PRIVATE -static)
 endif()
 
+add_executable(ip-to-vsock-raw src/ip_to_vsock_raw.cpp)
+target_compile_options(ip-to-vsock-raw PRIVATE -Werror -Wall -Wextra -pedantic-errors)
+
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+  target_link_options(ip-to-vsock-raw PRIVATE -static)
+endif()
+
