@@ -43,6 +43,10 @@ int main() {
   // get all interfaces
   struct ifaddrs *ifap;
   res = getifaddrs(&ifap);
+  if (res < 0) {
+    printf("interface fetch error: %d, %s\n", res, strerror(errno));
+    return -1;
+  }
 
   // iterate
   struct ifaddrs *ifa_orig = ifap;
