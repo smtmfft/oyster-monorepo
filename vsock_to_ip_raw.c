@@ -61,20 +61,21 @@ int main() {
     return -1;
   }
 
+  int raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
+  if (raw_socket < 0) {
+    printf("failed to create socket: %d, %s\n", raw_socket, strerror(errno));
+    return -1;
+  }
+
+  res = setsockopt(raw_socket, SOL_SOCKET, SO_BINDTODEVICE, ifname,
+                   strlen(ifname));
+  if (res < 0) {
+    printf("bind error: %d, %s\n", res, strerror(errno));
+    return -1;
+  }
+
   // free ifap
   freeifaddrs(ifa_orig);
-
-  // int raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-  // if (raw_socket < 0) {
-  //   printf("failed to create socket: %d, %s\n", raw_socket, strerror(errno));
-  //   return -1;
-  // }
-  //
-  // res = setsockopt(raw_socket, SOL_SOCKET, SO_BINDTODEVICE, "lo", 2);
-  // if (res < 0) {
-  //   printf("bind error: %d, %s\n", res, strerror(errno));
-  //   return -1;
-  // }
 
   struct msghdr message_header;
   memset(&message_header, 0, sizeof(message_header));
