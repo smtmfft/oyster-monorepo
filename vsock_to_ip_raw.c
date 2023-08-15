@@ -81,6 +81,13 @@ int main() {
   // free ifap
   freeifaddrs(ifa_orig);
 
+  // shut down read side since we only transmit
+  res = shutdown(raw_socket, SHUT_RD);
+  if (res < 0) {
+    printf("shutdown error: %d, %s\n", res, strerror(errno));
+    return -1;
+  }
+
   struct msghdr message_header;
   memset(&message_header, 0, sizeof(message_header));
 
