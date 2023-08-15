@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <ifaddrs.h>
 #include <netinet/in.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -36,6 +37,32 @@ int main() {
     printf("listen error: %d, %s\n", res, strerror(errno));
     return -1;
   }
+
+  // bind to ethernet interface
+
+  // get all interfaces
+  struct ifaddrs *ifap;
+  res = getifaddrs(&ifap);
+
+  // iterate
+  struct ifaddrs *ifa_orig = ifap;
+  char *ifname = NULL;
+  while (ifap != NULL) {
+    if (strncmp(ifap->ifa_name, "eth", 3) == 0 ||
+        strncmp(ifap->ifa_name, "ens", 3) == 0) {
+      ifname = ifap->ifa_name;
+      break;
+    }
+    ifap = ifap->ifa_next;
+  }
+
+  if (ifname == NULL) {
+    printf("no ethernet interface found\n");
+    return -1;
+  }
+
+  // free ifap
+  freeifaddrs(ifa_orig);
 
   // int raw_socket = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
   // if (raw_socket < 0) {
