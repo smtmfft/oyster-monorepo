@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 project(raw-proxy VERSION 0.0.1 LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
