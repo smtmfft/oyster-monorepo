@@ -15,4 +15,5 @@ endif()
 add_subdirectory(vendor EXCLUDE_FROM_ALL)
 
 add_executable(vsock-to-ip-raw src/vsock_to_ip_raw.cpp)
+target_compile_options(vsock-to-ip-raw PRIVATE -Werror -Wall -Wextra -pedantic-errors)
 
