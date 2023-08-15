@@ -18,6 +18,7 @@ add_subdirectory(vendor EXCLUDE_FROM_ALL)
 
 add_executable(vsock-to-ip-raw src/vsock_to_ip_raw.cpp)
 target_compile_options(vsock-to-ip-raw PRIVATE -Werror -Wall -Wextra -pedantic-errors)
+target_link_libraries(vsock-to-ip-raw PUBLIC absl::flat_hash_map)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   target_link_options(vsock-to-ip-raw PRIVATE -static)
