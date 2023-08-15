@@ -10,4 +10,5 @@ path = "src/ip_to_vsock_raw.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.73"
 socket2 = { version = "0.5.3", features = ["all"] }
