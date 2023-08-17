@@ -34,6 +34,10 @@ fn get_eth_interface() -> Result<String> {
     }
 }
 
+fn handle_conn(conn_socket: Socket, conn_addr: SockAddr) -> Result<()> {
+    Ok(())
+}
+
 fn main() -> Result<()> {
     // get ethernet interface
     let ifname = get_eth_interface().context("could not get ethernet interface")?;
@@ -59,5 +63,15 @@ fn main() -> Result<()> {
         .listen(0)
         .context("failed to listen using vsock socket")?;
 
-    Ok(())
+    loop {
+        let (conn_socket, conn_addr) = vsock_socket
+            .accept()
+            .context("failed to accept connection")?;
+
+        let res = handle_conn(conn_socket, conn_addr).context("error while handling connection");
+        println!(
+            "{:?}",
+            res.err().unwrap_or(anyhow!("connection closed gracefully"))
+        );
+    }
 }
