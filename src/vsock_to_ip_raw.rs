@@ -19,7 +19,7 @@ fn get_eth_interface() -> Result<String> {
     while !ifap_iter.is_null() {
         let name = unsafe { CStr::from_ptr((*ifap_iter).ifa_name) };
         if unsafe { strncmp(name.as_ptr(), "eth".as_ptr().cast(), 3) } == 0
-            || unsafe { strncmp(name.as_ptr(), "wlp".as_ptr().cast(), 3) } == 0
+            || unsafe { strncmp(name.as_ptr(), "ens".as_ptr().cast(), 3) } == 0
         {
             ifname = name.to_str().context("non utf8 interface")?.to_owned();
             break;
