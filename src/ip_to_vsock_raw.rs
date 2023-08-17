@@ -69,5 +69,12 @@ fn main() -> Result<()> {
         {
             continue;
         }
+
+        // send through vsock
+        let mut total_sent = 0;
+        while total_sent < size {
+            let size = vsock_socket.send(&buf[total_sent..size])?;
+            total_sent += size;
+        }
     }
 }
