@@ -1,7 +1,8 @@
-use std::ffi::CStr;
+use std::{ffi::CStr, net::Shutdown};
 
 use anyhow::{anyhow, Context, Result};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
+use socket2::{Domain, Protocol, Socket, Type};
 
 fn get_eth_interface() -> Result<String> {
     let mut ifap: *mut ifaddrs = std::ptr::null_mut();
@@ -27,14 +28,26 @@ fn get_eth_interface() -> Result<String> {
     unsafe { freeifaddrs(ifap) };
 
     if ifname == "" {
-        Err(anyhow!("could not find ethernet interface"))
+        Err(anyhow!("no matching interface found"))
     } else {
         Ok(ifname)
     }
 }
 
 fn main() -> Result<()> {
-    println!("{}", get_eth_interface()?);
+    // get ethernet interface
+    let ifname = get_eth_interface().context("could not get ethernet interface")?;
+    println!("detected ethernet interface: {}", ifname);
+
+    // set up socket in interface
+    let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
+        .context("failed to create ip socket")?;
+    ip_socket
+        .bind_device(ifname.as_bytes().into())
+        .context("failed to bind ip socket")?;
+
+    // shut down read side since we are only going to write
+    ip_socket.shutdown(Shutdown::Read)?;
 
     Ok(())
 }
