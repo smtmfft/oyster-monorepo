@@ -1,6 +1,5 @@
 use std::ffi::CStr;
 use std::io::Read;
-use std::net::Shutdown;
 
 use anyhow::{anyhow, Context, Result};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
@@ -61,7 +60,10 @@ fn main() -> Result<()> {
         .context("failed to bind ip socket")?;
 
     // shut down read side since we are only going to write
-    ip_socket.shutdown(Shutdown::Read)?;
+    // set zero buffer instead of shutdown since latter was not working
+    ip_socket
+        .set_recv_buffer_size(0)
+        .context("failed to shut down read side")?;
 
     // set up vsock socket
     let vsock_socket =
