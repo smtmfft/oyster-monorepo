@@ -1,4 +1,6 @@
-use std::{ffi::CStr, net::Shutdown};
+use std::ffi::CStr;
+use std::io::Read;
+use std::net::Shutdown;
 
 use anyhow::{anyhow, Context, Result};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
@@ -34,8 +36,16 @@ fn get_eth_interface() -> Result<String> {
     }
 }
 
-fn handle_conn(conn_socket: Socket, conn_addr: SockAddr) -> Result<()> {
-    Ok(())
+fn handle_conn(conn_socket: &mut Socket, conn_addr: SockAddr) -> Result<()> {
+    println!("handling connection from {:?}", conn_addr);
+    let mut buf = vec![0u8; 65536].into_boxed_slice();
+    loop {
+        let size = conn_socket
+            .read(&mut buf)
+            .context("failed to read from conn socket")?;
+
+        println!("{:?}", &buf[0..size]);
+    }
 }
 
 fn main() -> Result<()> {
@@ -64,11 +74,12 @@ fn main() -> Result<()> {
         .context("failed to listen using vsock socket")?;
 
     loop {
-        let (conn_socket, conn_addr) = vsock_socket
+        let (mut conn_socket, conn_addr) = vsock_socket
             .accept()
             .context("failed to accept connection")?;
 
-        let res = handle_conn(conn_socket, conn_addr).context("error while handling connection");
+        let res =
+            handle_conn(&mut conn_socket, conn_addr).context("error while handling connection");
         println!(
             "{:?}",
             res.err().unwrap_or(anyhow!("connection closed gracefully"))
