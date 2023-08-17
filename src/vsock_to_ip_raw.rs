@@ -2,7 +2,7 @@ use std::{ffi::CStr, net::Shutdown};
 
 use anyhow::{anyhow, Context, Result};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
-use socket2::{Domain, Protocol, Socket, Type};
+use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 fn get_eth_interface() -> Result<String> {
     let mut ifap: *mut ifaddrs = std::ptr::null_mut();
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
     let ifname = get_eth_interface().context("could not get ethernet interface")?;
     println!("detected ethernet interface: {}", ifname);
 
-    // set up socket in interface
+    // set up ip socket in interface
     let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
         .context("failed to create ip socket")?;
     ip_socket
@@ -48,6 +48,16 @@ fn main() -> Result<()> {
 
     // shut down read side since we are only going to write
     ip_socket.shutdown(Shutdown::Read)?;
+
+    // set up vsock socket
+    let vsock_socket =
+        Socket::new(Domain::VSOCK, Type::STREAM, None).context("failed to create vsock socket")?;
+    vsock_socket
+        .bind(&SockAddr::vsock(3, 1200))
+        .context("failed to bind vsock socket")?;
+    vsock_socket
+        .listen(0)
+        .context("failed to listen using vsock socket")?;
 
     Ok(())
 }
