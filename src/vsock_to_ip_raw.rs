@@ -66,30 +66,35 @@ fn get_eth_interface() -> Result<String> {
 
 fn handle_conn(conn_socket: &mut Socket, conn_addr: SockAddr) -> Result<()> {
     println!("handling connection from {:?}", conn_addr);
-
-    // define nat table data structure, likely hash table
     let mut buf = vec![0u8; 65535].into_boxed_slice();
 
     loop {
-        let size = conn_socket
-            .read(&mut buf)
-            .context("failed to read from conn socket")?;
+        // read till total size
+        conn_socket
+            .read_exact(&mut buf[0..4])
+            .context("failed to read size from conn socket")?;
+
+        let size: usize = u16::from_be_bytes(buf[2..4].try_into().unwrap()).into();
+
+        // read till full frame
+        conn_socket
+            .read_exact(&mut buf[4..size])
+            .context("failed to read frame from conn socket")?;
 
         println!("{:?}", &buf[0..size]);
 
-        // src_addr is assumed to be 127.0.0.1
-        // we only NAT (src_port, dst_addr, dst_port) tuple
-        // luckily fits in u64
+        let ip_header_size = usize::from((buf[0] & 0x0f) * 4);
+        let src_port =
+            u16::from_be_bytes(buf[ip_header_size..ip_header_size + 2].try_into().unwrap());
 
-        // calculate key
+        if src_port != 80 && src_port != 443 && (src_port < 1024 || src_port > 61439) {
+            // silently drop
+            continue;
+        }
 
-        // check if flow already exists
+        // TODO: replace src addr with interface addr
 
-        // if not assign a port and start tracking flow
-
-        // perform NAT
-
-        // forward
+        // TODO: forward
     }
 }
 
