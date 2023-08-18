@@ -45,7 +45,7 @@ fn main() -> Result<()> {
         .bind_device("lo".as_bytes().into())
         .context("failed to bind ip socket")?;
 
-    let mut buf = vec![0u8; 65536].into_boxed_slice();
+    let mut buf = vec![0u8; 65535].into_boxed_slice();
     loop {
         // using read for now, investigate read_vectored for better perf
         let size = ip_socket.read(&mut buf)?;

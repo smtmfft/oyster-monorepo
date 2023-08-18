@@ -66,9 +66,9 @@ fn get_eth_interface() -> Result<String> {
 
 fn handle_conn(conn_socket: &mut Socket, conn_addr: SockAddr) -> Result<()> {
     println!("handling connection from {:?}", conn_addr);
-    let mut buf = vec![0u8; 65536].into_boxed_slice();
 
     // define nat table data structure, likely hash table
+    let mut buf = vec![0u8; 65535].into_boxed_slice();
 
     loop {
         let size = conn_socket
