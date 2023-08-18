@@ -64,7 +64,11 @@ fn get_eth_interface() -> Result<String> {
     }
 }
 
-fn handle_conn(conn_socket: &mut Socket, conn_addr: SockAddr) -> Result<()> {
+fn handle_conn(
+    conn_socket: &mut Socket,
+    conn_addr: SockAddr,
+    ip_socket: &mut Socket,
+) -> Result<()> {
     println!("handling connection from {:?}", conn_addr);
     let mut buf = vec![0u8; 65535].into_boxed_slice();
 
@@ -94,7 +98,9 @@ fn handle_conn(conn_socket: &mut Socket, conn_addr: SockAddr) -> Result<()> {
 
         // TODO: replace src addr with interface addr
 
-        // TODO: forward
+        ip_socket
+            .send(&buf[0..size])
+            .context("failed to send packet")?;
     }
 }
 
@@ -104,7 +110,7 @@ fn main() -> Result<()> {
     println!("detected ethernet interface: {}", ifname);
 
     // set up ip socket in interface
-    let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
+    let mut ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
         .context("failed to create ip socket")?;
     ip_socket
         .bind_device(ifname.as_bytes().into())
@@ -131,8 +137,8 @@ fn main() -> Result<()> {
             .accept()
             .context("failed to accept connection")?;
 
-        let res =
-            handle_conn(&mut conn_socket, conn_addr).context("error while handling connection");
+        let res = handle_conn(&mut conn_socket, conn_addr, &mut ip_socket)
+            .context("error while handling connection");
         println!(
             "{:?}",
             res.err().unwrap_or(anyhow!("connection closed gracefully"))
