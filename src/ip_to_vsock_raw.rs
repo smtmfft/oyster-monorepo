@@ -1,3 +1,32 @@
+// Summarizing NAT insights
+//
+// v1: track (src_port, dst_addr, dst_port)
+// or any form of stateful NAT for that matter
+//
+// 1. tracking and assigning ports is a headache
+// 2. does not easily scale to many threads and I want to avoid tokio/async if possible
+// 3. there should be a fast path
+//
+// Host does not have any real services running on it
+// Therefore, we have a lot of latitude in port assignment
+//
+// Let us direct map some port ranges directly to skip lookups
+// 80, 443, 1024-61439 of enclave -> 80, 443, 1024-61439 of host
+//
+// Connections to and from the enclave now work directly
+// More importantly, we do not need a stateful NAT!
+// This means no lookups affecting performance
+// This also means the NAT can easily be multi threaded without needing locks
+//
+// On the enclave, we set ephemeral ports to stay within the same range
+// It seems to already be the case in my local system, the max is 60999
+//
+// Only downside - some ports need to be reserved for the host to use
+// 61440-65535 is available for that
+// This means the enclave cannot use these ports to reach the internet
+// While this should not be an issue in most cases since ephemeral ports do not extend there
+// and most applications use ports lower than ephemeral, it _is_ a breaking change
+
 use std::io::Read;
 
 use anyhow::{Context, Result};
