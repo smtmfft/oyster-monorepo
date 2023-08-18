@@ -29,12 +29,13 @@
 
 use std::ffi::CStr;
 use std::io::Read;
+use std::mem::size_of;
 
 use anyhow::{anyhow, Context, Result};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
-fn get_eth_interface() -> Result<String> {
+fn get_eth_interface() -> Result<(String, SockAddr)> {
     let mut ifap: *mut ifaddrs = std::ptr::null_mut();
     let res = unsafe { getifaddrs(&mut ifap) };
 
@@ -44,12 +45,19 @@ fn get_eth_interface() -> Result<String> {
 
     let mut ifap_iter = ifap;
     let mut ifname = "".to_owned();
+    let mut ifaddr = SockAddr::vsock(0, 0); // dummy
     while !ifap_iter.is_null() {
         let name = unsafe { CStr::from_ptr((*ifap_iter).ifa_name) };
         if unsafe { strncmp(name.as_ptr(), "eth".as_ptr().cast(), 3) } == 0
             || unsafe { strncmp(name.as_ptr(), "ens".as_ptr().cast(), 3) } == 0
         {
             ifname = name.to_str().context("non utf8 interface")?.to_owned();
+            ifaddr = unsafe {
+                SockAddr::new(
+                    (*(*ifap_iter).ifa_addr.cast::<libc::sockaddr_storage>()).clone(),
+                    size_of::<libc::sockaddr>() as u32,
+                )
+            };
             break;
         }
         ifap_iter = unsafe { (*ifap_iter).ifa_next };
@@ -60,7 +68,7 @@ fn get_eth_interface() -> Result<String> {
     if ifname == "" {
         Err(anyhow!("no matching interface found"))
     } else {
-        Ok(ifname)
+        Ok((ifname, ifaddr))
     }
 }
 
@@ -106,8 +114,8 @@ fn handle_conn(
 
 fn main() -> Result<()> {
     // get ethernet interface
-    let ifname = get_eth_interface().context("could not get ethernet interface")?;
-    println!("detected ethernet interface: {}", ifname);
+    let (ifname, ifaddr) = get_eth_interface().context("could not get ethernet interface")?;
+    println!("detected ethernet interface: {}, {:?}", ifname, ifaddr);
 
     // set up ip socket in interface
     let mut ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
