@@ -38,12 +38,29 @@ fn get_eth_interface() -> Result<String> {
 fn handle_conn(conn_socket: &mut Socket, conn_addr: SockAddr) -> Result<()> {
     println!("handling connection from {:?}", conn_addr);
     let mut buf = vec![0u8; 65536].into_boxed_slice();
+
+    // define nat table data structure, likely hash table
+
     loop {
         let size = conn_socket
             .read(&mut buf)
             .context("failed to read from conn socket")?;
 
         println!("{:?}", &buf[0..size]);
+
+        // src_addr is assumed to be 127.0.0.1
+        // we only NAT (src_port, dst_addr, dst_port) tuple
+        // luckily fits in u64
+
+        // calculate key
+
+        // check if flow already exists
+
+        // if not assign a port and start tracking flow
+
+        // perform NAT
+
+        // forward
     }
 }
 
