@@ -75,6 +75,7 @@ fn handle_conn(
     conn_socket: &mut Socket,
     conn_addr: SockAddr,
     ip_socket: &mut Socket,
+    ifaddr: u32,
 ) -> Result<()> {
     println!("handling connection from {:?}", conn_addr);
     let mut buf = vec![0u8; 65535].into_boxed_slice();
@@ -103,7 +104,7 @@ fn handle_conn(
             continue;
         }
 
-        // TODO: replace src addr with interface addr
+        buf[12..16].clone_from_slice(&ifaddr.to_ne_bytes());
 
         ip_socket
             .send(&buf[0..size])
@@ -144,7 +145,7 @@ fn main() -> Result<()> {
             .accept()
             .context("failed to accept connection")?;
 
-        let res = handle_conn(&mut conn_socket, conn_addr, &mut ip_socket)
+        let res = handle_conn(&mut conn_socket, conn_addr, &mut ip_socket, ifaddr)
             .context("error while handling connection");
         println!(
             "{:?}",
