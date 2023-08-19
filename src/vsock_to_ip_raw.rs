@@ -34,6 +34,11 @@
 // NAT is stateless so they can work independently
 // vsock connections are independent as well
 
+// for incoming packets, we need to _intercept_ them and not just get a copy
+// raw sockets do the latter, therefore we go with iptables and nfqueue
+// iptables can be used to redirect packets to a nfqueue
+// we read it here, do NAT and forward onwards
+
 use std::ffi::CStr;
 use std::io::Read;
 
@@ -168,11 +173,6 @@ fn handle_conn(
             .context("failed to send packet")?;
     }
 }
-
-// for incoming packets, we need to _intercept_ them and not just get a copy
-// raw sockets do the latter, therefore we go with iptables and nfqueue
-// iptables can be used to redirect packets to a nfqueue
-// we read it here, do NAT and forward onwards
 
 fn handle_incoming(conn_socket: &mut Socket) -> Result<()> {
     let mut queue = Queue::open().context("failed to open nfqueue")?;
