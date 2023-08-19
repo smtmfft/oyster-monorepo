@@ -32,6 +32,7 @@ use std::io::Read;
 
 use anyhow::{anyhow, Context, Result};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
+use nfq::{Queue, Verdict};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 fn get_eth_interface() -> Result<(String, u32)> {
@@ -165,6 +166,21 @@ fn handle_conn(
 // raw sockets do the latter, therefore we go with iptables and nfqueue
 // iptables can be used to redirect packets to a nf queue
 // we read it here, do NAT and forward onwards
+
+fn handle_incoming(conn_socket: &mut Socket) -> Result<()> {
+    let mut queue = Queue::open().context("failed to open nfqueue")?;
+    queue.bind(0).context("failed to bind to nfqueue 0")?;
+
+    loop {
+        let mut msg = queue.recv().context("nfqueue recv error")?;
+
+        println!("{:?}", msg);
+
+        // conn_socket.send(msg);
+
+        msg.set_verdict(Verdict::Drop);
+    }
+}
 
 fn main() -> Result<()> {
     // get ethernet interface
