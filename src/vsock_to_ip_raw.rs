@@ -27,6 +27,13 @@
 // While this should not be an issue in most cases since ephemeral ports do not extend there
 // and most applications use ports lower than ephemeral, it _is_ a breaking change
 
+// threading model:
+// two threads total
+// one thread to handle packets coming from enclave going out
+// one thread to handle packets coming to enclave going in
+// NAT is stateless so they can work independently
+// vsock connections are independent as well
+
 use std::ffi::CStr;
 use std::io::Read;
 
@@ -164,7 +171,7 @@ fn handle_conn(
 
 // for incoming packets, we need to _intercept_ them and not just get a copy
 // raw sockets do the latter, therefore we go with iptables and nfqueue
-// iptables can be used to redirect packets to a nf queue
+// iptables can be used to redirect packets to a nfqueue
 // we read it here, do NAT and forward onwards
 
 fn handle_incoming(conn_socket: &mut Socket) -> Result<()> {
