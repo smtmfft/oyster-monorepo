@@ -161,6 +161,11 @@ fn handle_conn(
     }
 }
 
+// for incoming packets, we need to _intercept_ them and not just get a copy
+// raw sockets do the latter, therefore we go with iptables and nfqueue
+// iptables can be used to redirect packets to a nf queue
+// we read it here, do NAT and forward onwards
+
 fn main() -> Result<()> {
     // get ethernet interface
     let (ifname, ifaddr) = get_eth_interface().context("could not get ethernet interface")?;
