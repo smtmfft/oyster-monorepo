@@ -174,10 +174,7 @@ fn handle_conn_outgoing(
     }
 }
 
-fn handle_incoming(conn_socket: &mut Socket) -> Result<()> {
-    let mut queue = Queue::open().context("failed to open nfqueue")?;
-    queue.bind(0).context("failed to bind to nfqueue 0")?;
-
+fn handle_conn_incoming(conn_socket: &mut Socket, queue: &mut Queue) -> Result<()> {
     loop {
         let mut msg = queue.recv().context("nfqueue recv error")?;
 
@@ -191,17 +188,34 @@ fn handle_incoming(conn_socket: &mut Socket) -> Result<()> {
     }
 }
 
+fn handle_incoming(vsock_socket: Socket, mut queue: Queue) -> Result<()> {
+    loop {
+        let (mut conn_socket, _) = vsock_socket
+            .accept()
+            .context("failed to accept incoming connection")?;
+
+        let res = handle_conn_incoming(&mut conn_socket, &mut queue)
+            .context("error while handling incoming connection");
+        println!(
+            "{:?}",
+            res.err()
+                .unwrap_or(anyhow!("incoming connection closed gracefully"))
+        );
+    }
+}
+
 fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> Result<()> {
     loop {
         let (mut conn_socket, conn_addr) = vsock_socket
             .accept()
-            .context("failed to accept connection")?;
+            .context("failed to accept outgoing connection")?;
 
         let res = handle_conn_outgoing(&mut conn_socket, conn_addr, &mut ip_socket, ifaddr)
-            .context("error while handling connection");
+            .context("error while handling outgoing connection");
         println!(
             "{:?}",
-            res.err().unwrap_or(anyhow!("connection closed gracefully"))
+            res.err()
+                .unwrap_or(anyhow!("outgoing connection closed gracefully"))
         );
     }
 }
@@ -234,11 +248,27 @@ fn main() -> Result<()> {
         .listen(0)
         .context("failed to listen using outgoing vsock socket")?;
 
+    // nfqueue for incoming packets
+    let mut queue = Queue::open().context("failed to open nfqueue")?;
+    queue.bind(0).context("failed to bind to nfqueue 0")?;
+
+    // set up incoming vsock socket for incoming packets
+    let vsock_socket_incoming = Socket::new(Domain::VSOCK, Type::STREAM, None)
+        .context("failed to create incoming vsock socket")?;
+    vsock_socket_outgoing
+        .bind(&SockAddr::vsock(3, 1201))
+        .context("failed to bind incoming vsock socket")?;
+    vsock_socket_outgoing
+        .listen(0)
+        .context("failed to listen using incoming vsock socket")?;
+
     let outgoing_handle =
         std::thread::spawn(move || handle_outgoing(vsock_socket_outgoing, ip_socket, ifaddr));
+    let incoming_handle = std::thread::spawn(move || handle_incoming(vsock_socket_incoming, queue));
 
     // TODO: how are we supposed to handle this?
     let _ = outgoing_handle.join();
+    let _ = incoming_handle.join();
 
     Ok(())
 }
