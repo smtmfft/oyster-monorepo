@@ -84,7 +84,7 @@ fn get_eth_interface() -> Result<(String, u32)> {
     }
 }
 
-fn handle_conn(
+fn handle_conn_outgoing(
     conn_socket: &mut Socket,
     conn_addr: SockAddr,
     ip_socket: &mut Socket,
@@ -183,9 +183,26 @@ fn handle_incoming(conn_socket: &mut Socket) -> Result<()> {
 
         println!("{:?}", msg);
 
+        // NAT
+
         // conn_socket.send(msg);
 
         msg.set_verdict(Verdict::Drop);
+    }
+}
+
+fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> Result<()> {
+    loop {
+        let (mut conn_socket, conn_addr) = vsock_socket
+            .accept()
+            .context("failed to accept connection")?;
+
+        let res = handle_conn_outgoing(&mut conn_socket, conn_addr, &mut ip_socket, ifaddr)
+            .context("error while handling connection");
+        println!(
+            "{:?}",
+            res.err().unwrap_or(anyhow!("connection closed gracefully"))
+        );
     }
 }
 
@@ -194,8 +211,8 @@ fn main() -> Result<()> {
     let (ifname, ifaddr) = get_eth_interface().context("could not get ethernet interface")?;
     println!("detected ethernet interface: {}, {:#10x}", ifname, ifaddr);
 
-    // set up ip socket in interface
-    let mut ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
+    // set up ip socket for outgoing packets
+    let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
         .context("failed to create ip socket")?;
     ip_socket
         .bind_device(ifname.as_bytes().into())
@@ -207,26 +224,21 @@ fn main() -> Result<()> {
         .set_recv_buffer_size(0)
         .context("failed to shut down read side")?;
 
-    // set up vsock socket
-    let vsock_socket =
-        Socket::new(Domain::VSOCK, Type::STREAM, None).context("failed to create vsock socket")?;
-    vsock_socket
+    // set up outgoing vsock socket for outgoing packets
+    let vsock_socket_outgoing = Socket::new(Domain::VSOCK, Type::STREAM, None)
+        .context("failed to create outgoing vsock socket")?;
+    vsock_socket_outgoing
         .bind(&SockAddr::vsock(3, 1200))
-        .context("failed to bind vsock socket")?;
-    vsock_socket
+        .context("failed to bind outgoing vsock socket")?;
+    vsock_socket_outgoing
         .listen(0)
-        .context("failed to listen using vsock socket")?;
+        .context("failed to listen using outgoing vsock socket")?;
 
-    loop {
-        let (mut conn_socket, conn_addr) = vsock_socket
-            .accept()
-            .context("failed to accept connection")?;
+    let outgoing_handle =
+        std::thread::spawn(move || handle_outgoing(vsock_socket_outgoing, ip_socket, ifaddr));
 
-        let res = handle_conn(&mut conn_socket, conn_addr, &mut ip_socket, ifaddr)
-            .context("error while handling connection");
-        println!(
-            "{:?}",
-            res.err().unwrap_or(anyhow!("connection closed gracefully"))
-        );
-    }
+    // TODO: how are we supposed to handle this?
+    let _ = outgoing_handle.join();
+
+    Ok(())
 }
