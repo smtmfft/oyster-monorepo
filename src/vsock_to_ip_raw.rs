@@ -285,10 +285,10 @@ fn main() -> Result<()> {
     // set up incoming vsock socket for incoming packets
     let vsock_socket_incoming = Socket::new(Domain::VSOCK, Type::STREAM, None)
         .context("failed to create incoming vsock socket")?;
-    vsock_socket_outgoing
+    vsock_socket_incoming
         .bind(&SockAddr::vsock(3, 1201))
         .context("failed to bind incoming vsock socket")?;
-    vsock_socket_outgoing
+    vsock_socket_incoming
         .listen(0)
         .context("failed to listen using incoming vsock socket")?;
 
