@@ -171,6 +171,32 @@ fn handle_conn_outgoing(
 
         buf[12..16].clone_from_slice(&ifaddr.to_ne_bytes());
 
+        // TODO: tcp checksum has to be redone manually, figure out a way to offload
+        buf[ip_header_size + 16..ip_header_size + 18].clone_from_slice(&[0, 0]);
+        let mut csum = 0u32;
+        for i in (12..20).step_by(2) {
+            let word: u32 = u16::from_be_bytes(buf[i..i + 2].try_into().unwrap()).into();
+            csum += word;
+            println!("{:02x}, {:02x}", word, csum);
+        }
+        csum += u32::from(u16::from_be_bytes([0, buf[9]]));
+        csum += (size - ip_header_size) as u16 as u32;
+        for i in (ip_header_size..size - 1).step_by(2) {
+            let word: u32 = u16::from_be_bytes(buf[i..i + 2].try_into().unwrap()).into();
+            csum += word;
+            println!("{:02x}, {:02x}", word, csum);
+        }
+        if size % 2 == 1 {
+            csum += u32::from(u16::from_be_bytes([buf[size - 1], 0]));
+        }
+        csum = (csum >> 16) + (csum & 0xffff);
+        println!("{:02x}", csum);
+        csum = (csum >> 16) + (csum & 0xffff);
+        println!("{:02x}", csum);
+        csum = !csum;
+
+        buf[ip_header_size + 16..ip_header_size + 18].clone_from_slice(&csum.to_be_bytes()[2..4]);
+
         ip_socket
             .send_to(&buf[0..size], &external_addr)
             .context("failed to send packet")?;
