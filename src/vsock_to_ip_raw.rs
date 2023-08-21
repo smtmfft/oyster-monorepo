@@ -93,6 +93,9 @@ fn handle_conn_outgoing(
     println!("handling connection from {:?}", conn_addr);
     let mut buf = vec![0u8; 65535].into_boxed_slice();
 
+    // does not matter what the address is, just has to be a publicly routed address
+    let external_addr: SockAddr = "1.1.1.1:80".parse::<SocketAddrV4>().unwrap().into();
+
     loop {
         // read till total size
         conn_socket
@@ -169,7 +172,7 @@ fn handle_conn_outgoing(
         buf[12..16].clone_from_slice(&ifaddr.to_ne_bytes());
 
         ip_socket
-            .send(&buf[0..size])
+            .send_to(&buf[0..size], &external_addr)
             .context("failed to send packet")?;
     }
 }
