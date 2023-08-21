@@ -214,6 +214,7 @@ fn handle_conn_incoming(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(
         // conn_socket.send(msg);
 
         msg.set_verdict(Verdict::Drop);
+        queue.verdict(msg).context("failed to set verdict")?;
     }
 }
 
