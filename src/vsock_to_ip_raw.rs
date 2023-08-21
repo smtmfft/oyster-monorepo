@@ -208,8 +208,12 @@ fn handle_conn_incoming(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(
         // NAT
         payload[16..20].clone_from_slice(&0x7f000001u32.to_be_bytes());
 
-        // conn_socket.send(msg);
+        // send
+        conn_socket
+            .send(payload)
+            .context("failed to send incoming packet")?;
 
+        // verdicts
         msg.set_verdict(Verdict::Drop);
         queue.verdict(msg).context("failed to set verdict")?;
     }
