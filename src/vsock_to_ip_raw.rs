@@ -41,6 +41,7 @@
 
 use std::ffi::CStr;
 use std::io::Read;
+use std::net::SocketAddrV4;
 
 use anyhow::{anyhow, Context, Result};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
