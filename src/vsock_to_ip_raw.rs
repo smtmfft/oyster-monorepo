@@ -209,9 +209,13 @@ fn handle_conn_incoming(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(
         payload[16..20].clone_from_slice(&0x7f000001u32.to_be_bytes());
 
         // send
-        conn_socket
-            .send(payload)
-            .context("failed to send incoming packet")?;
+        let mut total_sent = 0;
+        while total_sent < payload.len() {
+            let size = conn_socket
+                .send(payload)
+                .context("failed to send incoming packet")?;
+            total_sent += size;
+        }
 
         // verdicts
         msg.set_verdict(Verdict::Drop);
