@@ -259,6 +259,9 @@ fn main() -> Result<()> {
     let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
         .context("failed to create ip socket")?;
     ip_socket
+        .set_header_included(true)
+        .context("failed to set IP_HDRINCL")?;
+    ip_socket
         .bind_device(ifname.as_bytes().into())
         .context("failed to bind ip socket")?;
 
