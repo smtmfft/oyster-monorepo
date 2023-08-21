@@ -203,8 +203,10 @@ fn handle_conn_incoming(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(
         let mut msg = queue.recv().context("nfqueue recv error")?;
 
         println!("{:?}", msg);
+        let payload = msg.get_payload_mut();
 
         // NAT
+        payload[16..20].clone_from_slice(&0x7f000001u32.to_be_bytes());
 
         // conn_socket.send(msg);
 
