@@ -93,8 +93,7 @@ fn handle_conn_outgoing(
     conn_addr: SockAddr,
     ip_socket: &mut Socket,
     ifaddr: u32,
-) -> anyhow::Result<()> {
-    println!("handling connection from {:?}", conn_addr);
+) -> Result<(), ProxyError> {
     let mut buf = vec![0u8; 65535].into_boxed_slice();
 
     // does not matter what the address is, just has to be a publicly routed address
@@ -104,14 +103,16 @@ fn handle_conn_outgoing(
         // read till total size
         conn_socket
             .read_exact(&mut buf[0..4])
-            .context("failed to read size from conn socket")?;
+            .map_err(SocketError::ReadError)
+            .map_err(ProxyError::VsockError)?;
 
         let size: usize = u16::from_be_bytes(buf[2..4].try_into().unwrap()).into();
 
         // read till full frame
         conn_socket
             .read_exact(&mut buf[4..size])
-            .context("failed to read frame from conn socket")?;
+            .map_err(SocketError::ReadError)
+            .map_err(ProxyError::VsockError)?;
 
         // get src and dst addr
         let src_addr = u32::from_be_bytes(buf[12..16].try_into().unwrap());
