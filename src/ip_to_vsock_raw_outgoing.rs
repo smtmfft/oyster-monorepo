@@ -38,14 +38,6 @@ fn handle_conn_outgoing(
     conn_socket: &mut Socket,
     ip_socket: &mut Socket,
 ) -> Result<(), ProxyError> {
-    conn_socket
-        .connect(&SockAddr::vsock(3, 1200))
-        .map_err(|e| SocketError::ConnectError {
-            addr: "3:1200".to_owned(),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-
     let mut buf = vec![0u8; 65535].into_boxed_slice();
     loop {
         // using read for now, investigate read_vectored for better perf
@@ -131,14 +123,7 @@ fn handle_conn_outgoing(
 // TODO: remove anyhow, use it only for main for pretty print
 fn handle_outgoing(mut ip_socket: Socket) -> anyhow::Result<()> {
     loop {
-        let mut vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
-            .map_err(|e| SocketError::CreateError {
-                domain: Domain::VSOCK,
-                r#type: Type::STREAM,
-                protocol: None,
-                source: e,
-            })
-            .map_err(ProxyError::VsockError)?;
+        let mut vsock_socket = new_vsock_socket(&SockAddr::vsock(3, 1200))?;
 
         let res = handle_conn_outgoing(&mut vsock_socket, &mut ip_socket)
             .context("error while handling outgoing connection");
@@ -148,6 +133,27 @@ fn handle_outgoing(mut ip_socket: Socket) -> anyhow::Result<()> {
                 .unwrap_or(anyhow!("outgoing connection closed gracefully"))
         );
     }
+}
+
+fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
+    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
+        .map_err(|e| SocketError::CreateError {
+            domain: Domain::VSOCK,
+            r#type: Type::STREAM,
+            protocol: None,
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+
+    vsock_socket
+        .connect(addr)
+        .map_err(|e| SocketError::ConnectError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+
+    Ok(vsock_socket)
 }
 
 fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
