@@ -22,3 +22,4 @@ anyhow = "1.0.73"
 libc = "0.2.147"
 nfq = "0.2.5"
 socket2 = { version = "0.5.3", features = ["all"] }
+thiserror = "1.0.47"
