@@ -42,10 +42,14 @@
 use std::ffi::CStr;
 use std::io::Read;
 use std::net::SocketAddrV4;
+use std::thread::sleep;
+use std::time::Duration;
 
 use anyhow::{anyhow, Context};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+
+use raw_proxy::{ProxyError, SocketError};
 
 fn get_eth_interface() -> anyhow::Result<(String, u32)> {
     let mut ifap: *mut ifaddrs = std::ptr::null_mut();
@@ -210,6 +214,47 @@ fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> 
             res.err()
                 .unwrap_or(anyhow!("outgoing connection closed gracefully"))
         );
+    }
+}
+
+fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
+    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
+        .map_err(|e| SocketError::CreateError {
+            domain: Domain::VSOCK,
+            r#type: Type::STREAM,
+            protocol: None,
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    vsock_socket
+        .bind(addr)
+        .map_err(|e| SocketError::BindError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    vsock_socket
+        .listen(0)
+        .map_err(|e| SocketError::ListenError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+
+    Ok(vsock_socket)
+}
+
+fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
+    loop {
+        match new_vsock_socket(addr) {
+            Ok(vsock_socket) => return vsock_socket,
+            Err(err) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                sleep(Duration::from_secs(*backoff));
+                *backoff = (*backoff * 2).clamp(1, 64);
+            }
+        };
     }
 }
 
