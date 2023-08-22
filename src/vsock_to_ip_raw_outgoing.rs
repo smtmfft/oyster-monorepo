@@ -195,9 +195,15 @@ fn handle_conn_outgoing(
 
         buf[ip_header_size + 16..ip_header_size + 18].clone_from_slice(&csum.to_be_bytes()[2..4]);
 
-        ip_socket
-            .send_to(&buf[0..size], &external_addr)
-            .context("failed to send packet")?;
+        // send
+        let mut total_sent = 0;
+        while total_sent < size {
+            let size = conn_socket
+                .send_to(&buf[total_sent..], &external_addr)
+                .map_err(SocketError::WriteError)
+                .map_err(ProxyError::NfqError)?;
+            total_sent += size;
+        }
     }
 }
 
