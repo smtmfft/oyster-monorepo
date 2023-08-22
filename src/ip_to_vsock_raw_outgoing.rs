@@ -244,6 +244,10 @@ fn main() -> anyhow::Result<()> {
                 // reset backoff on success
                 backoff = 1;
             }
+            Err(err) => {
+                // should never happen!
+                unreachable!("connection handler exited with unknown error {err:?}");
+            }
         }
     }
 }
