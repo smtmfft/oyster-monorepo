@@ -49,7 +49,7 @@ enum SocketError {
     CreateError {
         domain: Domain,
         r#type: Type,
-        protocol: Protocol,
+        protocol: Option<Protocol>,
         #[source]
         source: std::io::Error,
     },
@@ -141,7 +141,13 @@ fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Res
 fn handle_outgoing(mut ip_socket: Socket) -> Result<()> {
     loop {
         let mut vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
-            .context("failed to create vsock socket")?;
+            .map_err(|e| SocketError::CreateError {
+                domain: Domain::VSOCK,
+                r#type: Type::STREAM,
+                protocol: None,
+                source: e,
+            })
+            .map_err(ProxyError::VsockError)?;
 
         let res = handle_conn_outgoing(&mut vsock_socket, &mut ip_socket)
             .context("error while handling outgoing connection");
@@ -158,7 +164,7 @@ fn main() -> Result<()> {
         .map_err(|e| SocketError::CreateError {
             domain: Domain::IPV4,
             r#type: Type::RAW,
-            protocol: Protocol::TCP,
+            protocol: Protocol::TCP.into(),
             source: e,
         })
         .map_err(ProxyError::IpError)?;
