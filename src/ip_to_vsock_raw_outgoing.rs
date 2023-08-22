@@ -28,16 +28,14 @@
 // and most applications use ports lower than ephemeral, it _is_ a breaking change
 
 use std::io::Read;
+use std::thread::sleep;
+use std::time::Duration;
 
-use anyhow::{anyhow, Context};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 use raw_proxy::{ProxyError, SocketError};
 
-fn handle_conn_outgoing(
-    conn_socket: &mut Socket,
-    ip_socket: &mut Socket,
-) -> Result<(), ProxyError> {
+fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), ProxyError> {
     let mut buf = vec![0u8; 65535].into_boxed_slice();
     loop {
         // using read for now, investigate read_vectored for better perf
@@ -120,21 +118,6 @@ fn handle_conn_outgoing(
     }
 }
 
-// TODO: remove anyhow, use it only for main for pretty print
-fn handle_outgoing(mut ip_socket: Socket) -> anyhow::Result<()> {
-    loop {
-        let mut vsock_socket = new_vsock_socket(&SockAddr::vsock(3, 1200))?;
-
-        let res = handle_conn_outgoing(&mut vsock_socket, &mut ip_socket)
-            .context("error while handling outgoing connection");
-        println!(
-            "{:?}",
-            res.err()
-                .unwrap_or(anyhow!("outgoing connection closed gracefully"))
-        );
-    }
-}
-
 fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
     let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
         .map_err(|e| SocketError::CreateError {
@@ -176,8 +159,77 @@ fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
     Ok(ip_socket)
 }
 
-fn main() -> anyhow::Result<()> {
-    let ip_socket = new_ip_socket("lo")?;
+fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
+    loop {
+        match new_vsock_socket(addr) {
+            Ok(vsock_socket) => return vsock_socket,
+            Err(err) => {
+                println!("{:?}", anyhow::Error::from(err));
 
-    handle_outgoing(ip_socket)
+                sleep(Duration::from_secs(*backoff));
+                *backoff = (*backoff * 2).clamp(1, 64);
+            }
+        };
+    }
+}
+
+fn new_ip_socket_with_backoff(device: &str, backoff: &mut u64) -> Socket {
+    loop {
+        match new_ip_socket(device) {
+            Ok(ip_socket) => return ip_socket,
+            Err(err) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                sleep(Duration::from_secs(*backoff));
+                *backoff = (*backoff * 2).clamp(1, 64);
+            }
+        };
+    }
+}
+
+fn main() -> anyhow::Result<()> {
+    let mut backoff = 1u64;
+
+    // get ip socket
+    let device = "lo";
+    let mut ip_socket = new_ip_socket_with_backoff(device, &mut backoff);
+
+    // reset backoff on success
+    backoff = 1;
+
+    // get vsock socket
+    let vsock_addr = &SockAddr::vsock(3, 1200);
+    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
+
+    // reset backoff on success
+    backoff = 1;
+
+    loop {
+        // do proxying
+        // on errors, simply reset the erroring socket
+        match handle_conn(&mut vsock_socket, &mut ip_socket) {
+            Ok(_) => {
+                // should never happen!
+                unreachable!("connection handler exited without error");
+            }
+            Err(err @ ProxyError::IpError(_)) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                // get ip socket
+                ip_socket = new_ip_socket_with_backoff(device, &mut backoff);
+
+                // reset backoff on success
+                backoff = 1;
+            }
+            Err(err @ ProxyError::VsockError(_)) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                // get vsock socket
+                vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
+
+                // reset backoff on success
+                backoff = 1;
+            }
+        }
+    }
 }
