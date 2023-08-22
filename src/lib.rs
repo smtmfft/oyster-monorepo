@@ -54,4 +54,6 @@ pub enum SocketError {
     },
     #[error("unexpected eof")]
     EofError,
+    #[error("failed to open socket {0}")]
+    OpenError(String, #[source] std::io::Error),
 }
