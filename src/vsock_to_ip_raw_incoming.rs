@@ -86,10 +86,24 @@ fn handle_incoming(vsock_socket: Socket, mut queue: Queue) -> Result<()> {
     }
 }
 
-fn main() -> Result<()> {
+fn new_nfq() -> Result<Queue, ProxyError> {
+    let mut queue = Queue::open()
+        .map_err(|e| SocketError::OpenError("0".to_owned(), e))
+        .map_err(ProxyError::NfqError)?;
+    queue
+        .bind(0)
+        .map_err(|e| SocketError::BindError {
+            addr: "0".to_owned(),
+            source: e,
+        })
+        .map_err(ProxyError::NfqError)?;
+
+    Ok(queue)
+}
+
+fn main() -> anyhow::Result<()> {
     // nfqueue for incoming packets
-    let mut queue = Queue::open().context("failed to open nfqueue")?;
-    queue.bind(0).context("failed to bind to nfqueue 0")?;
+    let queue = new_nfq()?;
 
     // set up incoming vsock socket for incoming packets
     let vsock_socket_incoming = Socket::new(Domain::VSOCK, Type::STREAM, None)
