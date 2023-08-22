@@ -312,20 +312,10 @@ fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
     // set up ip socket for outgoing packets
-    let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
-        .context("failed to create ip socket")?;
-    ip_socket
-        .set_header_included(true)
-        .context("failed to set IP_HDRINCL")?;
-    ip_socket
-        .bind_device(ifname.as_bytes().into())
-        .context("failed to bind ip socket")?;
+    let ip_socket = new_ip_socket_with_backoff(&ifname, &mut backoff);
 
-    // shut down read side since we are only going to write
-    // set zero buffer instead of shutdown since latter was not working
-    ip_socket
-        .set_recv_buffer_size(0)
-        .context("failed to shut down read side")?;
+    // reset backoff on success
+    backoff = 1;
 
     // set up outgoing vsock socket for outgoing packets
     let vsock_socket = new_vsock_socket_with_backoff(&SockAddr::vsock(3, 1200), &mut backoff);
