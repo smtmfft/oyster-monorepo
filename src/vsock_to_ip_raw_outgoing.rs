@@ -207,22 +207,6 @@ fn handle_conn(
     }
 }
 
-fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> anyhow::Result<()> {
-    loop {
-        let (mut conn_socket, _) = vsock_socket
-            .accept()
-            .context("failed to accept outgoing connection")?;
-
-        let res = handle_conn(&mut conn_socket, &mut ip_socket, ifaddr)
-            .context("error while handling outgoing connection");
-        println!(
-            "{:?}",
-            res.err()
-                .unwrap_or(anyhow!("outgoing connection closed gracefully"))
-        );
-    }
-}
-
 fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
     let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
         .map_err(|e| SocketError::CreateError {
