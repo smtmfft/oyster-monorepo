@@ -101,9 +101,28 @@ fn new_nfq() -> Result<Queue, ProxyError> {
     Ok(queue)
 }
 
+fn new_nfq_with_backoff(backoff: &mut u64) -> Queue {
+    loop {
+        match new_nfq() {
+            Ok(queue) => return queue,
+            Err(err) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                sleep(Duration::from_secs(*backoff));
+                *backoff = (*backoff * 2).clamp(1, 64);
+            }
+        };
+    }
+}
+
 fn main() -> anyhow::Result<()> {
+    let mut backoff = 1u64;
+
     // nfqueue for incoming packets
-    let queue = new_nfq()?;
+    let queue = new_nfq_with_backoff(&mut backoff);
+
+    // reset backoff on success
+    backoff = 1;
 
     // set up incoming vsock socket for incoming packets
     let vsock_socket_incoming = Socket::new(Domain::VSOCK, Type::STREAM, None)
