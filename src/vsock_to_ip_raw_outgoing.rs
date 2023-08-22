@@ -43,11 +43,11 @@ use std::ffi::CStr;
 use std::io::Read;
 use std::net::SocketAddrV4;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
-fn get_eth_interface() -> Result<(String, u32)> {
+fn get_eth_interface() -> anyhow::Result<(String, u32)> {
     let mut ifap: *mut ifaddrs = std::ptr::null_mut();
     let res = unsafe { getifaddrs(&mut ifap) };
 
@@ -89,7 +89,7 @@ fn handle_conn_outgoing(
     conn_addr: SockAddr,
     ip_socket: &mut Socket,
     ifaddr: u32,
-) -> Result<()> {
+) -> anyhow::Result<()> {
     println!("handling connection from {:?}", conn_addr);
     let mut buf = vec![0u8; 65535].into_boxed_slice();
 
@@ -197,7 +197,7 @@ fn handle_conn_outgoing(
     }
 }
 
-fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> Result<()> {
+fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> anyhow::Result<()> {
     loop {
         let (mut conn_socket, conn_addr) = vsock_socket
             .accept()
@@ -213,7 +213,7 @@ fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> 
     }
 }
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     // get ethernet interface
     let (ifname, ifaddr) = get_eth_interface().context("could not get ethernet interface")?;
     println!("detected ethernet interface: {}, {:#10x}", ifname, ifaddr);
