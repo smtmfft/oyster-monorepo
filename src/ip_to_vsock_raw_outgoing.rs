@@ -36,7 +36,9 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 enum ProxyError {
     #[error("ip socket error")]
-    IpError(#[from] SocketError),
+    IpError(#[source] SocketError),
+    #[error("vsock socket error")]
+    VsockError(#[source] SocketError),
 }
 
 #[derive(Error, Debug)]
