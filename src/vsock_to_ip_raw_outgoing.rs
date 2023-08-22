@@ -88,7 +88,7 @@ fn get_eth_interface() -> anyhow::Result<(String, u32)> {
     }
 }
 
-fn handle_conn_outgoing(
+fn handle_conn(
     conn_socket: &mut Socket,
     ip_socket: &mut Socket,
     ifaddr: u32,
@@ -213,7 +213,7 @@ fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> 
             .accept()
             .context("failed to accept outgoing connection")?;
 
-        let res = handle_conn_outgoing(&mut conn_socket, &mut ip_socket, ifaddr)
+        let res = handle_conn(&mut conn_socket, &mut ip_socket, ifaddr)
             .context("error while handling outgoing connection");
         println!(
             "{:?}",
@@ -355,16 +355,55 @@ fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
     // set up ip socket for outgoing packets
-    let ip_socket = new_ip_socket_with_backoff(&ifname, &mut backoff);
+    let mut ip_socket = new_ip_socket_with_backoff(&ifname, &mut backoff);
 
     // reset backoff on success
     backoff = 1;
 
     // set up outgoing vsock socket for outgoing packets
-    let vsock_socket = new_vsock_socket_with_backoff(&SockAddr::vsock(3, 1200), &mut backoff);
+    let vsock_addr = &SockAddr::vsock(3, 1201);
+    let vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
 
     // reset backoff on success
     backoff = 1;
 
-    handle_outgoing(vsock_socket, ip_socket, ifaddr)
+    // get conn socket
+    let mut conn_socket = accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+
+    // reset backoff on success
+    backoff = 1;
+
+    loop {
+        // do proxying
+        // on errors, simply reset the erroring socket
+        match handle_conn(&mut conn_socket, &mut ip_socket, ifaddr) {
+            Ok(_) => {
+                // should never happen!
+                unreachable!("connection handler exited without error");
+            }
+            Err(err @ ProxyError::IpError(_)) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                // get ip socket
+                ip_socket = new_ip_socket_with_backoff(&ifname, &mut backoff);
+
+                // reset backoff on success
+                backoff = 1;
+            }
+            Err(err @ ProxyError::VsockError(_)) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                // get conn socket
+                conn_socket =
+                    accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+
+                // reset backoff on success
+                backoff = 1;
+            }
+            Err(err) => {
+                // should never happen!
+                unreachable!("connection handler exited with unknown error {err:?}");
+            }
+        }
+    }
 }
