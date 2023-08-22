@@ -65,4 +65,6 @@ pub enum SocketError {
     OpenError(String, #[source] std::io::Error),
     #[error("failed to set verdict {0:?}")]
     VerdictError(Verdict, #[source] std::io::Error),
+    #[error("failed to set option {0}")]
+    OptionError(String, #[source] std::io::Error),
 }
