@@ -59,12 +59,22 @@ enum SocketError {
         #[source]
         source: std::io::Error,
     },
+    #[error("failed to connect socket to {addr}")]
+    ConnectError {
+        addr: String,
+        #[source]
+        source: std::io::Error,
+    },
 }
 
 fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<()> {
     conn_socket
         .connect(&SockAddr::vsock(3, 1200))
-        .context("failed to connect vsock socket")?;
+        .map_err(|e| SocketError::ConnectError {
+            addr: "3:1200".to_owned(),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
 
     let mut buf = vec![0u8; 65535].into_boxed_slice();
     loop {
