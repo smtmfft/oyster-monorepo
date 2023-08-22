@@ -90,7 +90,6 @@ fn get_eth_interface() -> anyhow::Result<(String, u32)> {
 
 fn handle_conn_outgoing(
     conn_socket: &mut Socket,
-    conn_addr: SockAddr,
     ip_socket: &mut Socket,
     ifaddr: u32,
 ) -> Result<(), ProxyError> {
@@ -210,11 +209,11 @@ fn handle_conn_outgoing(
 
 fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> anyhow::Result<()> {
     loop {
-        let (mut conn_socket, conn_addr) = vsock_socket
+        let (mut conn_socket, _) = vsock_socket
             .accept()
             .context("failed to accept outgoing connection")?;
 
-        let res = handle_conn_outgoing(&mut conn_socket, conn_addr, &mut ip_socket, ifaddr)
+        let res = handle_conn_outgoing(&mut conn_socket, &mut ip_socket, ifaddr)
             .context("error while handling outgoing connection");
         println!(
             "{:?}",
