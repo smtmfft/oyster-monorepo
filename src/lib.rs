@@ -36,6 +36,12 @@ pub enum SocketError {
         #[source]
         source: std::io::Error,
     },
+    #[error("failed to accept with socket on {addr}")]
+    AcceptError {
+        addr: String,
+        #[source]
+        source: std::io::Error,
+    },
     #[error("failed to connect socket to {addr}")]
     ConnectError {
         addr: String,
