@@ -30,6 +30,12 @@ pub enum SocketError {
         #[source]
         source: std::io::Error,
     },
+    #[error("failed to listen with socket on {addr}")]
+    ListenError {
+        addr: String,
+        #[source]
+        source: std::io::Error,
+    },
     #[error("failed to connect socket to {addr}")]
     ConnectError {
         addr: String,
