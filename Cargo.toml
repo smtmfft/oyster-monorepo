@@ -3,6 +3,10 @@ name = "raw-proxy"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "raw_proxy"
+path = "src/lib.rs"
+
 [[bin]]
 name = "ip-to-vsock-raw-outgoing"
 path = "src/ip_to_vsock_raw_outgoing.rs"

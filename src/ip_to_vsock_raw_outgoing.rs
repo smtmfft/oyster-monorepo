@@ -31,47 +31,8 @@ use std::io::Read;
 
 use anyhow::{anyhow, Context, Result};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use thiserror::Error;
 
-#[derive(Error, Debug)]
-enum ProxyError {
-    #[error("ip socket error")]
-    IpError(#[source] SocketError),
-    #[error("vsock socket error")]
-    VsockError(#[source] SocketError),
-}
-
-#[derive(Error, Debug)]
-enum SocketError {
-    #[error(
-        "failed to create socket with domain {domain:?}, type {r#type:?}, protocol {protocol:?}"
-    )]
-    CreateError {
-        domain: Domain,
-        r#type: Type,
-        protocol: Option<Protocol>,
-        #[source]
-        source: std::io::Error,
-    },
-    #[error("failed to bind socket to {addr}")]
-    BindError {
-        addr: String,
-        #[source]
-        source: std::io::Error,
-    },
-    #[error("failed to connect socket to {addr}")]
-    ConnectError {
-        addr: String,
-        #[source]
-        source: std::io::Error,
-    },
-    #[error("failed to read from socket")]
-    ReadError(#[source] std::io::Error),
-    #[error("failed to write to socket")]
-    WriteError(#[source] std::io::Error),
-    #[error("unexpected eof")]
-    EofError,
-}
+use raw_proxy::{ProxyError, SocketError};
 
 fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<()> {
     conn_socket
