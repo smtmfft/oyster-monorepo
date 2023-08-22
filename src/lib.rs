@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+use nfq::Verdict;
 use socket2::{Domain, Protocol, Type};
 
 #[derive(Error, Debug)]
@@ -62,4 +63,6 @@ pub enum SocketError {
     EofError,
     #[error("failed to open socket {0}")]
     OpenError(String, #[source] std::io::Error),
+    #[error("failed to set verdict {0:?}")]
+    VerdictError(Verdict, #[source] std::io::Error),
 }
