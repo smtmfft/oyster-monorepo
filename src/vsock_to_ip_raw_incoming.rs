@@ -39,13 +39,20 @@
 // iptables can be used to redirect packets to a nfqueue
 // we read it here, do NAT and forward onwards
 
-use anyhow::{anyhow, Context, Result};
+use std::thread::sleep;
+use std::time::Duration;
+
 use nfq::{Queue, Verdict};
 use socket2::{Domain, SockAddr, Socket, Type};
 
-fn handle_conn_incoming(conn_socket: &mut Socket, queue: &mut Queue) -> Result<()> {
+use raw_proxy::{ProxyError, SocketError};
+
+fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
-        let mut msg = queue.recv().context("nfqueue recv error")?;
+        let mut msg = queue
+            .recv()
+            .map_err(SocketError::ReadError)
+            .map_err(ProxyError::NfqError)?;
 
         println!("{:?}", msg);
         let payload = msg.get_payload_mut();
@@ -60,29 +67,17 @@ fn handle_conn_incoming(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(
         while total_sent < payload.len() {
             let size = conn_socket
                 .send(payload)
-                .context("failed to send incoming packet")?;
+                .map_err(SocketError::WriteError)
+                .map_err(ProxyError::NfqError)?;
             total_sent += size;
         }
 
         // verdicts
         msg.set_verdict(Verdict::Drop);
-        queue.verdict(msg).context("failed to set verdict")?;
-    }
-}
-
-fn handle_incoming(vsock_socket: Socket, mut queue: Queue) -> Result<()> {
-    loop {
-        let (mut conn_socket, _) = vsock_socket
-            .accept()
-            .context("failed to accept incoming connection")?;
-
-        let res = handle_conn_incoming(&mut conn_socket, &mut queue)
-            .context("error while handling incoming connection");
-        println!(
-            "{:?}",
-            res.err()
-                .unwrap_or(anyhow!("incoming connection closed gracefully"))
-        );
+        queue
+            .verdict(msg)
+            .map_err(|e| SocketError::VerdictError(Verdict::Drop, e))
+            .map_err(ProxyError::NfqError)?;
     }
 }
 
@@ -157,7 +152,7 @@ fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
 }
 
 fn accept_vsock_conn(addr: &SockAddr, vsock_socket: &Socket) -> Result<Socket, ProxyError> {
-    let (mut conn_socket, _) = vsock_socket
+    let (conn_socket, _) = vsock_socket
         .accept()
         .map_err(|e| SocketError::AcceptError {
             addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
@@ -190,7 +185,7 @@ fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
     // nfqueue for incoming packets
-    let queue = new_nfq_with_backoff(&mut backoff);
+    let mut queue = new_nfq_with_backoff(&mut backoff);
 
     // reset backoff on success
     backoff = 1;
@@ -211,7 +206,7 @@ fn main() -> anyhow::Result<()> {
     loop {
         // do proxying
         // on errors, simply reset the erroring socket
-        match handle_conn(&mut vsock_socket, &mut queue) {
+        match handle_conn(&mut conn_socket, &mut queue) {
             Ok(_) => {
                 // should never happen!
                 unreachable!("connection handler exited without error");
