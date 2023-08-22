@@ -142,6 +142,20 @@ fn new_nfq_with_backoff(backoff: &mut u64) -> Queue {
     }
 }
 
+fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
+    loop {
+        match new_vsock_socket(addr) {
+            Ok(vsock_socket) => return vsock_socket,
+            Err(err) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                sleep(Duration::from_secs(*backoff));
+                *backoff = (*backoff * 2).clamp(1, 64);
+            }
+        };
+    }
+}
+
 fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
@@ -153,7 +167,10 @@ fn main() -> anyhow::Result<()> {
 
     // set up incoming vsock socket for incoming packets
     let vsock_addr = &SockAddr::vsock(3, 1201);
-    let vsock_socket = new_vsock_socket(vsock_addr)?;
+    let vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
+
+    // reset backoff on success
+    backoff = 1;
 
     handle_incoming(vsock_socket_incoming, queue)
 }
