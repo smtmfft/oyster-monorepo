@@ -152,6 +152,13 @@ fn accept_vsock_conn(addr: &SockAddr, vsock_socket: &Socket) -> Result<Socket, P
             source: e,
         })
         .map_err(ProxyError::VsockError)?;
+    conn_socket
+        .shutdown(std::net::Shutdown::Read)
+        .map_err(|e| SocketError::ShutdownError {
+            side: std::net::Shutdown::Read,
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
 
     Ok(conn_socket)
 }
