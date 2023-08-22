@@ -45,7 +45,6 @@ use std::net::SocketAddrV4;
 
 use anyhow::{anyhow, Context, Result};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
-use nfq::{Queue, Verdict};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 fn get_eth_interface() -> Result<(String, u32)> {
@@ -198,47 +197,6 @@ fn handle_conn_outgoing(
     }
 }
 
-fn handle_conn_incoming(conn_socket: &mut Socket, queue: &mut Queue) -> Result<()> {
-    loop {
-        let mut msg = queue.recv().context("nfqueue recv error")?;
-
-        println!("{:?}", msg);
-        let payload = msg.get_payload_mut();
-
-        // NAT
-        payload[16..20].clone_from_slice(&0x7f000001u32.to_be_bytes());
-
-        // send
-        let mut total_sent = 0;
-        while total_sent < payload.len() {
-            let size = conn_socket
-                .send(payload)
-                .context("failed to send incoming packet")?;
-            total_sent += size;
-        }
-
-        // verdicts
-        msg.set_verdict(Verdict::Drop);
-        queue.verdict(msg).context("failed to set verdict")?;
-    }
-}
-
-fn handle_incoming(vsock_socket: Socket, mut queue: Queue) -> Result<()> {
-    loop {
-        let (mut conn_socket, _) = vsock_socket
-            .accept()
-            .context("failed to accept incoming connection")?;
-
-        let res = handle_conn_incoming(&mut conn_socket, &mut queue)
-            .context("error while handling incoming connection");
-        println!(
-            "{:?}",
-            res.err()
-                .unwrap_or(anyhow!("incoming connection closed gracefully"))
-        );
-    }
-}
-
 fn handle_outgoing(vsock_socket: Socket, mut ip_socket: Socket, ifaddr: u32) -> Result<()> {
     loop {
         let (mut conn_socket, conn_addr) = vsock_socket
@@ -286,27 +244,5 @@ fn main() -> Result<()> {
         .listen(0)
         .context("failed to listen using outgoing vsock socket")?;
 
-    // nfqueue for incoming packets
-    let mut queue = Queue::open().context("failed to open nfqueue")?;
-    queue.bind(0).context("failed to bind to nfqueue 0")?;
-
-    // set up incoming vsock socket for incoming packets
-    let vsock_socket_incoming = Socket::new(Domain::VSOCK, Type::STREAM, None)
-        .context("failed to create incoming vsock socket")?;
-    vsock_socket_incoming
-        .bind(&SockAddr::vsock(3, 1201))
-        .context("failed to bind incoming vsock socket")?;
-    vsock_socket_incoming
-        .listen(0)
-        .context("failed to listen using incoming vsock socket")?;
-
-    let outgoing_handle =
-        std::thread::spawn(move || handle_outgoing(vsock_socket_outgoing, ip_socket, ifaddr));
-    let incoming_handle = std::thread::spawn(move || handle_incoming(vsock_socket_incoming, queue));
-
-    // TODO: how are we supposed to handle this?
-    let _ = outgoing_handle.join();
-    let _ = incoming_handle.join();
-
-    Ok(())
+    handle_outgoing(vsock_socket_outgoing, ip_socket, ifaddr)
 }
