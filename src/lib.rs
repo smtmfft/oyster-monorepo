@@ -38,6 +38,12 @@ pub enum SocketError {
     ReadError(#[source] std::io::Error),
     #[error("failed to write to socket")]
     WriteError(#[source] std::io::Error),
+    #[error("failed to shutdown {side:?}")]
+    ShutdownError {
+        side: std::net::Shutdown,
+        #[source]
+        source: std::io::Error,
+    },
     #[error("unexpected eof")]
     EofError,
 }

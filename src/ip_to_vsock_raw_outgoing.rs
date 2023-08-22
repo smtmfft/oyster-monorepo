@@ -127,11 +127,17 @@ fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
             source: e,
         })
         .map_err(ProxyError::VsockError)?;
-
     vsock_socket
         .connect(addr)
         .map_err(|e| SocketError::ConnectError {
             addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    vsock_socket
+        .shutdown(std::net::Shutdown::Read)
+        .map_err(|e| SocketError::ShutdownError {
+            side: std::net::Shutdown::Read,
             source: e,
         })
         .map_err(ProxyError::VsockError)?;
@@ -152,6 +158,14 @@ fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
         .bind_device(device.as_bytes().into())
         .map_err(|e| SocketError::BindError {
             addr: device.to_owned(),
+            source: e,
+        })
+        .map_err(ProxyError::IpError)?;
+    // shutdown does not work since socket is not connected, set send buffer to 0 instead
+    ip_socket
+        .set_send_buffer_size(0)
+        .map_err(|e| SocketError::ShutdownError {
+            side: std::net::Shutdown::Write,
             source: e,
         })
         .map_err(ProxyError::IpError)?;
