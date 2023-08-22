@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "ip-to-vsock-raw"
-path = "src/ip_to_vsock_raw.rs"
+name = "ip-to-vsock-raw-outgoing"
+path = "src/ip_to_vsock_raw_outgoing.rs"
 
 [[bin]]
 name = "vsock-to-ip-raw-incoming"
