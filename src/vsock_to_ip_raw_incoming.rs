@@ -202,5 +202,43 @@ fn main() -> anyhow::Result<()> {
     // reset backoff on success
     backoff = 1;
 
-    handle_incoming(vsock_socket_incoming, queue)
+    // get conn socket
+    let mut conn_socket = accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+
+    // reset backoff on success
+    backoff = 1;
+
+    loop {
+        // do proxying
+        // on errors, simply reset the erroring socket
+        match handle_conn(&mut vsock_socket, &mut queue) {
+            Ok(_) => {
+                // should never happen!
+                unreachable!("connection handler exited without error");
+            }
+            Err(err @ ProxyError::NfqError(_)) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                // get nfqueue
+                queue = new_nfq_with_backoff(&mut backoff);
+
+                // reset backoff on success
+                backoff = 1;
+            }
+            Err(err @ ProxyError::VsockError(_)) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                // get conn socket
+                conn_socket =
+                    accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+
+                // reset backoff on success
+                backoff = 1;
+            }
+            Err(err) => {
+                // should never happen!
+                unreachable!("connection handler exited with unknown error {err:?}");
+            }
+        }
+    }
 }
