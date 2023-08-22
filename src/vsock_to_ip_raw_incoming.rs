@@ -101,6 +101,33 @@ fn new_nfq() -> Result<Queue, ProxyError> {
     Ok(queue)
 }
 
+fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
+    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
+        .map_err(|e| SocketError::CreateError {
+            domain: Domain::VSOCK,
+            r#type: Type::STREAM,
+            protocol: None,
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    vsock_socket
+        .bind(addr)
+        .map_err(|e| SocketError::BindError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    vsock_socket
+        .listen(0)
+        .map_err(|e| SocketError::ListenError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+
+    Ok(vsock_socket)
+}
+
 fn new_nfq_with_backoff(backoff: &mut u64) -> Queue {
     loop {
         match new_nfq() {
@@ -125,14 +152,8 @@ fn main() -> anyhow::Result<()> {
     backoff = 1;
 
     // set up incoming vsock socket for incoming packets
-    let vsock_socket_incoming = Socket::new(Domain::VSOCK, Type::STREAM, None)
-        .context("failed to create incoming vsock socket")?;
-    vsock_socket_incoming
-        .bind(&SockAddr::vsock(3, 1201))
-        .context("failed to bind incoming vsock socket")?;
-    vsock_socket_incoming
-        .listen(0)
-        .context("failed to listen using incoming vsock socket")?;
+    let vsock_addr = &SockAddr::vsock(3, 1201);
+    let vsock_socket = new_vsock_socket(vsock_addr)?;
 
     handle_incoming(vsock_socket_incoming, queue)
 }
