@@ -263,6 +263,8 @@ fn main() -> anyhow::Result<()> {
     let (ifname, ifaddr) = get_eth_interface().context("could not get ethernet interface")?;
     println!("detected ethernet interface: {}, {:#10x}", ifname, ifaddr);
 
+    let mut backoff = 1u64;
+
     // set up ip socket for outgoing packets
     let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
         .context("failed to create ip socket")?;
@@ -280,14 +282,10 @@ fn main() -> anyhow::Result<()> {
         .context("failed to shut down read side")?;
 
     // set up outgoing vsock socket for outgoing packets
-    let vsock_socket_outgoing = Socket::new(Domain::VSOCK, Type::STREAM, None)
-        .context("failed to create outgoing vsock socket")?;
-    vsock_socket_outgoing
-        .bind(&SockAddr::vsock(3, 1200))
-        .context("failed to bind outgoing vsock socket")?;
-    vsock_socket_outgoing
-        .listen(0)
-        .context("failed to listen using outgoing vsock socket")?;
+    let vsock_socket = new_vsock_socket_with_backoff(&SockAddr::vsock(3, 1200), &mut backoff);
 
-    handle_outgoing(vsock_socket_outgoing, ip_socket, ifaddr)
+    // reset backoff on success
+    backoff = 1;
+
+    handle_outgoing(vsock_socket, ip_socket, ifaddr)
 }
