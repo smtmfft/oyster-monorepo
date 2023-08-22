@@ -150,7 +150,7 @@ fn handle_outgoing(mut ip_socket: Socket) -> anyhow::Result<()> {
     }
 }
 
-fn main() -> anyhow::Result<()> {
+fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
     let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
         .map_err(|e| SocketError::CreateError {
             domain: Domain::IPV4,
@@ -160,12 +160,18 @@ fn main() -> anyhow::Result<()> {
         })
         .map_err(ProxyError::IpError)?;
     ip_socket
-        .bind_device("lo".as_bytes().into())
+        .bind_device(device.as_bytes().into())
         .map_err(|e| SocketError::BindError {
-            addr: "lo".to_owned(),
+            addr: device.to_owned(),
             source: e,
         })
         .map_err(ProxyError::IpError)?;
+
+    Ok(ip_socket)
+}
+
+fn main() -> anyhow::Result<()> {
+    let ip_socket = new_ip_socket("lo")?;
 
     handle_outgoing(ip_socket)
 }
