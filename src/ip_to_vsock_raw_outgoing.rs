@@ -65,6 +65,8 @@ enum SocketError {
         #[source]
         source: std::io::Error,
     },
+    #[error("failed to read from socket")]
+    ReadError(#[source] std::io::Error),
 }
 
 fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<()> {
@@ -79,7 +81,10 @@ fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Res
     let mut buf = vec![0u8; 65535].into_boxed_slice();
     loop {
         // using read for now, investigate read_vectored for better perf
-        let size = ip_socket.read(&mut buf)?;
+        let size = ip_socket
+            .read(&mut buf)
+            .map_err(SocketError::ReadError)
+            .map_err(ProxyError::IpError)?;
 
         // get src and dst addr
         let src_addr = u32::from_be_bytes(buf[12..16].try_into().unwrap());
