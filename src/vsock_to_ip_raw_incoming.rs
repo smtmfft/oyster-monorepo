@@ -156,6 +156,36 @@ fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
     }
 }
 
+fn accept_vsock_conn(addr: &SockAddr, vsock_socket: &Socket) -> Result<Socket, ProxyError> {
+    let (mut conn_socket, _) = vsock_socket
+        .accept()
+        .map_err(|e| SocketError::AcceptError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+
+    Ok(conn_socket)
+}
+
+fn accept_vsock_conn_with_backoff(
+    addr: &SockAddr,
+    vsock_socket: &Socket,
+    backoff: &mut u64,
+) -> Socket {
+    loop {
+        match accept_vsock_conn(addr, vsock_socket) {
+            Ok(vsock_socket) => return vsock_socket,
+            Err(err) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                sleep(Duration::from_secs(*backoff));
+                *backoff = (*backoff * 2).clamp(1, 64);
+            }
+        };
+    }
+}
+
 fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
