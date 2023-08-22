@@ -29,21 +29,13 @@
 
 use std::io::Read;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
-fn main() -> Result<()> {
-    let vsock_socket =
-        Socket::new(Domain::VSOCK, Type::STREAM, None).context("failed to create vsock socket")?;
-    vsock_socket
+fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<()> {
+    conn_socket
         .connect(&SockAddr::vsock(3, 1200))
         .context("failed to connect vsock socket")?;
-
-    let mut ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
-        .context("failed to create ip socket")?;
-    ip_socket
-        .bind_device("lo".as_bytes().into())
-        .context("failed to bind ip socket")?;
 
     let mut buf = vec![0u8; 65535].into_boxed_slice();
     loop {
@@ -111,8 +103,33 @@ fn main() -> Result<()> {
         // send through vsock
         let mut total_sent = 0;
         while total_sent < size {
-            let size = vsock_socket.send(&buf[total_sent..size])?;
+            let size = conn_socket.send(&buf[total_sent..size])?;
             total_sent += size;
         }
     }
+}
+
+fn handle_outgoing(mut ip_socket: Socket) -> Result<()> {
+    loop {
+        let mut vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
+            .context("failed to create vsock socket")?;
+
+        let res = handle_conn_outgoing(&mut vsock_socket, &mut ip_socket)
+            .context("error while handling outgoing connection");
+        println!(
+            "{:?}",
+            res.err()
+                .unwrap_or(anyhow!("outgoing connection closed gracefully"))
+        );
+    }
+}
+
+fn main() -> Result<()> {
+    let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
+        .context("failed to create ip socket")?;
+    ip_socket
+        .bind_device("lo".as_bytes().into())
+        .context("failed to bind ip socket")?;
+
+    handle_outgoing(ip_socket)
 }
