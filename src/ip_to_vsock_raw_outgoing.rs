@@ -41,9 +41,18 @@ enum ProxyError {
 
 #[derive(Error, Debug)]
 enum SocketError {
-    #[error("failed to bind {id} to {addr}")]
+    #[error(
+        "failed to create socket with domain {domain:?}, type {r#type:?}, protocol {protocol:?}"
+    )]
+    CreateError {
+        domain: Domain,
+        r#type: Type,
+        protocol: Protocol,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error("failed to bind socket to {addr}")]
     BindError {
-        id: String,
         addr: String,
         #[source]
         source: std::io::Error,
@@ -144,11 +153,16 @@ fn handle_outgoing(mut ip_socket: Socket) -> Result<()> {
 
 fn main() -> Result<()> {
     let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
-        .context("failed to create ip socket")?;
+        .map_err(|e| SocketError::CreateError {
+            domain: Domain::IPV4,
+            r#type: Type::RAW,
+            protocol: Protocol::TCP,
+            source: e,
+        })
+        .map_err(ProxyError::IpError)?;
     ip_socket
         .bind_device("lo".as_bytes().into())
         .map_err(|e| SocketError::BindError {
-            id: "ip socket".to_owned(),
             addr: "lo".to_owned(),
             source: e,
         })
