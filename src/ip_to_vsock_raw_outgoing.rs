@@ -69,6 +69,8 @@ enum SocketError {
     ReadError(#[source] std::io::Error),
     #[error("failed to write to socket")]
     WriteError(#[source] std::io::Error),
+    #[error("unexpected eof")]
+    EofError,
 }
 
 fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<()> {
@@ -87,6 +89,10 @@ fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Res
             .read(&mut buf)
             .map_err(SocketError::ReadError)
             .map_err(ProxyError::IpError)?;
+
+        if size == 0 {
+            Err(SocketError::EofError).map_err(ProxyError::IpError)?;
+        }
 
         // get src and dst addr
         let src_addr = u32::from_be_bytes(buf[12..16].try_into().unwrap());
