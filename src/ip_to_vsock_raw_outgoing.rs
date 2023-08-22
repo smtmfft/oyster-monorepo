@@ -67,6 +67,8 @@ enum SocketError {
     },
     #[error("failed to read from socket")]
     ReadError(#[source] std::io::Error),
+    #[error("failed to write to socket")]
+    WriteError(#[source] std::io::Error),
 }
 
 fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<()> {
@@ -147,7 +149,10 @@ fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Res
         // send through vsock
         let mut total_sent = 0;
         while total_sent < size {
-            let size = conn_socket.send(&buf[total_sent..size])?;
+            let size = conn_socket
+                .send(&buf[total_sent..size])
+                .map_err(SocketError::WriteError)
+                .map_err(ProxyError::IpError)?;
             total_sent += size;
         }
     }
