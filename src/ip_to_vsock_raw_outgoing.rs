@@ -31,6 +31,24 @@ use std::io::Read;
 
 use anyhow::{anyhow, Context, Result};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+enum ProxyError {
+    #[error("ip socket error")]
+    IpError(#[from] SocketError),
+}
+
+#[derive(Error, Debug)]
+enum SocketError {
+    #[error("failed to bind {id} to {addr}")]
+    BindError {
+        id: String,
+        addr: String,
+        #[source]
+        source: std::io::Error,
+    },
+}
 
 fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<()> {
     conn_socket
@@ -129,7 +147,12 @@ fn main() -> Result<()> {
         .context("failed to create ip socket")?;
     ip_socket
         .bind_device("lo".as_bytes().into())
-        .context("failed to bind ip socket")?;
+        .map_err(|e| SocketError::BindError {
+            id: "ip socket".to_owned(),
+            addr: "lo".to_owned(),
+            source: e,
+        })
+        .map_err(ProxyError::IpError)?;
 
     handle_outgoing(ip_socket)
 }
