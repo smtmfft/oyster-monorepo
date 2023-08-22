@@ -8,8 +8,12 @@ name = "ip-to-vsock-raw"
 path = "src/ip_to_vsock_raw.rs"
 
 [[bin]]
-name = "vsock-to-ip-raw"
-path = "src/vsock_to_ip_raw.rs"
+name = "vsock-to-ip-raw-incoming"
+path = "src/vsock_to_ip_raw_incoming.rs"
+
+[[bin]]
+name = "vsock-to-ip-raw-outgoing"
+path = "src/vsock_to_ip_raw_outgoing.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
