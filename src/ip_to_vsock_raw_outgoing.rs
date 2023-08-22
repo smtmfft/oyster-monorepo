@@ -29,12 +29,15 @@
 
 use std::io::Read;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 use raw_proxy::{ProxyError, SocketError};
 
-fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<()> {
+fn handle_conn_outgoing(
+    conn_socket: &mut Socket,
+    ip_socket: &mut Socket,
+) -> Result<(), ProxyError> {
     conn_socket
         .connect(&SockAddr::vsock(3, 1200))
         .map_err(|e| SocketError::ConnectError {
@@ -125,7 +128,8 @@ fn handle_conn_outgoing(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Res
     }
 }
 
-fn handle_outgoing(mut ip_socket: Socket) -> Result<()> {
+// TODO: remove anyhow, use it only for main for pretty print
+fn handle_outgoing(mut ip_socket: Socket) -> anyhow::Result<()> {
     loop {
         let mut vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
             .map_err(|e| SocketError::CreateError {
@@ -146,7 +150,7 @@ fn handle_outgoing(mut ip_socket: Socket) -> Result<()> {
     }
 }
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
         .map_err(|e| SocketError::CreateError {
             domain: Domain::IPV4,
