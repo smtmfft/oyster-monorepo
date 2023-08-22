@@ -8,6 +8,8 @@ pub enum ProxyError {
     IpError(#[source] SocketError),
     #[error("vsock socket error")]
     VsockError(#[source] SocketError),
+    #[error("nfqueue error")]
+    NfqError(#[source] SocketError),
 }
 
 #[derive(Error, Debug)]
