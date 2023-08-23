@@ -28,6 +28,7 @@
 // and most applications use ports lower than ephemeral, it _is_ a breaking change
 
 use std::io::Read;
+use std::net::SocketAddrV4;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -56,7 +57,11 @@ fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), P
         let mut total_sent = 0;
         while total_sent < size {
             let size = ip_socket
-                .send(&buf[total_sent..size])
+                .send_to(
+                    &buf[total_sent..size],
+                    // port does not matter
+                    &"127.0.0.1:80".parse::<SocketAddrV4>().unwrap().into(),
+                )
                 .map_err(SocketError::WriteError)
                 .map_err(ProxyError::IpError)?;
             total_sent += size;
