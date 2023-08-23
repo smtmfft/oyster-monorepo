@@ -8,6 +8,10 @@ name = "raw_proxy"
 path = "src/lib.rs"
 
 [[bin]]
+name = "ip-to-vsock-raw-incoming"
+path = "src/ip_to_vsock_raw_incoming.rs"
+
+[[bin]]
 name = "ip-to-vsock-raw-outgoing"
 path = "src/ip_to_vsock_raw_outgoing.rs"
 
