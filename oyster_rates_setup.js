@@ -22,7 +22,7 @@ async function getAllInstanceTypesWithNitro() {
                 ((instanceType.ProcessorInfo.SupportedArchitectures[0] === 'x86_64' && instanceType.VCpuInfo.DefaultVCpus >= 4)
                     || (instanceType.ProcessorInfo.SupportedArchitectures[0] === 'arm64' && instanceType.VCpuInfo.DefaultVCpus >= 2));
         }).map((instanceType) => {
-            return instanceType.InstanceType
+            return [instanceType.InstanceType, { arch: instanceType.ProcessorInfo.SupportedArchitectures[0].replace("x86_64", "amd64") }];
         });
         let remaining = response.NextToken;
         while (remaining != null) {
@@ -36,7 +36,7 @@ async function getAllInstanceTypesWithNitro() {
                     ((instanceType.ProcessorInfo.SupportedArchitectures[0] === 'x86_64' && instanceType.VCpuInfo.DefaultVCpus >= 4)
                         || (instanceType.ProcessorInfo.SupportedArchitectures[0] === 'arm64' && instanceType.VCpuInfo.DefaultVCpus >= 2));
             }).map((instanceType) => {
-                return instanceType.InstanceType
+                return [instanceType.InstanceType, { arch: instanceType.ProcessorInfo.SupportedArchitectures[0].replace("x86_64", "amd64") }];
             });
             instanceTypes.push(...data);
             remaining = response.NextToken;
@@ -49,14 +49,14 @@ async function getAllInstanceTypesWithNitro() {
 }
 
 // Function to get the price of DedicatedUsage of an instance type in all supported regions 
-async function getEc2Prices(instanceType, premium) {
+async function getEc2Prices(instanceTypeWithMetadata, premium) {
     const params = {
         ServiceCode: 'AmazonEC2',
         Filters: [
             {
                 Type: 'TERM_MATCH',
                 Field: 'instanceType',
-                Value: instanceType
+                Value: instanceTypeWithMetadata[0]
             },
             {
                 Type: 'TERM_MATCH',
@@ -87,7 +87,10 @@ async function getEc2Prices(instanceType, premium) {
                 region: instance.product.attributes.regionCode,
                 instance: instance.product.attributes.instanceType,
                 min_rate: BigInt(parseFloat(instance.terms.OnDemand[on_demand_key]
-                    .priceDimensions[price_dimension_key].pricePerUnit.USD * 1e6 || 0).toFixed(0)) * BigInt(100 + premium) * BigInt(1e12) / BigInt(360000)
+                    .priceDimensions[price_dimension_key].pricePerUnit.USD * 1e6 || 0).toFixed(0)) * BigInt(100 + premium) * BigInt(1e12) / BigInt(360000),
+                cpus: instance.product.attributes.vcpu,
+                memory: instance.product.attributes.memory,
+                arch: instanceTypeWithMetadata[1].arch
             };
         })
 
@@ -125,7 +128,7 @@ async function run() {
     const selectInstanceFamiliesOnly = true;
     const selectInstanceFamilies = ["m5.", "m5a.", "m5n.", "m5zn.", "m6a.", "m6g.", "m6i.", "m6in.", "m7g.", "c5.", "c5a.", "c5n.", "c6a.", "c6g.", "c6gn.", "c6i.", "c6in.", "c7g.", "c7gn.", "hpc6a.", "hpc7g.",];
 
-    const ec2InstanceTypes = (await getAllInstanceTypesWithNitro()).filter(type => !selectInstanceFamiliesOnly || selectInstanceFamilies.some(prefix => type.startsWith(prefix)));
+    const ec2InstanceTypesWithMetadata = (await getAllInstanceTypesWithNitro()).filter(type => !selectInstanceFamiliesOnly || selectInstanceFamilies.some(prefix => type[0].startsWith(prefix)));
 
     const selectRegionsOnly = true;
     const selectRegions = [
@@ -158,12 +161,12 @@ async function run() {
         "ap-east-1",
     ];
     let products = [];
-    for (let i = 0; i < ec2InstanceTypes.length; i++) {
-        const res = await getEc2Prices(ec2InstanceTypes[i], premium);
+    for (let i = 0; i < ec2InstanceTypesWithMetadata.length; i++) {
+        const res = await getEc2Prices(ec2InstanceTypesWithMetadata[i], premium);
         products.push(...res);
     }
 
-    // Change into [{region,[{instance,min_rate}]}] format
+    // Change into [{region,[{instance,min_rate,cpu,memory,arch}]}] format
     const result = products.reduce((newProds, curr) => {
         if (excludedInstances.includes(curr.instance) || excludedRegions.includes(curr.region)) return newProds;
         else if (selectRegionsOnly && !selectRegions.includes(curr.region)) return newProds;
@@ -171,11 +174,11 @@ async function run() {
         const found = newProds.find(el => el.region === curr.region);
 
         if (found) {
-            found.rate_cards.push({ instance: curr.instance, min_rate: curr.min_rate });
+            found.rate_cards.push({ instance: curr.instance, min_rate: curr.min_rate, cpu: curr.cpus, memory: curr.memory, arch: curr.arch });
         } else {
             newProds.push({
                 region: curr.region,
-                rate_cards: [{ instance: curr.instance, min_rate: curr.min_rate },]
+                rate_cards: [{ instance: curr.instance, min_rate: curr.min_rate, cpu: curr.cpus, memory: curr.memory, arch: curr.arch },]
             });
         }
         return newProds;
