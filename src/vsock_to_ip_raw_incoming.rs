@@ -61,7 +61,7 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
             let size = conn_socket
                 .send(&payload[total_sent..])
                 .map_err(SocketError::WriteError)
-                .map_err(ProxyError::NfqError)?;
+                .map_err(ProxyError::VsockError)?;
             total_sent += size;
         }
 
