@@ -88,8 +88,8 @@ async function getEc2Prices(instanceTypeWithMetadata, premium) {
                 instance: instance.product.attributes.instanceType,
                 min_rate: BigInt(parseFloat(instance.terms.OnDemand[on_demand_key]
                     .priceDimensions[price_dimension_key].pricePerUnit.USD * 1e6 || 0).toFixed(0)) * BigInt(100 + premium) * BigInt(1e12) / BigInt(360000),
-                cpus: instance.product.attributes.vcpu,
-                memory: instance.product.attributes.memory.replace(" GiB", ""),
+                cpus: parseInt(instance.product.attributes.vcpu),
+                memory: parseInt(instance.product.attributes.memory.replace(" GiB", "")),
                 arch: instanceTypeWithMetadata[1].arch
             };
         })
