@@ -345,7 +345,7 @@ fn main() -> anyhow::Result<()> {
     backoff = 1;
 
     // set up outgoing vsock socket for outgoing packets
-    let vsock_addr = &SockAddr::vsock(3, 1201);
+    let vsock_addr = &SockAddr::vsock(3, 1200);
     let vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
 
     // reset backoff on success
