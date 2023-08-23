@@ -199,7 +199,7 @@ fn handle_conn(
         let mut total_sent = 0;
         while total_sent < size {
             let size = ip_socket
-                .send_to(&buf[total_sent..], &external_addr)
+                .send_to(&buf[total_sent..size], &external_addr)
                 .map_err(SocketError::WriteError)
                 .map_err(ProxyError::NfqError)?;
             total_sent += size;
