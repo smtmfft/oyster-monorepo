@@ -12,7 +12,6 @@ impl error::ResponseError for UserError {
     fn status_code(&self) -> actix_web::http::StatusCode {
         match self {
             UserError::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
-            UserError::NoBlockError => StatusCode::NOT_FOUND,
         }
     }
 }
