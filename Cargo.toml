@@ -1,0 +1,17 @@
+[package]
+name = "oyster-attestation-verifier"
+version = "0.1.0"
+authors = ["whitewalker608 <nitingoel608@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4.4.0"
+config = "0.13.3"
+derive_more = "0.99.17"
+lazy_static = "1.4.0"
+libsodium-sys-stable = "1.19.30"
+oyster-sdk = "0.3.0"
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.105"
