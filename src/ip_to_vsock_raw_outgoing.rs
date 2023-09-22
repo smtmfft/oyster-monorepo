@@ -33,7 +33,7 @@ use std::time::Duration;
 use nfq::{Queue, Verdict};
 use socket2::{Domain, SockAddr, Socket, Type};
 
-use raw_proxy::{ProxyError, SocketError};
+use raw_proxy::{run_with_backoff, ProxyError, SocketError};
 
 fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
@@ -179,17 +179,7 @@ fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
 }
 
 fn new_nfq_with_backoff(addr: u16, backoff: &mut u64) -> Queue {
-    loop {
-        match new_nfq(addr) {
-            Ok(queue) => return queue,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
+    run_with_backoff(new_nfq, addr, backoff, 64)
 }
 
 fn main() -> anyhow::Result<()> {
