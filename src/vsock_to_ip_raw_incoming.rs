@@ -27,87 +27,46 @@
 // While this should not be an issue in most cases since ephemeral ports do not extend there
 // and most applications use ports lower than ephemeral, it _is_ a breaking change
 
-// for incoming packets, we need to _intercept_ them and not just get a copy
-// raw sockets do the latter, therefore we go with iptables and nfqueue
-// iptables can be used to redirect packets to a nfqueue
-// we read it here, do NAT and forward onwards
-
+use std::io::Read;
+use std::net::SocketAddrV4;
 use std::thread::sleep;
 use std::time::Duration;
 
-use nfq::{Queue, Verdict};
-use socket2::{Domain, SockAddr, Socket, Type};
+use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 use raw_proxy::{ProxyError, SocketError};
 
-fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
+fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), ProxyError> {
+    let mut buf = vec![0u8; 65535].into_boxed_slice();
     loop {
-        let mut msg = queue
-            .recv()
+        // read till total size
+        conn_socket
+            .read_exact(&mut buf[0..4])
             .map_err(SocketError::ReadError)
-            .map_err(ProxyError::NfqError)?;
+            .map_err(ProxyError::VsockError)?;
 
-        let buf = msg.get_payload_mut();
+        let size: usize = u16::from_be_bytes(buf[2..4].try_into().unwrap()).into();
 
-        // NAT
-        buf[16..20].clone_from_slice(&0x7f000001u32.to_be_bytes());
+        // read till full frame
+        conn_socket
+            .read_exact(&mut buf[4..size])
+            .map_err(SocketError::ReadError)
+            .map_err(ProxyError::VsockError)?;
 
-        // TODO: tcp checksum has to be redone manually, figure out a way to offload
-        let ip_header_size = usize::from((buf[0] & 0x0f) * 4);
-        let size = buf.len();
-        buf[ip_header_size + 16..ip_header_size + 18].clone_from_slice(&[0, 0]);
-        let mut csum = 0u32;
-        for i in (12..20).step_by(2) {
-            let word: u32 = u16::from_be_bytes(buf[i..i + 2].try_into().unwrap()).into();
-            csum += word;
-        }
-        csum += u32::from(u16::from_be_bytes([0, buf[9]]));
-        csum += (size - ip_header_size) as u16 as u32;
-        for i in (ip_header_size..size - 1).step_by(2) {
-            let word: u32 = u16::from_be_bytes(buf[i..i + 2].try_into().unwrap()).into();
-            csum += word;
-        }
-        if size % 2 == 1 {
-            csum += u32::from(u16::from_be_bytes([buf[size - 1], 0]));
-        }
-        csum = (csum >> 16) + (csum & 0xffff);
-        csum = (csum >> 16) + (csum & 0xffff);
-        csum = !csum;
-
-        buf[ip_header_size + 16..ip_header_size + 18].clone_from_slice(&csum.to_be_bytes()[2..4]);
-
-        // send
+        // send through ip sock
         let mut total_sent = 0;
-        while total_sent < buf.len() {
-            let size = conn_socket
-                .send(&buf[total_sent..])
+        while total_sent < size {
+            let size = ip_socket
+                .send_to(
+                    &buf[total_sent..size],
+                    // port does not matter
+                    &"127.0.0.1:80".parse::<SocketAddrV4>().unwrap().into(),
+                )
                 .map_err(SocketError::WriteError)
-                .map_err(ProxyError::VsockError)?;
+                .map_err(ProxyError::IpError)?;
             total_sent += size;
         }
-
-        // verdicts
-        msg.set_verdict(Verdict::Drop);
-        queue
-            .verdict(msg)
-            .map_err(|e| SocketError::VerdictError(Verdict::Drop, e))
-            .map_err(ProxyError::NfqError)?;
     }
-}
-
-fn new_nfq() -> Result<Queue, ProxyError> {
-    let mut queue = Queue::open()
-        .map_err(|e| SocketError::OpenError("0".to_owned(), e))
-        .map_err(ProxyError::NfqError)?;
-    queue
-        .bind(0)
-        .map_err(|e| SocketError::BindError {
-            addr: "0".to_owned(),
-            source: e,
-        })
-        .map_err(ProxyError::NfqError)?;
-
-    Ok(queue)
 }
 
 fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
@@ -120,16 +79,16 @@ fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
         })
         .map_err(ProxyError::VsockError)?;
     vsock_socket
-        .bind(addr)
-        .map_err(|e| SocketError::BindError {
+        .connect(addr)
+        .map_err(|e| SocketError::ConnectError {
             addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
             source: e,
         })
         .map_err(ProxyError::VsockError)?;
     vsock_socket
-        .listen(0)
-        .map_err(|e| SocketError::ListenError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+        .shutdown(std::net::Shutdown::Write)
+        .map_err(|e| SocketError::ShutdownError {
+            side: std::net::Shutdown::Write,
             source: e,
         })
         .map_err(ProxyError::VsockError)?;
@@ -137,18 +96,36 @@ fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
     Ok(vsock_socket)
 }
 
-fn new_nfq_with_backoff(backoff: &mut u64) -> Queue {
-    loop {
-        match new_nfq() {
-            Ok(queue) => return queue,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
+fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
+    let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
+        .map_err(|e| SocketError::CreateError {
+            domain: Domain::IPV4,
+            r#type: Type::RAW,
+            protocol: Protocol::TCP.into(),
+            source: e,
+        })
+        .map_err(ProxyError::IpError)?;
+    ip_socket
+        .bind_device(device.as_bytes().into())
+        .map_err(|e| SocketError::BindError {
+            addr: device.to_owned(),
+            source: e,
+        })
+        .map_err(ProxyError::IpError)?;
+    ip_socket
+        .set_header_included(true)
+        .map_err(|e| SocketError::OptionError("IP_HDRINCL".to_owned(), e))
+        .map_err(ProxyError::IpError)?;
+    // shutdown does not work since socket is not connected, set buffer size to 0 instead
+    ip_socket
+        .set_recv_buffer_size(0)
+        .map_err(|e| SocketError::ShutdownError {
+            side: std::net::Shutdown::Read,
+            source: e,
+        })
+        .map_err(ProxyError::IpError)?;
 
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
+    Ok(ip_socket)
 }
 
 fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
@@ -165,33 +142,10 @@ fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
     }
 }
 
-fn accept_vsock_conn(addr: &SockAddr, vsock_socket: &Socket) -> Result<Socket, ProxyError> {
-    let (conn_socket, _) = vsock_socket
-        .accept()
-        .map_err(|e| SocketError::AcceptError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    conn_socket
-        .shutdown(std::net::Shutdown::Read)
-        .map_err(|e| SocketError::ShutdownError {
-            side: std::net::Shutdown::Read,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-
-    Ok(conn_socket)
-}
-
-fn accept_vsock_conn_with_backoff(
-    addr: &SockAddr,
-    vsock_socket: &Socket,
-    backoff: &mut u64,
-) -> Socket {
+fn new_ip_socket_with_backoff(device: &str, backoff: &mut u64) -> Socket {
     loop {
-        match accept_vsock_conn(addr, vsock_socket) {
-            Ok(vsock_socket) => return vsock_socket,
+        match new_ip_socket(device) {
+            Ok(ip_socket) => return ip_socket,
             Err(err) => {
                 println!("{:?}", anyhow::Error::from(err));
 
@@ -205,21 +159,16 @@ fn accept_vsock_conn_with_backoff(
 fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
-    // nfqueue for incoming packets
-    let mut queue = new_nfq_with_backoff(&mut backoff);
+    // get ip socket
+    let device = "lo";
+    let mut ip_socket = new_ip_socket_with_backoff(device, &mut backoff);
 
     // reset backoff on success
     backoff = 1;
 
-    // set up incoming vsock socket for incoming packets
+    // get vsock socket
     let vsock_addr = &SockAddr::vsock(3, 1201);
-    let vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
-
-    // reset backoff on success
-    backoff = 1;
-
-    // get conn socket
-    let mut conn_socket = accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
 
     // reset backoff on success
     backoff = 1;
@@ -227,16 +176,16 @@ fn main() -> anyhow::Result<()> {
     loop {
         // do proxying
         // on errors, simply reset the erroring socket
-        match handle_conn(&mut conn_socket, &mut queue) {
+        match handle_conn(&mut vsock_socket, &mut ip_socket) {
             Ok(_) => {
                 // should never happen!
                 unreachable!("connection handler exited without error");
             }
-            Err(err @ ProxyError::NfqError(_)) => {
+            Err(err @ ProxyError::IpError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
 
-                // get nfqueue
-                queue = new_nfq_with_backoff(&mut backoff);
+                // get ip socket
+                ip_socket = new_ip_socket_with_backoff(device, &mut backoff);
 
                 // reset backoff on success
                 backoff = 1;
@@ -244,9 +193,8 @@ fn main() -> anyhow::Result<()> {
             Err(err @ ProxyError::VsockError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
 
-                // get conn socket
-                conn_socket =
-                    accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+                // get vsock socket
+                vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
 
                 // reset backoff on success
                 backoff = 1;
