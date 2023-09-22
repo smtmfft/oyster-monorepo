@@ -1,3 +1,6 @@
+use std::thread::sleep;
+use std::time::Duration;
+
 use thiserror::Error;
 
 use nfq::Verdict;
@@ -67,4 +70,23 @@ pub enum SocketError {
     VerdictError(Verdict, #[source] std::io::Error),
     #[error("failed to set option {0}")]
     OptionError(String, #[source] std::io::Error),
+}
+
+pub fn run_with_backoff<P: Clone, R, F: Fn(P) -> Result<R, ProxyError>>(
+    f: F,
+    p: P,
+    backoff: &mut u64,
+    max_backoff: u64,
+) -> R {
+    loop {
+        match f(p.clone()) {
+            Ok(r) => return r,
+            Err(err) => {
+                println!("{:?}", anyhow::Error::from(err));
+
+                sleep(Duration::from_secs(*backoff));
+                *backoff = (*backoff * 2).clamp(1, max_backoff);
+            }
+        };
+    }
 }
