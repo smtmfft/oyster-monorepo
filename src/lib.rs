@@ -4,7 +4,7 @@ use std::time::Duration;
 use thiserror::Error;
 
 use nfq::{Queue, Verdict};
-use socket2::{Domain, Protocol, Type};
+use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
 #[derive(Error, Debug)]
 pub enum ProxyError {
@@ -108,4 +108,35 @@ fn new_nfq(addr: u16) -> Result<Queue, ProxyError> {
 
 pub fn new_nfq_with_backoff(addr: u16, backoff: &mut u64) -> Queue {
     run_with_backoff(new_nfq, addr, backoff, 64)
+}
+
+fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
+    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
+        .map_err(|e| SocketError::CreateError {
+            domain: Domain::VSOCK,
+            r#type: Type::STREAM,
+            protocol: None,
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    vsock_socket
+        .connect(addr)
+        .map_err(|e| SocketError::ConnectError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    vsock_socket
+        .shutdown(std::net::Shutdown::Read)
+        .map_err(|e| SocketError::ShutdownError {
+            side: std::net::Shutdown::Read,
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+
+    Ok(vsock_socket)
+}
+
+pub fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
+    run_with_backoff(new_vsock_socket, addr, backoff, 64)
 }
