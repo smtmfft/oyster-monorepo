@@ -27,13 +27,10 @@
 // While this should not be an issue in most cases since ephemeral ports do not extend there
 // and most applications use ports lower than ephemeral, it _is_ a breaking change
 
-use std::thread::sleep;
-use std::time::Duration;
-
 use nfq::{Queue, Verdict};
-use socket2::{Domain, SockAddr, Socket, Type};
+use socket2::{SockAddr, Socket};
 
-use raw_proxy::{new_nfq_with_backoff, ProxyError, SocketError};
+use raw_proxy::{new_nfq_with_backoff, new_vsock_socket_with_backoff, ProxyError, SocketError};
 
 fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
@@ -119,47 +116,6 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
             .verdict(msg)
             .map_err(|e| SocketError::VerdictError(Verdict::Drop, e))
             .map_err(ProxyError::NfqError)?;
-    }
-}
-
-fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
-    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
-        .map_err(|e| SocketError::CreateError {
-            domain: Domain::VSOCK,
-            r#type: Type::STREAM,
-            protocol: None,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .connect(addr)
-        .map_err(|e| SocketError::ConnectError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .shutdown(std::net::Shutdown::Read)
-        .map_err(|e| SocketError::ShutdownError {
-            side: std::net::Shutdown::Read,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-
-    Ok(vsock_socket)
-}
-
-fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
-    loop {
-        match new_vsock_socket(addr) {
-            Ok(vsock_socket) => return vsock_socket,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
     }
 }
 
