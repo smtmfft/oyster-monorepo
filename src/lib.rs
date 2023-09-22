@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use thiserror::Error;
 
-use nfq::Verdict;
+use nfq::{Queue, Verdict};
 use socket2::{Domain, Protocol, Type};
 
 #[derive(Error, Debug)]
@@ -89,4 +89,23 @@ pub fn run_with_backoff<P: Clone, R, F: Fn(P) -> Result<R, ProxyError>>(
             }
         };
     }
+}
+
+fn new_nfq(addr: u16) -> Result<Queue, ProxyError> {
+    let mut queue = Queue::open()
+        .map_err(|e| SocketError::OpenError(addr.to_string(), e))
+        .map_err(ProxyError::NfqError)?;
+    queue
+        .bind(addr)
+        .map_err(|e| SocketError::BindError {
+            addr: addr.to_string(),
+            source: e,
+        })
+        .map_err(ProxyError::NfqError)?;
+
+    Ok(queue)
+}
+
+pub fn new_nfq_with_backoff(addr: u16, backoff: &mut u64) -> Queue {
+    run_with_backoff(new_nfq, addr, backoff, 64)
 }
