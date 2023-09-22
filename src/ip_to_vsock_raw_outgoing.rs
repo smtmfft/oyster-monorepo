@@ -149,14 +149,14 @@ fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
     Ok(vsock_socket)
 }
 
-fn new_nfq() -> Result<Queue, ProxyError> {
+fn new_nfq(addr: u16) -> Result<Queue, ProxyError> {
     let mut queue = Queue::open()
-        .map_err(|e| SocketError::OpenError("0".to_owned(), e))
+        .map_err(|e| SocketError::OpenError(addr.to_string(), e))
         .map_err(ProxyError::NfqError)?;
     queue
-        .bind(0)
+        .bind(addr)
         .map_err(|e| SocketError::BindError {
-            addr: "0".to_owned(),
+            addr: addr.to_string(),
             source: e,
         })
         .map_err(ProxyError::NfqError)?;
@@ -178,9 +178,9 @@ fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
     }
 }
 
-fn new_nfq_with_backoff(backoff: &mut u64) -> Queue {
+fn new_nfq_with_backoff(addr: u16, backoff: &mut u64) -> Queue {
     loop {
-        match new_nfq() {
+        match new_nfq(addr) {
             Ok(queue) => return queue,
             Err(err) => {
                 println!("{:?}", anyhow::Error::from(err));
@@ -196,7 +196,8 @@ fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
     // nfqueue for incoming packets
-    let mut queue = new_nfq_with_backoff(&mut backoff);
+    let queue_addr = 0;
+    let mut queue = new_nfq_with_backoff(queue_addr, &mut backoff);
 
     // reset backoff on success
     backoff = 1;
@@ -220,7 +221,7 @@ fn main() -> anyhow::Result<()> {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get nfqueue
-                queue = new_nfq_with_backoff(&mut backoff);
+                queue = new_nfq_with_backoff(queue_addr, &mut backoff);
 
                 // reset backoff on success
                 backoff = 1;
