@@ -33,7 +33,7 @@ use std::time::Duration;
 use nfq::{Queue, Verdict};
 use socket2::{Domain, SockAddr, Socket, Type};
 
-use raw_proxy::{run_with_backoff, ProxyError, SocketError};
+use raw_proxy::{new_nfq_with_backoff, ProxyError, SocketError};
 
 fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
@@ -149,21 +149,6 @@ fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
     Ok(vsock_socket)
 }
 
-fn new_nfq(addr: u16) -> Result<Queue, ProxyError> {
-    let mut queue = Queue::open()
-        .map_err(|e| SocketError::OpenError(addr.to_string(), e))
-        .map_err(ProxyError::NfqError)?;
-    queue
-        .bind(addr)
-        .map_err(|e| SocketError::BindError {
-            addr: addr.to_string(),
-            source: e,
-        })
-        .map_err(ProxyError::NfqError)?;
-
-    Ok(queue)
-}
-
 fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
     loop {
         match new_vsock_socket(addr) {
@@ -176,10 +161,6 @@ fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
             }
         };
     }
-}
-
-fn new_nfq_with_backoff(addr: u16, backoff: &mut u64) -> Queue {
-    run_with_backoff(new_nfq, addr, backoff, 64)
 }
 
 fn main() -> anyhow::Result<()> {
