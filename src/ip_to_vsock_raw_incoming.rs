@@ -97,7 +97,7 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
 
 fn new_nfq() -> Result<Queue, ProxyError> {
     let mut queue = Queue::open()
-        .map_err(|e| SocketError::OpenError("0".to_owned(), e))
+        .map_err(SocketError::OpenError)
         .map_err(ProxyError::NfqError)?;
     queue
         .bind(0)

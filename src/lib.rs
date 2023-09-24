@@ -65,7 +65,7 @@ pub enum SocketError {
     #[error("unexpected eof")]
     EofError,
     #[error("failed to open socket {0}")]
-    OpenError(String, #[source] std::io::Error),
+    OpenError(#[source] std::io::Error),
     #[error("failed to set verdict {0:?}")]
     VerdictError(Verdict, #[source] std::io::Error),
     #[error("failed to set option {0}")]
@@ -93,7 +93,7 @@ pub fn run_with_backoff<P: Clone, R, F: Fn(P) -> Result<R, ProxyError>>(
 
 fn new_nfq(addr: u16) -> Result<Queue, ProxyError> {
     let mut queue = Queue::open()
-        .map_err(|e| SocketError::OpenError(addr.to_string(), e))
+        .map_err(SocketError::OpenError)
         .map_err(ProxyError::NfqError)?;
     queue
         .bind(addr)
