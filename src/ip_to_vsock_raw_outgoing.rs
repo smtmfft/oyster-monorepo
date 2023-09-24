@@ -120,15 +120,13 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
 }
 
 fn main() -> anyhow::Result<()> {
-    let mut backoff = 1u64;
-
     // nfqueue for incoming packets
     let queue_addr = 0;
-    let mut queue = new_nfq_with_backoff(queue_addr, &mut backoff);
+    let mut queue = new_nfq_with_backoff(queue_addr);
 
     // get vsock socket
     let vsock_addr = &SockAddr::vsock(3, 1200);
-    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
+    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
 
     loop {
         // do proxying
@@ -142,13 +140,13 @@ fn main() -> anyhow::Result<()> {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get nfqueue
-                queue = new_nfq_with_backoff(queue_addr, &mut backoff);
+                queue = new_nfq_with_backoff(queue_addr);
             }
             Err(err @ ProxyError::VsockError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get vsock socket
-                vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
+                vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
             }
             Err(err) => {
                 // should never happen!

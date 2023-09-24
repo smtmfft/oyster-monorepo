@@ -108,8 +108,8 @@ fn new_nfq(addr: u16) -> Result<Queue, ProxyError> {
     Ok(queue)
 }
 
-pub fn new_nfq_with_backoff(addr: u16, backoff: &mut u64) -> Queue {
-    run_with_backoff(new_nfq, addr, backoff, 64)
+pub fn new_nfq_with_backoff(addr: u16) -> Queue {
+    run_with_backoff(new_nfq, addr, 64)
 }
 
 fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
@@ -139,6 +139,6 @@ fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
     Ok(vsock_socket)
 }
 
-pub fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
-    run_with_backoff(new_vsock_socket, addr, backoff, 4)
+pub fn new_vsock_socket_with_backoff(addr: &SockAddr) -> Socket {
+    run_with_backoff(new_vsock_socket, addr, 4)
 }
