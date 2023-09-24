@@ -80,7 +80,11 @@ pub fn run_with_backoff<P: Clone, R, F: Fn(P) -> Result<R, ProxyError>>(
 ) -> R {
     loop {
         match f(p.clone()) {
-            Ok(r) => return r,
+            Ok(r) => {
+                // reset backoff on success
+                *backoff = 1;
+                return r;
+            }
             Err(err) => {
                 println!("{:?}", anyhow::Error::from(err));
 
