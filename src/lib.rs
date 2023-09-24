@@ -142,5 +142,5 @@ fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
 }
 
 pub fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
-    run_with_backoff(new_vsock_socket, addr, backoff, 64)
+    run_with_backoff(new_vsock_socket, addr, backoff, 4)
 }
