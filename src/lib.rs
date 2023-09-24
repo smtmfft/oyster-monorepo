@@ -75,21 +75,19 @@ pub enum SocketError {
 pub fn run_with_backoff<P: Clone, R, F: Fn(P) -> Result<R, ProxyError>>(
     f: F,
     p: P,
-    backoff: &mut u64,
     max_backoff: u64,
 ) -> R {
+    let mut backoff = 1;
     loop {
         match f(p.clone()) {
             Ok(r) => {
-                // reset backoff on success
-                *backoff = 1;
                 return r;
             }
             Err(err) => {
                 println!("{:?}", anyhow::Error::from(err));
 
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, max_backoff);
+                sleep(Duration::from_secs(backoff));
+                backoff = (backoff * 2).clamp(1, max_backoff);
             }
         };
     }
