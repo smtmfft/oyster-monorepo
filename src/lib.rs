@@ -197,3 +197,39 @@ fn accept_vsock_conn(params: (&SockAddr, &Socket)) -> Result<Socket, ProxyError>
 pub fn accept_vsock_conn_with_backoff(params: (&SockAddr, &Socket)) -> Socket {
     run_with_backoff(accept_vsock_conn, params, 64)
 }
+
+fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
+    let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
+        .map_err(|e| SocketError::CreateError {
+            domain: Domain::IPV4,
+            r#type: Type::RAW,
+            protocol: Protocol::TCP.into(),
+            source: e,
+        })
+        .map_err(ProxyError::IpError)?;
+    ip_socket
+        .bind_device(device.as_bytes().into())
+        .map_err(|e| SocketError::BindError {
+            addr: device.to_owned(),
+            source: e,
+        })
+        .map_err(ProxyError::IpError)?;
+    ip_socket
+        .set_header_included(true)
+        .map_err(|e| SocketError::OptionError("IP_HDRINCL".to_owned(), e))
+        .map_err(ProxyError::IpError)?;
+    // shutdown does not work since socket is not connected, set buffer size to 0 instead
+    ip_socket
+        .set_recv_buffer_size(0)
+        .map_err(|e| SocketError::ShutdownError {
+            side: std::net::Shutdown::Read,
+            source: e,
+        })
+        .map_err(ProxyError::IpError)?;
+
+    Ok(ip_socket)
+}
+
+pub fn new_ip_socket_with_backoff(device: &str) -> Socket {
+    run_with_backoff(new_ip_socket, device, 64)
+}
