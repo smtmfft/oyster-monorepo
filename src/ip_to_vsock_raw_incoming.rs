@@ -32,10 +32,24 @@
 // iptables can be used to redirect packets to a nfqueue
 // we read it here, do NAT and forward onwards
 
+use clap::Parser;
 use nfq::{Queue, Verdict};
 use socket2::{SockAddr, Socket};
 
-use raw_proxy::{new_nfq_with_backoff, new_vsock_socket_with_backoff, ProxyError, SocketError};
+use raw_proxy::{
+    new_nfq_with_backoff, new_vsock_socket_with_backoff, ProxyError, SocketError, VsockAddrParser,
+};
+
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    /// vsock address to forward packets to <cid:port>
+    #[clap(short, long, value_parser = VsockAddrParser{})]
+    vsock_addr: SockAddr,
+    /// nfqueue number of the listener <num>
+    #[clap(short, long, value_parser)]
+    queue_num: u16,
+}
 
 fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
@@ -93,11 +107,14 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
 }
 
 fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+
     // nfqueue for incoming packets
-    let mut queue = new_nfq_with_backoff(0);
+    let queue_num = cli.queue_num;
+    let mut queue = new_nfq_with_backoff(queue_num);
 
     // get vsock socket
-    let vsock_addr = &SockAddr::vsock(88, 1200);
+    let vsock_addr = &cli.vsock_addr;
     let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
 
     loop {
@@ -112,7 +129,7 @@ fn main() -> anyhow::Result<()> {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get nfqueue
-                queue = new_nfq_with_backoff(0);
+                queue = new_nfq_with_backoff(queue_num);
             }
             Err(err @ ProxyError::VsockError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
