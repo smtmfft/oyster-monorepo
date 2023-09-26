@@ -41,15 +41,7 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
 
         let buf = msg.get_payload_mut();
 
-        let ip_header_size = usize::from((buf[0] & 0x0f) * 4);
         let size = buf.len();
-        let src_port =
-            u16::from_be_bytes(buf[ip_header_size..ip_header_size + 2].try_into().unwrap());
-
-        if src_port != 80 && src_port != 443 && (src_port < 1024 || src_port > 61439) {
-            // silently drop
-            continue;
-        }
 
         // send through vsock
         let mut total_sent = 0;
