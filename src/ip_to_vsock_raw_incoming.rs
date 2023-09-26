@@ -35,10 +35,7 @@
 use nfq::{Queue, Verdict};
 use socket2::{SockAddr, Socket};
 
-use raw_proxy::{
-    accept_vsock_conn_with_backoff, new_nfq_with_backoff, new_vsock_server_with_backoff,
-    ProxyError, SocketError,
-};
+use raw_proxy::{new_nfq_with_backoff, new_vsock_socket_with_backoff, ProxyError, SocketError};
 
 fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
@@ -99,17 +96,14 @@ fn main() -> anyhow::Result<()> {
     // nfqueue for incoming packets
     let mut queue = new_nfq_with_backoff(0);
 
-    // set up incoming vsock socket for incoming packets
-    let vsock_addr = &SockAddr::vsock(3, 1201);
-    let vsock_socket = new_vsock_server_with_backoff(vsock_addr);
-
-    // get conn socket
-    let mut conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
+    // get vsock socket
+    let vsock_addr = &SockAddr::vsock(88, 1200);
+    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
 
     loop {
         // do proxying
         // on errors, simply reset the erroring socket
-        match handle_conn(&mut conn_socket, &mut queue) {
+        match handle_conn(&mut vsock_socket, &mut queue) {
             Ok(_) => {
                 // should never happen!
                 unreachable!("connection handler exited without error");
@@ -123,8 +117,8 @@ fn main() -> anyhow::Result<()> {
             Err(err @ ProxyError::VsockError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
 
-                // get conn socket
-                conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
+                // get vsock socket
+                vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
             }
             Err(err) => {
                 // should never happen!

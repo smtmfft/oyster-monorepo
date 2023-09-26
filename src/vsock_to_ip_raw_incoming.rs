@@ -33,7 +33,8 @@ use std::net::SocketAddrV4;
 use socket2::{SockAddr, Socket};
 
 use raw_proxy::{
-    new_ip_socket_with_backoff, new_vsock_socket_with_backoff, ProxyError, SocketError,
+    accept_vsock_conn_with_backoff, new_ip_socket_with_backoff, new_vsock_server_with_backoff,
+    ProxyError, SocketError,
 };
 
 fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), ProxyError> {
@@ -74,14 +75,17 @@ fn main() -> anyhow::Result<()> {
     let device = "lo";
     let mut ip_socket = new_ip_socket_with_backoff(device);
 
-    // get vsock socket
-    let vsock_addr = &SockAddr::vsock(3, 1201);
-    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
+    // set up incoming vsock socket for incoming packets
+    let vsock_addr = &SockAddr::vsock(88, 1200);
+    let vsock_socket = new_vsock_server_with_backoff(vsock_addr);
+
+    // get conn socket
+    let mut conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
 
     loop {
         // do proxying
         // on errors, simply reset the erroring socket
-        match handle_conn(&mut vsock_socket, &mut ip_socket) {
+        match handle_conn(&mut conn_socket, &mut ip_socket) {
             Ok(_) => {
                 // should never happen!
                 unreachable!("connection handler exited without error");
@@ -95,8 +99,8 @@ fn main() -> anyhow::Result<()> {
             Err(err @ ProxyError::VsockError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
 
-                // get vsock socket
-                vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
+                // get conn socket
+                conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
             }
             Err(err) => {
                 // should never happen!
