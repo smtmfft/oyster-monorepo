@@ -30,12 +30,24 @@
 use std::io::Read;
 use std::net::SocketAddrV4;
 
+use clap::Parser;
 use socket2::{SockAddr, Socket};
 
 use raw_proxy::{
     accept_vsock_conn_with_backoff, new_ip_socket_with_backoff, new_vsock_server_with_backoff,
-    ProxyError, SocketError,
+    ProxyError, SocketError, VsockAddrParser,
 };
+
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    /// vsock address to listen on <cid:port>
+    #[clap(short, long, value_parser = VsockAddrParser{})]
+    vsock_addr: SockAddr,
+    /// network device to forward packets on
+    #[clap(short, long, value_parser)]
+    device: String,
+}
 
 fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), ProxyError> {
     let mut buf = vec![0u8; 65535].into_boxed_slice();
@@ -71,12 +83,14 @@ fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), P
 }
 
 fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+
     // get ip socket
-    let device = "lo";
+    let device = &cli.device;
     let mut ip_socket = new_ip_socket_with_backoff(device);
 
     // set up incoming vsock socket for incoming packets
-    let vsock_addr = &SockAddr::vsock(88, 1200);
+    let vsock_addr = &cli.vsock_addr;
     let vsock_socket = new_vsock_server_with_backoff(vsock_addr);
 
     // get conn socket
