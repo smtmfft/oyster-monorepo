@@ -51,6 +51,10 @@ struct Cli {
 
 fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), ProxyError> {
     let mut buf = vec![0u8; 65535].into_boxed_slice();
+
+    // port does not matter
+    let internal_addr: SockAddr = "127.0.0.1:80".parse::<SocketAddrV4>().unwrap().into();
+
     loop {
         // read till total size
         conn_socket
@@ -73,7 +77,7 @@ fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), P
                 .send_to(
                     &buf[total_sent..size],
                     // port does not matter
-                    &"127.0.0.1:80".parse::<SocketAddrV4>().unwrap().into(),
+                    &internal_addr,
                 )
                 .map_err(SocketError::WriteError)
                 .map_err(ProxyError::IpError)?;
