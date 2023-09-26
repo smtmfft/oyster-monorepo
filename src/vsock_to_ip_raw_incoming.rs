@@ -34,7 +34,7 @@ use std::time::Duration;
 
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
-use raw_proxy::{ProxyError, SocketError};
+use raw_proxy::{new_vsock_socket_with_backoff, ProxyError, SocketError};
 
 fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), ProxyError> {
     let mut buf = vec![0u8; 65535].into_boxed_slice();
@@ -69,33 +69,6 @@ fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), P
     }
 }
 
-fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
-    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
-        .map_err(|e| SocketError::CreateError {
-            domain: Domain::VSOCK,
-            r#type: Type::STREAM,
-            protocol: None,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .connect(addr)
-        .map_err(|e| SocketError::ConnectError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .shutdown(std::net::Shutdown::Write)
-        .map_err(|e| SocketError::ShutdownError {
-            side: std::net::Shutdown::Write,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-
-    Ok(vsock_socket)
-}
-
 fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
     let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
         .map_err(|e| SocketError::CreateError {
@@ -128,20 +101,6 @@ fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
     Ok(ip_socket)
 }
 
-fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
-    loop {
-        match new_vsock_socket(addr) {
-            Ok(vsock_socket) => return vsock_socket,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
-}
-
 fn new_ip_socket_with_backoff(device: &str, backoff: &mut u64) -> Socket {
     loop {
         match new_ip_socket(device) {
@@ -168,7 +127,7 @@ fn main() -> anyhow::Result<()> {
 
     // get vsock socket
     let vsock_addr = &SockAddr::vsock(3, 1201);
-    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
+    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
 
     // reset backoff on success
     backoff = 1;
@@ -194,7 +153,7 @@ fn main() -> anyhow::Result<()> {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get vsock socket
-                vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
+                vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
 
                 // reset backoff on success
                 backoff = 1;
