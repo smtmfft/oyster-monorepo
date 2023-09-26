@@ -32,13 +32,13 @@
 // iptables can be used to redirect packets to a nfqueue
 // we read it here, do NAT and forward onwards
 
-use std::thread::sleep;
-use std::time::Duration;
-
 use nfq::{Queue, Verdict};
-use socket2::{Domain, SockAddr, Socket, Type};
+use socket2::{SockAddr, Socket};
 
-use raw_proxy::{new_nfq_with_backoff, new_vsock_server_with_backoff, ProxyError, SocketError};
+use raw_proxy::{
+    accept_vsock_conn_with_backoff, new_nfq_with_backoff, new_vsock_server_with_backoff,
+    ProxyError, SocketError,
+};
 
 fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
@@ -95,43 +95,6 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
     }
 }
 
-fn accept_vsock_conn(addr: &SockAddr, vsock_socket: &Socket) -> Result<Socket, ProxyError> {
-    let (conn_socket, _) = vsock_socket
-        .accept()
-        .map_err(|e| SocketError::AcceptError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    conn_socket
-        .shutdown(std::net::Shutdown::Read)
-        .map_err(|e| SocketError::ShutdownError {
-            side: std::net::Shutdown::Read,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-
-    Ok(conn_socket)
-}
-
-fn accept_vsock_conn_with_backoff(
-    addr: &SockAddr,
-    vsock_socket: &Socket,
-    backoff: &mut u64,
-) -> Socket {
-    loop {
-        match accept_vsock_conn(addr, vsock_socket) {
-            Ok(vsock_socket) => return vsock_socket,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
-}
-
 fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
@@ -149,7 +112,7 @@ fn main() -> anyhow::Result<()> {
     backoff = 1;
 
     // get conn socket
-    let mut conn_socket = accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+    let mut conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
 
     // reset backoff on success
     backoff = 1;
@@ -175,8 +138,7 @@ fn main() -> anyhow::Result<()> {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get conn socket
-                conn_socket =
-                    accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+                conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
 
                 // reset backoff on success
                 backoff = 1;
