@@ -37,13 +37,22 @@ use std::io::Read;
 use std::net::SocketAddrV4;
 
 use anyhow::{anyhow, Context};
+use clap::Parser;
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
 use socket2::{SockAddr, Socket};
 
 use raw_proxy::{
     accept_vsock_conn_with_backoff, new_ip_socket_with_backoff, new_vsock_server_with_backoff,
-    ProxyError, SocketError,
+    ProxyError, SocketError, VsockAddrParser,
 };
+
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    /// vsock address to listen on <cid:port>
+    #[clap(short, long, value_parser = VsockAddrParser{})]
+    vsock_addr: SockAddr,
+}
 
 fn get_eth_interface() -> anyhow::Result<(String, u32)> {
     let mut ifap: *mut ifaddrs = std::ptr::null_mut();
@@ -204,6 +213,8 @@ fn handle_conn(
 }
 
 fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+
     // get ethernet interface
     let (ifname, ifaddr) = get_eth_interface().context("could not get ethernet interface")?;
     println!("detected ethernet interface: {}, {:#10x}", ifname, ifaddr);
@@ -212,7 +223,7 @@ fn main() -> anyhow::Result<()> {
     let mut ip_socket = new_ip_socket_with_backoff(&ifname);
 
     // set up outgoing vsock socket for outgoing packets
-    let vsock_addr = &SockAddr::vsock(3, 1200);
+    let vsock_addr = &cli.vsock_addr;
     let vsock_socket = new_vsock_server_with_backoff(vsock_addr);
 
     // get conn socket
