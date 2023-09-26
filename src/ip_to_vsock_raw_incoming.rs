@@ -38,7 +38,7 @@ use std::time::Duration;
 use nfq::{Queue, Verdict};
 use socket2::{Domain, SockAddr, Socket, Type};
 
-use raw_proxy::{ProxyError, SocketError};
+use raw_proxy::{new_nfq_with_backoff, ProxyError, SocketError};
 
 fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
@@ -95,21 +95,6 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
     }
 }
 
-fn new_nfq() -> Result<Queue, ProxyError> {
-    let mut queue = Queue::open()
-        .map_err(SocketError::OpenError)
-        .map_err(ProxyError::NfqError)?;
-    queue
-        .bind(0)
-        .map_err(|e| SocketError::BindError {
-            addr: "0".to_owned(),
-            source: e,
-        })
-        .map_err(ProxyError::NfqError)?;
-
-    Ok(queue)
-}
-
 fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
     let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
         .map_err(|e| SocketError::CreateError {
@@ -135,20 +120,6 @@ fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
         .map_err(ProxyError::VsockError)?;
 
     Ok(vsock_socket)
-}
-
-fn new_nfq_with_backoff(backoff: &mut u64) -> Queue {
-    loop {
-        match new_nfq() {
-            Ok(queue) => return queue,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
 }
 
 fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
@@ -206,7 +177,7 @@ fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
     // nfqueue for incoming packets
-    let mut queue = new_nfq_with_backoff(&mut backoff);
+    let mut queue = new_nfq_with_backoff(0);
 
     // reset backoff on success
     backoff = 1;
@@ -236,7 +207,7 @@ fn main() -> anyhow::Result<()> {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get nfqueue
-                queue = new_nfq_with_backoff(&mut backoff);
+                queue = new_nfq_with_backoff(0);
 
                 // reset backoff on success
                 backoff = 1;
