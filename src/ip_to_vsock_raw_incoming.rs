@@ -38,7 +38,7 @@ use std::time::Duration;
 use nfq::{Queue, Verdict};
 use socket2::{Domain, SockAddr, Socket, Type};
 
-use raw_proxy::{new_nfq_with_backoff, ProxyError, SocketError};
+use raw_proxy::{new_nfq_with_backoff, new_vsock_server_with_backoff, ProxyError, SocketError};
 
 fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
@@ -95,47 +95,6 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
     }
 }
 
-fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
-    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
-        .map_err(|e| SocketError::CreateError {
-            domain: Domain::VSOCK,
-            r#type: Type::STREAM,
-            protocol: None,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .bind(addr)
-        .map_err(|e| SocketError::BindError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .listen(0)
-        .map_err(|e| SocketError::ListenError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-
-    Ok(vsock_socket)
-}
-
-fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
-    loop {
-        match new_vsock_socket(addr) {
-            Ok(vsock_socket) => return vsock_socket,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
-}
-
 fn accept_vsock_conn(addr: &SockAddr, vsock_socket: &Socket) -> Result<Socket, ProxyError> {
     let (conn_socket, _) = vsock_socket
         .accept()
@@ -184,7 +143,7 @@ fn main() -> anyhow::Result<()> {
 
     // set up incoming vsock socket for incoming packets
     let vsock_addr = &SockAddr::vsock(3, 1201);
-    let vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
+    let vsock_socket = new_vsock_server_with_backoff(vsock_addr);
 
     // reset backoff on success
     backoff = 1;
