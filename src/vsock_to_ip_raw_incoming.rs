@@ -34,7 +34,9 @@ use std::time::Duration;
 
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
-use raw_proxy::{new_vsock_socket_with_backoff, ProxyError, SocketError};
+use raw_proxy::{
+    new_ip_socket_with_backoff, new_vsock_socket_with_backoff, ProxyError, SocketError,
+};
 
 fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), ProxyError> {
     let mut buf = vec![0u8; 65535].into_boxed_slice();
@@ -69,58 +71,12 @@ fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), P
     }
 }
 
-fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
-    let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
-        .map_err(|e| SocketError::CreateError {
-            domain: Domain::IPV4,
-            r#type: Type::RAW,
-            protocol: Protocol::TCP.into(),
-            source: e,
-        })
-        .map_err(ProxyError::IpError)?;
-    ip_socket
-        .bind_device(device.as_bytes().into())
-        .map_err(|e| SocketError::BindError {
-            addr: device.to_owned(),
-            source: e,
-        })
-        .map_err(ProxyError::IpError)?;
-    ip_socket
-        .set_header_included(true)
-        .map_err(|e| SocketError::OptionError("IP_HDRINCL".to_owned(), e))
-        .map_err(ProxyError::IpError)?;
-    // shutdown does not work since socket is not connected, set buffer size to 0 instead
-    ip_socket
-        .set_recv_buffer_size(0)
-        .map_err(|e| SocketError::ShutdownError {
-            side: std::net::Shutdown::Read,
-            source: e,
-        })
-        .map_err(ProxyError::IpError)?;
-
-    Ok(ip_socket)
-}
-
-fn new_ip_socket_with_backoff(device: &str, backoff: &mut u64) -> Socket {
-    loop {
-        match new_ip_socket(device) {
-            Ok(ip_socket) => return ip_socket,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
-}
-
 fn main() -> anyhow::Result<()> {
     let mut backoff = 1u64;
 
     // get ip socket
     let device = "lo";
-    let mut ip_socket = new_ip_socket_with_backoff(device, &mut backoff);
+    let mut ip_socket = new_ip_socket_with_backoff(device);
 
     // reset backoff on success
     backoff = 1;
@@ -144,7 +100,7 @@ fn main() -> anyhow::Result<()> {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get ip socket
-                ip_socket = new_ip_socket_with_backoff(device, &mut backoff);
+                ip_socket = new_ip_socket_with_backoff(device);
 
                 // reset backoff on success
                 backoff = 1;
