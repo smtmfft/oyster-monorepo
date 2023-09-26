@@ -1,8 +1,10 @@
+use std::ffi::OsStr;
 use std::thread::sleep;
 use std::time::Duration;
 
 use thiserror::Error;
 
+use clap::{builder::TypedValueParser, error::ErrorKind, Arg, Command};
 use nfq::{Queue, Verdict};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
@@ -232,4 +234,35 @@ fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
 
 pub fn new_ip_socket_with_backoff(device: &str) -> Socket {
     run_with_backoff(new_ip_socket, device, 64)
+}
+
+#[derive(Clone)]
+pub struct VsockAddrParser {}
+
+impl TypedValueParser for VsockAddrParser {
+    type Value = SockAddr;
+
+    fn parse_ref(
+        &self,
+        cmd: &Command,
+        _: Option<&Arg>,
+        value: &OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        let value = value
+            .to_str()
+            .ok_or(clap::Error::new(ErrorKind::InvalidUtf8).with_cmd(cmd))?;
+
+        let (cid, port) = value
+            .split_once(':')
+            .ok_or(clap::Error::new(ErrorKind::ValueValidation).with_cmd(cmd))?;
+
+        let cid = cid
+            .parse::<u32>()
+            .map_err(|_| clap::Error::new(ErrorKind::ValueValidation).with_cmd(cmd))?;
+        let port = port
+            .parse::<u32>()
+            .map_err(|_| clap::Error::new(ErrorKind::ValueValidation).with_cmd(cmd))?;
+
+        Ok(SockAddr::vsock(cid, port))
+    }
 }
