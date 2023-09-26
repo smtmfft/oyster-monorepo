@@ -173,3 +173,27 @@ fn new_vsock_server(addr: &SockAddr) -> Result<Socket, ProxyError> {
 pub fn new_vsock_server_with_backoff(addr: &SockAddr) -> Socket {
     run_with_backoff(new_vsock_server, addr, 64)
 }
+
+fn accept_vsock_conn(params: (&SockAddr, &Socket)) -> Result<Socket, ProxyError> {
+    let (addr, vsock_socket) = params;
+    let (conn_socket, _) = vsock_socket
+        .accept()
+        .map_err(|e| SocketError::AcceptError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    conn_socket
+        .shutdown(std::net::Shutdown::Write)
+        .map_err(|e| SocketError::ShutdownError {
+            side: std::net::Shutdown::Write,
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+
+    Ok(conn_socket)
+}
+
+pub fn accept_vsock_conn_with_backoff(params: (&SockAddr, &Socket)) -> Socket {
+    run_with_backoff(accept_vsock_conn, params, 64)
+}
