@@ -35,12 +35,10 @@
 use std::ffi::CStr;
 use std::io::Read;
 use std::net::SocketAddrV4;
-use std::thread::sleep;
-use std::time::Duration;
 
 use anyhow::{anyhow, Context};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
-use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+use socket2::{SockAddr, Socket};
 
 use raw_proxy::{
     accept_vsock_conn_with_backoff, new_ip_socket_with_backoff, new_vsock_server_with_backoff,
@@ -208,26 +206,15 @@ fn main() -> anyhow::Result<()> {
     let (ifname, ifaddr) = get_eth_interface().context("could not get ethernet interface")?;
     println!("detected ethernet interface: {}, {:#10x}", ifname, ifaddr);
 
-    let mut backoff = 1u64;
-
     // set up ip socket for outgoing packets
     let mut ip_socket = new_ip_socket_with_backoff(&ifname);
-
-    // reset backoff on success
-    backoff = 1;
 
     // set up outgoing vsock socket for outgoing packets
     let vsock_addr = &SockAddr::vsock(3, 1200);
     let vsock_socket = new_vsock_server_with_backoff(vsock_addr);
 
-    // reset backoff on success
-    backoff = 1;
-
     // get conn socket
     let mut conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
-
-    // reset backoff on success
-    backoff = 1;
 
     loop {
         // do proxying
@@ -242,18 +229,12 @@ fn main() -> anyhow::Result<()> {
 
                 // get ip socket
                 ip_socket = new_ip_socket_with_backoff(&ifname);
-
-                // reset backoff on success
-                backoff = 1;
             }
             Err(err @ ProxyError::VsockError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get conn socket
                 conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
-
-                // reset backoff on success
-                backoff = 1;
             }
             Err(err) => {
                 // should never happen!
