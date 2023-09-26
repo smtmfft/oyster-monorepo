@@ -142,3 +142,34 @@ fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
 pub fn new_vsock_socket_with_backoff(addr: &SockAddr) -> Socket {
     run_with_backoff(new_vsock_socket, addr, 4)
 }
+
+fn new_vsock_server(addr: &SockAddr) -> Result<Socket, ProxyError> {
+    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
+        .map_err(|e| SocketError::CreateError {
+            domain: Domain::VSOCK,
+            r#type: Type::STREAM,
+            protocol: None,
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    vsock_socket
+        .bind(addr)
+        .map_err(|e| SocketError::BindError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+    vsock_socket
+        .listen(0)
+        .map_err(|e| SocketError::ListenError {
+            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
+            source: e,
+        })
+        .map_err(ProxyError::VsockError)?;
+
+    Ok(vsock_socket)
+}
+
+pub fn new_vsock_server_with_backoff(addr: &SockAddr) -> Socket {
+    run_with_backoff(new_vsock_server, addr, 64)
+}
