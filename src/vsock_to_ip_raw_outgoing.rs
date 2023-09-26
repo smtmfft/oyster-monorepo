@@ -42,7 +42,9 @@ use anyhow::{anyhow, Context};
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
-use raw_proxy::{new_vsock_server_with_backoff, ProxyError, SocketError};
+use raw_proxy::{
+    accept_vsock_conn_with_backoff, new_vsock_server_with_backoff, ProxyError, SocketError,
+};
 
 fn get_eth_interface() -> anyhow::Result<(String, u32)> {
     let mut ifap: *mut ifaddrs = std::ptr::null_mut();
@@ -200,43 +202,6 @@ fn handle_conn(
     }
 }
 
-fn accept_vsock_conn(addr: &SockAddr, vsock_socket: &Socket) -> Result<Socket, ProxyError> {
-    let (conn_socket, _) = vsock_socket
-        .accept()
-        .map_err(|e| SocketError::AcceptError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    conn_socket
-        .shutdown(std::net::Shutdown::Write)
-        .map_err(|e| SocketError::ShutdownError {
-            side: std::net::Shutdown::Write,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-
-    Ok(conn_socket)
-}
-
-fn accept_vsock_conn_with_backoff(
-    addr: &SockAddr,
-    vsock_socket: &Socket,
-    backoff: &mut u64,
-) -> Socket {
-    loop {
-        match accept_vsock_conn(addr, vsock_socket) {
-            Ok(vsock_socket) => return vsock_socket,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
-}
-
 fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
     let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
         .map_err(|e| SocketError::CreateError {
@@ -298,13 +263,13 @@ fn main() -> anyhow::Result<()> {
 
     // set up outgoing vsock socket for outgoing packets
     let vsock_addr = &SockAddr::vsock(3, 1200);
-    let vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
+    let vsock_socket = new_vsock_server_with_backoff(vsock_addr);
 
     // reset backoff on success
     backoff = 1;
 
     // get conn socket
-    let mut conn_socket = accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+    let mut conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
 
     // reset backoff on success
     backoff = 1;
@@ -330,8 +295,7 @@ fn main() -> anyhow::Result<()> {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get conn socket
-                conn_socket =
-                    accept_vsock_conn_with_backoff(vsock_addr, &vsock_socket, &mut backoff);
+                conn_socket = accept_vsock_conn_with_backoff((vsock_addr, &vsock_socket));
 
                 // reset backoff on success
                 backoff = 1;
