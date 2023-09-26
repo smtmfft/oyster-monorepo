@@ -107,6 +107,8 @@ fn handle_conn(
             .map_err(SocketError::ReadError)
             .map_err(ProxyError::VsockError)?;
 
+        // IMPORTANT: checks are needed here, assume packets from the enclave to be untrusted
+
         // get src and dst addr
         let src_addr = u32::from_be_bytes(buf[12..16].try_into().unwrap());
         let dst_addr = u32::from_be_bytes(buf[16..20].try_into().unwrap());
