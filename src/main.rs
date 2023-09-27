@@ -1,6 +1,8 @@
 use std::pin::Pin;
 use std::task::{ready, Poll};
 
+use anyhow::Context;
+
 use axum::{routing::get, Router};
 use hyper::server::accept::Accept;
 use tokio_vsock::{VsockListener, VsockStream};
@@ -23,11 +25,15 @@ impl Accept for VsockServer {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), anyhow::Error> {
     let app = Router::new().route("/", get(|| async { "Hello, World!" }));
 
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    axum::Server::builder(VsockServer {
+        listener: VsockListener::bind(3, 1400).context("failed to create vsock listener")?,
+    })
+    .serve(app.into_make_service())
+    .await
+    .context("server exited with error")?;
+
+    Ok(())
 }
