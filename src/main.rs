@@ -57,12 +57,23 @@ impl TypedValueParser for VsockAddrParser {
     }
 }
 
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    /// vsock address to listen on <cid:port>
+    #[clap(short, long, value_parser = VsockAddrParser{})]
+    vsock_addr: (u32, u32),
+}
+
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+    let cli = Cli::parse();
+
     let app = Router::new().route("/", get(|| async { "Hello, World!" }));
 
     axum::Server::builder(VsockServer {
-        listener: VsockListener::bind(3, 1400).context("failed to create vsock listener")?,
+        listener: VsockListener::bind(cli.vsock_addr.0, cli.vsock_addr.1)
+            .context("failed to create vsock listener")?,
     })
     .serve(app.into_make_service())
     .await
