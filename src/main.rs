@@ -1,6 +1,9 @@
+use std::ffi::CStr;
 use std::ffi::OsStr;
 use std::pin::Pin;
 use std::task::{ready, Poll};
+
+use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
 
 use anyhow::Context;
 
@@ -54,6 +57,44 @@ impl TypedValueParser for VsockAddrParser {
             .map_err(|_| clap::Error::new(ErrorKind::ValueValidation).with_cmd(cmd))?;
 
         Ok((cid, port))
+    }
+}
+
+fn get_eth_interface() -> anyhow::Result<(String, u32)> {
+    let mut ifap: *mut ifaddrs = std::ptr::null_mut();
+    let res = unsafe { getifaddrs(&mut ifap) };
+
+    if res < 0 {
+        return Err(anyhow::anyhow!("failed to query interfaces"));
+    }
+
+    let mut ifap_iter = ifap;
+    let mut ifname = "".to_owned();
+    let mut ifaddr = 0;
+    while !ifap_iter.is_null() {
+        let name = unsafe { CStr::from_ptr((*ifap_iter).ifa_name) };
+        if (unsafe { strncmp(name.as_ptr(), "eth".as_ptr().cast(), 3) } == 0
+            || unsafe { strncmp(name.as_ptr(), "ens".as_ptr().cast(), 3) } == 0
+            || unsafe { strncmp(name.as_ptr(), "lo".as_ptr().cast(), 2) } == 0)
+            && unsafe { (*(*ifap_iter).ifa_addr).sa_family == libc::AF_INET as u16 }
+        {
+            ifname = name.to_str().context("non utf8 interface")?.to_owned();
+            ifaddr = unsafe {
+                (*(*ifap_iter).ifa_addr.cast::<libc::sockaddr_in>())
+                    .sin_addr
+                    .s_addr
+            };
+            break;
+        }
+        ifap_iter = unsafe { (*ifap_iter).ifa_next };
+    }
+
+    unsafe { freeifaddrs(ifap) };
+
+    if ifname == "" {
+        Err(anyhow::anyhow!("no matching interface found"))
+    } else {
+        Ok((ifname, ifaddr))
     }
 }
 
