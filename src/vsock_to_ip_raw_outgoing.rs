@@ -119,11 +119,11 @@ fn handle_conn(
         // IMPORTANT: checks are needed here, assume packets from the enclave to be untrusted
 
         // get src and dst addr
-        let src_addr = u32::from_be_bytes(buf[12..16].try_into().unwrap());
+        let src_addr = u32::from_ne_bytes(buf[12..16].try_into().unwrap());
         let dst_addr = u32::from_be_bytes(buf[16..20].try_into().unwrap());
 
-        // ignore packets not originating from 127.0.0.1
-        if src_addr != 0x7f000001 {
+        // ignore packets not originating from the interface address
+        if src_addr != ifaddr {
             continue;
         }
 
