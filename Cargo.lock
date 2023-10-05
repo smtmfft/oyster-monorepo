@@ -560,6 +560,7 @@ dependencies = [
  "axum",
  "clap",
  "hyper",
+ "libc",
  "tokio",
  "tokio-vsock",
 ]
