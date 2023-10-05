@@ -113,7 +113,13 @@ struct Cli {
 async fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
 
-    let app = Router::new().route("/job", get(|| async { cli.job_id }));
+    let (_, ip) = get_eth_interface().context("failed to get ethernet ip")?;
+    println!("ip: {:#010x}", ip);
+    let ip = ip.to_string();
+
+    let app = Router::new()
+        .route("/oyster/job", get(|| async { cli.job_id }))
+        .route("/instance/ip", get(|| async { ip }));
 
     axum::Server::builder(VsockServer {
         listener: VsockListener::bind(cli.vsock_addr.0, cli.vsock_addr.1)
