@@ -49,11 +49,15 @@ struct Cli {
     device: String,
 }
 
-fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), ProxyError> {
+fn handle_conn(
+    conn_socket: &mut Socket,
+    ip_socket: &mut Socket,
+    ip: &str,
+) -> Result<(), ProxyError> {
     let mut buf = vec![0u8; 65535].into_boxed_slice();
 
     // port does not matter
-    let internal_addr: SockAddr = "127.0.0.1:80".parse::<SocketAddrV4>().unwrap().into();
+    let internal_addr: SockAddr = format!("{ip}:80").parse::<SocketAddrV4>().unwrap().into();
 
     loop {
         // read till total size
@@ -89,6 +93,9 @@ fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), P
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
+    // get ip
+    let ip = std::fs::read_to_string("/app/ip.txt")?.trim().to_owned();
+
     // get ip socket
     let device = &cli.device;
     let mut ip_socket = new_ip_socket_with_backoff(device);
@@ -103,7 +110,7 @@ fn main() -> anyhow::Result<()> {
     loop {
         // do proxying
         // on errors, simply reset the erroring socket
-        match handle_conn(&mut conn_socket, &mut ip_socket) {
+        match handle_conn(&mut conn_socket, &mut ip_socket, &ip) {
             Ok(_) => {
                 // should never happen!
                 unreachable!("connection handler exited without error");
