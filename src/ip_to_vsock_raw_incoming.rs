@@ -27,177 +27,88 @@
 // While this should not be an issue in most cases since ephemeral ports do not extend there
 // and most applications use ports lower than ephemeral, it _is_ a breaking change
 
-use std::io::Read;
-use std::net::SocketAddrV4;
-use std::thread::sleep;
-use std::time::Duration;
+// for incoming packets, we need to _intercept_ them and not just get a copy
+// raw sockets do the latter, therefore we go with iptables and nfqueue
+// iptables can be used to redirect packets to a nfqueue
+// we read it here, do NAT and forward onwards
 
-use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+use clap::Parser;
+use nfq::{Queue, Verdict};
+use socket2::{SockAddr, Socket};
 
-use raw_proxy::{ProxyError, SocketError};
+use raw_proxy::{
+    new_nfq_with_backoff, new_vsock_socket_with_backoff, ProxyError, SocketError, VsockAddrParser,
+};
 
-fn handle_conn(conn_socket: &mut Socket, ip_socket: &mut Socket) -> Result<(), ProxyError> {
-    let mut buf = vec![0u8; 65535].into_boxed_slice();
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    /// vsock address to forward packets to <cid:port>
+    #[clap(short, long, value_parser = VsockAddrParser{})]
+    vsock_addr: SockAddr,
+    /// nfqueue number of the listener <num>
+    #[clap(short, long, value_parser)]
+    queue_num: u16,
+}
+
+fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
-        // read till total size
-        conn_socket
-            .read_exact(&mut buf[0..4])
+        let mut msg = queue
+            .recv()
             .map_err(SocketError::ReadError)
-            .map_err(ProxyError::VsockError)?;
+            .map_err(ProxyError::NfqError)?;
 
-        let size: usize = u16::from_be_bytes(buf[2..4].try_into().unwrap()).into();
+        let buf = msg.get_payload_mut();
 
-        // read till full frame
-        conn_socket
-            .read_exact(&mut buf[4..size])
-            .map_err(SocketError::ReadError)
-            .map_err(ProxyError::VsockError)?;
-
-        // send through ip sock
+        // send
         let mut total_sent = 0;
-        while total_sent < size {
-            let size = ip_socket
-                .send_to(
-                    &buf[total_sent..size],
-                    // port does not matter
-                    &"127.0.0.1:80".parse::<SocketAddrV4>().unwrap().into(),
-                )
+        while total_sent < buf.len() {
+            let size = conn_socket
+                .send(&buf[total_sent..])
                 .map_err(SocketError::WriteError)
-                .map_err(ProxyError::IpError)?;
+                .map_err(ProxyError::VsockError)?;
             total_sent += size;
         }
-    }
-}
 
-fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
-    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
-        .map_err(|e| SocketError::CreateError {
-            domain: Domain::VSOCK,
-            r#type: Type::STREAM,
-            protocol: None,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .connect(addr)
-        .map_err(|e| SocketError::ConnectError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .shutdown(std::net::Shutdown::Write)
-        .map_err(|e| SocketError::ShutdownError {
-            side: std::net::Shutdown::Write,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-
-    Ok(vsock_socket)
-}
-
-fn new_ip_socket(device: &str) -> Result<Socket, ProxyError> {
-    let ip_socket = Socket::new(Domain::IPV4, Type::RAW, Protocol::TCP.into())
-        .map_err(|e| SocketError::CreateError {
-            domain: Domain::IPV4,
-            r#type: Type::RAW,
-            protocol: Protocol::TCP.into(),
-            source: e,
-        })
-        .map_err(ProxyError::IpError)?;
-    ip_socket
-        .bind_device(device.as_bytes().into())
-        .map_err(|e| SocketError::BindError {
-            addr: device.to_owned(),
-            source: e,
-        })
-        .map_err(ProxyError::IpError)?;
-    ip_socket
-        .set_header_included(true)
-        .map_err(|e| SocketError::OptionError("IP_HDRINCL".to_owned(), e))
-        .map_err(ProxyError::IpError)?;
-    // shutdown does not work since socket is not connected, set buffer size to 0 instead
-    ip_socket
-        .set_recv_buffer_size(0)
-        .map_err(|e| SocketError::ShutdownError {
-            side: std::net::Shutdown::Read,
-            source: e,
-        })
-        .map_err(ProxyError::IpError)?;
-
-    Ok(ip_socket)
-}
-
-fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
-    loop {
-        match new_vsock_socket(addr) {
-            Ok(vsock_socket) => return vsock_socket,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
-}
-
-fn new_ip_socket_with_backoff(device: &str, backoff: &mut u64) -> Socket {
-    loop {
-        match new_ip_socket(device) {
-            Ok(ip_socket) => return ip_socket,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
+        // verdicts
+        msg.set_verdict(Verdict::Drop);
+        queue
+            .verdict(msg)
+            .map_err(|e| SocketError::VerdictError(Verdict::Drop, e))
+            .map_err(ProxyError::NfqError)?;
     }
 }
 
 fn main() -> anyhow::Result<()> {
-    let mut backoff = 1u64;
+    let cli = Cli::parse();
 
-    // get ip socket
-    let device = "lo";
-    let mut ip_socket = new_ip_socket_with_backoff(device, &mut backoff);
-
-    // reset backoff on success
-    backoff = 1;
+    // nfqueue for incoming packets
+    let queue_num = cli.queue_num;
+    let mut queue = new_nfq_with_backoff(queue_num);
 
     // get vsock socket
-    let vsock_addr = &SockAddr::vsock(3, 1201);
-    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
-
-    // reset backoff on success
-    backoff = 1;
+    let vsock_addr = &cli.vsock_addr;
+    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
 
     loop {
         // do proxying
         // on errors, simply reset the erroring socket
-        match handle_conn(&mut vsock_socket, &mut ip_socket) {
+        match handle_conn(&mut vsock_socket, &mut queue) {
             Ok(_) => {
                 // should never happen!
                 unreachable!("connection handler exited without error");
             }
-            Err(err @ ProxyError::IpError(_)) => {
+            Err(err @ ProxyError::NfqError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
 
-                // get ip socket
-                ip_socket = new_ip_socket_with_backoff(device, &mut backoff);
-
-                // reset backoff on success
-                backoff = 1;
+                // get nfqueue
+                queue = new_nfq_with_backoff(queue_num);
             }
             Err(err @ ProxyError::VsockError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get vsock socket
-                vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
-
-                // reset backoff on success
-                backoff = 1;
+                vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
             }
             Err(err) => {
                 // should never happen!

@@ -27,13 +27,24 @@
 // While this should not be an issue in most cases since ephemeral ports do not extend there
 // and most applications use ports lower than ephemeral, it _is_ a breaking change
 
-use std::thread::sleep;
-use std::time::Duration;
-
+use clap::Parser;
 use nfq::{Queue, Verdict};
-use socket2::{Domain, SockAddr, Socket, Type};
+use socket2::{SockAddr, Socket};
 
-use raw_proxy::{ProxyError, SocketError};
+use raw_proxy::{
+    new_nfq_with_backoff, new_vsock_socket_with_backoff, ProxyError, SocketError, VsockAddrParser,
+};
+
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    /// vsock address to forward packets to <cid:port>
+    #[clap(short, long, value_parser = VsockAddrParser{})]
+    vsock_addr: SockAddr,
+    /// nfqueue number of the listener <num>
+    #[clap(short, long, value_parser)]
+    queue_num: u16,
+}
 
 fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyError> {
     loop {
@@ -44,64 +55,7 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
 
         let buf = msg.get_payload_mut();
 
-        // get src and dst addr
-        let src_addr = u32::from_be_bytes(buf[12..16].try_into().unwrap());
-        let dst_addr = u32::from_be_bytes(buf[16..20].try_into().unwrap());
-
-        // ignore packets not originating from 127.0.0.1
-        if src_addr != 0x7f000001 {
-            continue;
-        }
-
-        // https://en.wikipedia.org/wiki/Reserved_IP_addresses
-        // ignore packets sent to
-        // 0.0.0.0/8
-        if (dst_addr & 0xff000000) == 0x00000000 ||
-            // 10.0.0.0/8
-            (dst_addr & 0xff000000) == 0x0a000000 ||
-            // 100.64.0.0/10
-            (dst_addr & 0xffc00000) == 0x64400000 ||
-            // 127.0.0.0/8
-            (dst_addr & 0xff000000) == 0x7f000000 ||
-            // 169.254.0.0/16
-            (dst_addr & 0xffff0000) == 0xa9fe0000 ||
-            // 172.16.0.0/12
-            (dst_addr & 0xfff00000) == 0xac100000 ||
-            // 192.0.0.0/24
-            (dst_addr & 0xffffff00) == 0xc0000000 ||
-            // 192.0.2.0/24
-            (dst_addr & 0xffffff00) == 0xc0000200 ||
-            // 192.88.99.0/24
-            (dst_addr & 0xffffff00) == 0xc0586300 ||
-            // 192.168.0.0/16
-            (dst_addr & 0xffff0000) == 0xc0a80000 ||
-            // 198.18.0.0/15
-            (dst_addr & 0xfffe0000) == 0xc6120000 ||
-            // 198.51.100.0/24
-            (dst_addr & 0xffffff00) == 0xc6336400 ||
-            // 203.0.113.0/24
-            (dst_addr & 0xffffff00) == 0xcb007100 ||
-            // 224.0.0.0/4
-            (dst_addr & 0xf0000000) == 0xe0000000 ||
-            // 233.252.0.0/24
-            (dst_addr & 0xffffff00) == 0xe9fc0000 ||
-            // 240.0.0.0/4
-            (dst_addr & 0xf0000000) == 0xf0000000 ||
-            // 255.255.255.255/32
-            (dst_addr & 0xffffffff) == 0xffffffff
-        {
-            continue;
-        }
-
-        let ip_header_size = usize::from((buf[0] & 0x0f) * 4);
         let size = buf.len();
-        let src_port =
-            u16::from_be_bytes(buf[ip_header_size..ip_header_size + 2].try_into().unwrap());
-
-        if src_port != 80 && src_port != 443 && (src_port < 1024 || src_port > 61439) {
-            // silently drop
-            continue;
-        }
 
         // send through vsock
         let mut total_sent = 0;
@@ -109,7 +63,7 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
             let size = conn_socket
                 .send(&buf[total_sent..size])
                 .map_err(SocketError::WriteError)
-                .map_err(ProxyError::IpError)?;
+                .map_err(ProxyError::VsockError)?;
             total_sent += size;
         }
 
@@ -122,91 +76,16 @@ fn handle_conn(conn_socket: &mut Socket, queue: &mut Queue) -> Result<(), ProxyE
     }
 }
 
-fn new_vsock_socket(addr: &SockAddr) -> Result<Socket, ProxyError> {
-    let vsock_socket = Socket::new(Domain::VSOCK, Type::STREAM, None)
-        .map_err(|e| SocketError::CreateError {
-            domain: Domain::VSOCK,
-            r#type: Type::STREAM,
-            protocol: None,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .connect(addr)
-        .map_err(|e| SocketError::ConnectError {
-            addr: format!("{:?}, {:?}", addr.domain(), addr.as_vsock_address()),
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-    vsock_socket
-        .shutdown(std::net::Shutdown::Read)
-        .map_err(|e| SocketError::ShutdownError {
-            side: std::net::Shutdown::Read,
-            source: e,
-        })
-        .map_err(ProxyError::VsockError)?;
-
-    Ok(vsock_socket)
-}
-
-fn new_nfq() -> Result<Queue, ProxyError> {
-    let mut queue = Queue::open()
-        .map_err(|e| SocketError::OpenError("0".to_owned(), e))
-        .map_err(ProxyError::NfqError)?;
-    queue
-        .bind(0)
-        .map_err(|e| SocketError::BindError {
-            addr: "0".to_owned(),
-            source: e,
-        })
-        .map_err(ProxyError::NfqError)?;
-
-    Ok(queue)
-}
-
-fn new_vsock_socket_with_backoff(addr: &SockAddr, backoff: &mut u64) -> Socket {
-    loop {
-        match new_vsock_socket(addr) {
-            Ok(vsock_socket) => return vsock_socket,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
-}
-
-fn new_nfq_with_backoff(backoff: &mut u64) -> Queue {
-    loop {
-        match new_nfq() {
-            Ok(queue) => return queue,
-            Err(err) => {
-                println!("{:?}", anyhow::Error::from(err));
-
-                sleep(Duration::from_secs(*backoff));
-                *backoff = (*backoff * 2).clamp(1, 64);
-            }
-        };
-    }
-}
-
 fn main() -> anyhow::Result<()> {
-    let mut backoff = 1u64;
+    let cli = Cli::parse();
 
     // nfqueue for incoming packets
-    let mut queue = new_nfq_with_backoff(&mut backoff);
-
-    // reset backoff on success
-    backoff = 1;
+    let queue_addr = cli.queue_num;
+    let mut queue = new_nfq_with_backoff(queue_addr);
 
     // get vsock socket
-    let vsock_addr = &SockAddr::vsock(3, 1200);
-    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
-
-    // reset backoff on success
-    backoff = 1;
+    let vsock_addr = &cli.vsock_addr;
+    let mut vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
 
     loop {
         // do proxying
@@ -220,19 +99,13 @@ fn main() -> anyhow::Result<()> {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get nfqueue
-                queue = new_nfq_with_backoff(&mut backoff);
-
-                // reset backoff on success
-                backoff = 1;
+                queue = new_nfq_with_backoff(queue_addr);
             }
             Err(err @ ProxyError::VsockError(_)) => {
                 println!("{:?}", anyhow::Error::from(err));
 
                 // get vsock socket
-                vsock_socket = new_vsock_socket_with_backoff(vsock_addr, &mut backoff);
-
-                // reset backoff on success
-                backoff = 1;
+                vsock_socket = new_vsock_socket_with_backoff(vsock_addr);
             }
             Err(err) => {
                 // should never happen!
