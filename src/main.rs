@@ -1,5 +1,6 @@
 use std::ffi::CStr;
 use std::ffi::OsStr;
+use std::net::Ipv4Addr;
 use std::pin::Pin;
 use std::task::{ready, Poll};
 
@@ -93,7 +94,7 @@ fn get_eth_interface() -> anyhow::Result<(String, u32)> {
     if ifname == "" {
         Err(anyhow::anyhow!("no matching interface found"))
     } else {
-        Ok((ifname, ifaddr))
+        Ok((ifname, ifaddr.to_be()))
     }
 }
 
@@ -114,7 +115,8 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let (_, ip) = get_eth_interface().context("failed to get ethernet ip")?;
     println!("ip: {:#010x}", ip);
-    let ip = ip.to_string();
+    let ip = Ipv4Addr::from(ip).to_string();
+    println!("{ip}");
 
     let app = Router::new()
         .route("/oyster/job", get(|| async { cli.job_id }))
