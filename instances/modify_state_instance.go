@@ -168,10 +168,9 @@ func TerminateInstance(instanceID string, profile string, region string) {
 	log.Info("Termination Successful!")
 }
 
-func CreateAMI(instanceID string, profile string, region string, arch string) {
+func CreateAMI(amiName string, instanceID string, profile string, region string, arch string) {
 	client := GetClient(profile, region)
 	resource := ec2.ResourceTypeImage
-	amiName := "marlin/oyster/worker-" + arch + "-" + time.Now().UTC().Format("20060102")
 	res, err := client.CreateImage(&ec2.CreateImageInput{
 		InstanceId: aws.String(instanceID),
 		Name:       aws.String(amiName),
