@@ -125,10 +125,10 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo apt -y install network-manager")
 
 	// proxies
-	RunCommand(client, "wget -O vsock-to-ip-transparent http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-transparent_v1.0.0_linux_"+arch)
-	RunCommand(client, "chmod +x vsock-to-ip-transparent")
-	RunCommand(client, "wget -O port-to-vsock-transparent http://public.artifacts.marlin.pro/projects/enclaves/port-to-vsock-transparent_v1.0.0_linux_"+arch)
-	RunCommand(client, "chmod +x port-to-vsock-transparent")
+	RunCommand(client, "wget -O vsock-to-ip-raw-outgoing http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-raw-outgoing_v1.0.0_linux_"+arch)
+	RunCommand(client, "chmod +x vsock-to-ip-raw-outgoing")
+	RunCommand(client, "wget -O ip-to-vsock-raw-incoming http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-raw-incoming_v1.0.0_linux_"+arch)
+	RunCommand(client, "chmod +x ip-to-vsock-raw-incoming")
 
 	// supervisord
 	RunCommand(client, "sudo apt-get -y install supervisor")
