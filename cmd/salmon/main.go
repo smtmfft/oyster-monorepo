@@ -96,7 +96,8 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 	)
 	SetupPreRequisites(client, *(instance.PublicIpAddress), newInstanceID, profile, region, arch)
 
-	instances.CreateAMI(newInstanceID, profile, region, arch)
+	amiName := "marlin/oyster/worker-salmon-" + arch + "-" + time.Now().UTC().Format("20060102")
+	instances.CreateAMI(amiName, newInstanceID, profile, region, arch)
 	time.Sleep(7 * time.Minute)
 	TearDown(newInstanceID, profile, region)
 }
