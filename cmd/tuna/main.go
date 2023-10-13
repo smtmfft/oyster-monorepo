@@ -138,11 +138,11 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 	RunCommand(client, "sudo apt-get -y install supervisor")
 
 	// proxies conf
-	connect.TransferFile(client.Config, host, "./proxies.conf", "/home/ubuntu/proxies.conf")
+	connect.TransferFile(client.Config, host, "./cmd/tuna/proxies.conf", "/home/ubuntu/proxies.conf")
 	RunCommand(client, "sudo mv /home/ubuntu/proxies.conf /etc/supervisor/conf.d/proxies.conf")
 
 	// init server conf
-	connect.TransferFile(client.Config, host, "./oyster-init-server.conf", "/home/ubuntu/oyster-init-server.conf")
+	connect.TransferFile(client.Config, host, "./cmd/tuna/oyster-init-server.conf", "/home/ubuntu/oyster-init-server.conf")
 	RunCommand(client, "sudo mv /home/ubuntu/oyster-init-server.conf /etc/supervisor/conf.d/oyster-init-server.conf")
 
 	RunCommand(client, "sudo supervisorctl reload")
