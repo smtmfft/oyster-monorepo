@@ -4,5 +4,5 @@ instance.json
 Pulumi.*.yaml
 OysterSetupAWS
 .gitsigners
-tuna
-salmon
+/tuna
+/salmon
