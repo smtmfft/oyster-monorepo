@@ -132,7 +132,7 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 
 	// supervisord
 	RunCommand(client, "sudo apt-get -y install supervisor")
-	connect.TransferFile(client.Config, host, "./proxies.conf", "/home/ubuntu/proxies.conf")
+	connect.TransferFile(client.Config, host, "./cmd/salmon/proxies.conf", "/home/ubuntu/proxies.conf")
 	RunCommand(client, "sudo mv /home/ubuntu/proxies.conf /etc/supervisor/conf.d/proxies.conf")
 	RunCommand(client, "sudo supervisorctl reload")
 
