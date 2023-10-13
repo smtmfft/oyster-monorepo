@@ -76,7 +76,7 @@ func main() {
 
 func create_ami(keyPairName string, keyStoreLocation string, profile string, region string, arch string) {
 	log.Info("Creating AMI for " + arch)
-	name := "oyster_" + arch
+	name := "oyster_salmon_" + arch
 	newInstanceID := ""
 	exist, instance := instances.GetInstanceFromNameTag(name, profile, region)
 	if exist {
