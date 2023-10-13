@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string, arch string, subnetId string, secGroupID string) (*ec2.Reservation, error) {
