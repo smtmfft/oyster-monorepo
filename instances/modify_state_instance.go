@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string, arch string, subnetId string, secGroupID string) (*ec2.Reservation, error) {
+func CreateInstance(name string, client *ec2.EC2, imageId string, minCount int, maxCount int, instanceType string, keyName string, arch string, subnetId string, secGroupID string) (*ec2.Reservation, error) {
 	res, err := client.RunInstances(&ec2.RunInstancesInput{
 		ImageId:        aws.String(imageId),
 		MinCount:       aws.Int64(int64(minCount)),
@@ -37,8 +37,6 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
 		return nil, err
 	}
 
-	name := "oyster_" + arch
-
 	_, errtag := client.CreateTags(&ec2.CreateTagsInput{
 		Resources: []*string{res.Instances[0].InstanceId},
 		Tags: []*ec2.Tag{
@@ -62,7 +60,7 @@ func CreateInstance(client *ec2.EC2, imageId string, minCount int, maxCount int,
 	return res, nil
 }
 
-func LaunchInstance(keyPairName string, profile string, region string, arch string) *string {
+func LaunchInstance(name string, keyPairName string, profile string, region string, arch string) *string {
 	log.Info("Launching Instance.")
 
 	ec2Client := GetClient(profile, region)
@@ -109,7 +107,7 @@ func LaunchInstance(keyPairName string, profile string, region string, arch stri
 
 	subnetId := *subnet.SubnetId
 	securityGroupID := *securityGroup.GroupId
-	newInstance, err := CreateInstance(ec2Client, imageId, minCount, maxCount, instanceType, keyName, arch, subnetId, securityGroupID)
+	newInstance, err := CreateInstance(name, ec2Client, imageId, minCount, maxCount, instanceType, keyName, arch, subnetId, securityGroupID)
 	if err != nil {
 		log.Error("Couldn't create new instance: %v", err)
 		return nil
