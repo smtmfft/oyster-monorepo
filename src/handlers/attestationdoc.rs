@@ -1,8 +1,10 @@
 use crate::types::handlers::AppState;
-use actix_web::{post, web, App, HttpServer, Responder, Result};
+use actix_web::{error, http::StatusCode, post, web, App, HttpServer, Responder, Result};
+use derive_more::{Display, Error};
 use libsodium_sys::crypto_sign;
-use oyster::verify;
-use serde::Deserialize;
+use oyster;
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, Bytes};
 #[derive(Deserialize)]
 struct VerifyAttestation {
     attestation_doc: Vec<u8>,
@@ -12,8 +14,10 @@ struct VerifyAttestation {
     max_age: usize,
 }
 
-#[derive(Deserialize)]
+#[serde_as]
+#[derive(Serialize)]
 struct VerifyAttestationResponse {
+    #[serde_as(as = "Bytes")]
     sig: [u8; 64],
 }
 
@@ -22,14 +26,28 @@ pub enum UserError {
     InternalServerError,
 }
 
+impl error::ResponseError for UserError {
+    fn error_response(&self) -> actix_web::HttpResponse<actix_web::body::BoxBody> {
+        actix_web::HttpResponse::build(self.status_code())
+            .insert_header(actix_web::http::header::ContentType::plaintext())
+            .body(self.to_string())
+    }
+
+    fn status_code(&self) -> actix_web::http::StatusCode {
+        match self {
+            UserError::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
 #[post("/verify/attestation")]
 async fn verify(
     attestation: web::Json<VerifyAttestation>,
     state: web::Data<AppState>,
 ) -> actix_web::Result<impl Responder, UserError> {
-    let result = match verify(
-        attestation.attestation_doc,
-        attestation.pcrs,
+    let result = match oyster::verify(
+        attestation.attestation_doc.clone(),
+        attestation.pcrs.clone(),
         attestation.min_cpus,
         attestation.min_mem,
         attestation.max_age,
@@ -50,7 +68,7 @@ async fn verify(
             state.private_key.as_ptr(),
         );
         if is_signed != 0 {
-            return UserError::InternalServerError;
+            return Err(UserError::InternalServerError);
         }
     }
     Ok(web::Json(VerifyAttestationResponse { sig }))
