@@ -1,5 +1,5 @@
 use crate::types::handlers::AppState;
-use actix_web::{error, http::StatusCode, post, web, App, HttpServer, Responder, Result};
+use actix_web::{error, http::StatusCode, post, web, Responder};
 use derive_more::{Display, Error};
 use libsodium_sys::crypto_sign;
 use oyster;

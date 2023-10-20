@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate lazy_static;
-use actix_web::{rt::spawn, web, App, HttpServer};
+use actix_web::{web, App, HttpServer};
 use std::error::Error;
 use std::fs;
 
