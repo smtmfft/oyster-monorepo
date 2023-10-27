@@ -11,6 +11,7 @@ pub struct Server {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Enclave {
     pub privatekeypath: String,
+    pub publickeypath: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -2,6 +2,7 @@ use serde::Deserialize;
 
 pub struct AppState {
     pub private_key: Vec<u8>,
+    pub public_key: Vec<u8>,
 }
 
 #[derive(Deserialize)]
