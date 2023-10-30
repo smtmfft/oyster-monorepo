@@ -15,9 +15,16 @@ pub struct Enclave {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct Scep {
+    pub privatekeypath: String,
+    pub publickeypath: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Configuration {
     pub server: Server,
     pub enclave: Enclave,
+    pub scep: Scep,
     pub env: ENV,
 }
 impl Configuration {

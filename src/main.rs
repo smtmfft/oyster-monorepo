@@ -17,13 +17,17 @@ lazy_static! {
 }
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let private_key = fs::read(CONFIG.enclave.privatekeypath.clone())?;
-    let public_key = fs::read(CONFIG.enclave.publickeypath.clone())?;
+    let enclave_private_key = fs::read(CONFIG.enclave.privatekeypath.clone())?;
+    let enclave_public_key = fs::read(CONFIG.enclave.publickeypath.clone())?;
+    let scep_private_key = fs::read(CONFIG.scep.privatekeypath.clone())?;
+    let scep_public_key = fs::read(CONFIG.scep.publickeypath.clone())?;
     let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
-                private_key: private_key.clone(),
-                public_key: public_key.clone(),
+                enclave_private_key: enclave_private_key.clone(),
+                enclave_public_key: enclave_public_key.clone(),
+                scep_private_key: scep_private_key.clone(),
+                scep_public_key: scep_public_key.clone(),
             }))
             .service(handlers::attestationdoc::verify)
     })

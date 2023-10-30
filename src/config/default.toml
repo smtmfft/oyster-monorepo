@@ -5,3 +5,7 @@ ip = "127.0.0.1"
 [enclave]
 privatekeypath = "./secret.key"
 publickeypath = "./public.key"
+
+[scep]
+privatekeypath = "./secret.key"
+publickeypath = "./public.key"

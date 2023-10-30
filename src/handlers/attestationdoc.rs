@@ -4,6 +4,7 @@ use derive_more::{Display, Error};
 use ethers;
 use hex;
 use libsodium_sys::crypto_sign;
+use libsodium_sys::crypto_sign_verify_detached;
 use oyster;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
@@ -75,11 +76,27 @@ fn address_from_pubkey(pub_key: &[u8; 32]) -> ethers::types::Address {
     ethers::types::Address::from_slice(&hash[12..])
 }
 
+fn verification_message(pubkey: &Vec<u8>) -> String {
+    const PREFIX: &str = "attestation-verification-";
+    format!("{}{:?}", PREFIX.to_string(), pubkey)
+}
 #[post("/verify/attestation")]
 async fn verify(
     attestation: web::Json<VerifyAttestation>,
     state: web::Data<AppState>,
 ) -> actix_web::Result<impl Responder, UserError> {
+    let msg = verification_message(&state.scep_public_key);
+    unsafe {
+        let is_verified = crypto_sign_verify_detached(
+            attestation.signature.clone().as_mut_ptr(),
+            msg.as_ptr(),
+            msg.len() as u64,
+            state.enclave_public_key.as_ptr(),
+        );
+        if is_verified != 0 {
+            return Err(UserError::InternalServerError);
+        }
+    }
     let pub_key = oyster::verify(
         attestation.attestation_doc.clone(),
         attestation.pcrs.clone(),
@@ -108,7 +125,7 @@ async fn verify(
             std::ptr::null_mut(),
             msg_to_sign.as_ptr(),
             msg_to_sign.len() as u64,
-            state.private_key.as_ptr(),
+            state.scep_private_key.as_ptr(),
         );
         if is_signed != 0 {
             return Err(UserError::InternalServerError);
