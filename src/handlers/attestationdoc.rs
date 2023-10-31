@@ -1,3 +1,4 @@
+use crate::config::Scep;
 use crate::types::handlers::AppState;
 use actix_web::{error, http::StatusCode, post, web, Responder};
 use derive_more::{Display, Error};
@@ -6,8 +7,10 @@ use hex;
 use libsodium_sys::crypto_sign;
 use libsodium_sys::crypto_sign_verify_detached;
 use oyster;
+use secp256k1;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
+use sha256::digest;
 
 #[derive(Deserialize)]
 struct VerifyAttestation {
@@ -22,8 +25,7 @@ struct VerifyAttestation {
 #[serde_as]
 #[derive(Serialize)]
 struct VerifyAttestationResponse {
-    #[serde_as(as = "Bytes")]
-    sig: [u8; 64],
+    sig: String,
 }
 
 #[derive(Debug, Display, Error)]
@@ -116,21 +118,17 @@ async fn verify(
         attestation.min_cpus,
         attestation.min_mem,
     );
-    let mut sig = [0u8; 64];
+
     const SIG_PREFIX: &str = "signed-attestation-verification-";
     let msg_to_sign = format!("{}{}", SIG_PREFIX.to_string(), hex::encode(abi_encoded));
-    unsafe {
-        let is_signed = crypto_sign(
-            sig.as_mut_ptr(),
-            std::ptr::null_mut(),
-            msg_to_sign.as_ptr(),
-            msg_to_sign.len() as u64,
-            state.scep_private_key.as_ptr(),
-        );
-        if is_signed != 0 {
-            return Err(UserError::InternalServerError);
-        }
-    }
+    let msg_to_sign = digest(msg_to_sign);
+    let msg_to_sign = secp256k1::Message::from_digest_slice(msg_to_sign.as_bytes())
+        .map_err(|_| UserError::InternalServerError)?;
+    let secp = secp256k1::Secp256k1::new();
+
+    let sig = secp
+        .sign_ecdsa(&msg_to_sign, &state.scep_private_key)
+        .to_string();
     Ok(web::Json(VerifyAttestationResponse { sig }))
 }
 
@@ -139,13 +137,64 @@ async fn verify(
 mod tests {
     use super::*;
     use std::fs;
+    // #[actix_web::test]
+    // async fn test_attestation() {
+    //     println!("testing");
+    //     let attestation_doc = fs::read("./attestation_doc").unwrap();
+    //     let mut pcrs = Vec::new();
+    //     pcrs.push("3a2c64486fc890a1f65e82c195632b35a1b97d7595c666b8c83e91b56b92568abbeca0829269e40e4b76a6df963157da".to_string());
+    //     //pcrs.push("55ba3fa530581218580584144ce29c62c1c92f93c0bfcefead49c5fa174f15ba49a66a037957377abe34591364cbe935".to_string());
+    //     pcrs.push("be9dc8acb9b26e67f2919fe877f94271c79289989455013c66a5f2cc637a9355665bc9d89b7aed986f7b4c269acc1233".to_string());
+    //     pcrs.push("2cd79888cf800407c2bdd2165be71b8484561430942b314832cb11208ce774c757767893a84f52c46a41185f2248989f".to_string());
+    //     //pcrs.push("f064a1f5d2c0f49e3023a2f121c58ff5567ed423180da1f232f42093074b32f3e471b6bc946b9003e4725c9c2168ff25".to_string());
+    //     let result = oyster::verify(attestation_doc, pcrs, 2, 4134580224, 300000000).unwrap();
+    //     println!("publickey: {:?}", result);
+    // }
+
     #[actix_web::test]
-    async fn test_attestation() {
+    async fn test_request_signature_verification() {
+        let enclave_pub_key = fs::read("./enclave_public.key").unwrap();
+        let enclave_priv_key = fs::read("./enclave_private.key").unwrap();
+        let scep_pub_key = fs::read("./public.key").unwrap();
+
+        let msg_to_sign = verification_message(&scep_pub_key);
+        let mut sig = [0u8; 64];
+        unsafe {
+            let is_signed = crypto_sign(
+                sig.as_mut_ptr(),
+                std::ptr::null_mut(),
+                msg_to_sign.as_ptr(),
+                msg_to_sign.len() as u64,
+                enclave_priv_key.as_ptr(),
+            );
+            if is_signed != 0 {
+                panic!("not signed");
+            }
+        }
+
+        unsafe {
+            let is_verified = crypto_sign_verify_detached(
+                sig.clone().as_mut_ptr(),
+                msg_to_sign.as_ptr(),
+                msg_to_sign.len() as u64,
+                enclave_pub_key.as_ptr(),
+            );
+            if is_verified != 0 {
+                panic!("not verified");
+            }
+        }
+    }
+
+    #[actix_web::test]
+    async fn test_signature_generation() {
+        println!("testing");
         let attestation_doc = fs::read("./attestation_doc").unwrap();
         let mut pcrs = Vec::new();
-        pcrs.push("55ba3fa530581218580584144ce29c62c1c92f93c0bfcefead49c5fa174f15ba49a66a037957377abe34591364cbe935".to_string());
+        pcrs.push("3a2c64486fc890a1f65e82c195632b35a1b97d7595c666b8c83e91b56b92568abbeca0829269e40e4b76a6df963157da".to_string());
+        //pcrs.push("55ba3fa530581218580584144ce29c62c1c92f93c0bfcefead49c5fa174f15ba49a66a037957377abe34591364cbe935".to_string());
         pcrs.push("be9dc8acb9b26e67f2919fe877f94271c79289989455013c66a5f2cc637a9355665bc9d89b7aed986f7b4c269acc1233".to_string());
-        pcrs.push("f064a1f5d2c0f49e3023a2f121c58ff5567ed423180da1f232f42093074b32f3e471b6bc946b9003e4725c9c2168ff25".to_string());
+        pcrs.push("2cd79888cf800407c2bdd2165be71b8484561430942b314832cb11208ce774c757767893a84f52c46a41185f2248989f".to_string());
+        //pcrs.push("f064a1f5d2c0f49e3023a2f121c58ff5567ed423180da1f232f42093074b32f3e471b6bc946b9003e4725c9c2168ff25".to_string());
         let result = oyster::verify(attestation_doc, pcrs, 2, 4134580224, 300000000).unwrap();
         println!("publickey: {:?}", result);
     }

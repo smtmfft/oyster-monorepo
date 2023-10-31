@@ -21,6 +21,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let enclave_public_key = fs::read(CONFIG.enclave.publickeypath.clone())?;
     let scep_private_key = fs::read(CONFIG.scep.privatekeypath.clone())?;
     let scep_public_key = fs::read(CONFIG.scep.publickeypath.clone())?;
+    let scep_private_key = secp256k1::SecretKey::from_slice(&scep_private_key)?;
     let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
