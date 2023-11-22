@@ -76,6 +76,42 @@ pub async fn get_requested_service_quota_status(request_id: String) -> Result<St
     Ok(status)
 }
 
+pub async fn get_requested_service_quota_last_updated(request_id: String) -> Result<DateTime<Local>> {
+    let config = aws_config::load_from_env().await;
+    let client = aws_sdk_servicequotas::Client::new(&config);
+
+    let get_requested_service_quota_change = client
+        .get_requested_service_quota_change()
+        .request_id(request_id);
+
+    let res = get_requested_service_quota_change
+        .send()
+        .await
+        .context("Error getting service quota increase request info")?;
+
+    let aws_time = res
+        .requested_quota()
+        .unwrap()
+        .last_updated()
+        .unwrap()
+        .to_owned();
+
+    let chrono_time = Local
+        .timestamp_millis_opt(aws_time
+            .to_millis()
+            .context("Error during translation of AWS_SDK_EC2 primitive DateTime to millis")?);
+
+    match chrono_time {
+        Single(time) => {
+            Ok(time)
+        }
+
+        _ => {
+            Err(anyhow!("Error during conversion of AWS_SDK_EC2 primitive DateTime to chrono DateTime"))
+        }    
+    }
+}
+
 pub async fn get_latest_request_id(service: String, quota_code: String) -> Option<String> {
     let config = aws_config::load_from_env().await;
     let client = aws_sdk_servicequotas::Client::new(&config);
