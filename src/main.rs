@@ -1,12 +1,14 @@
 mod current_usage;
 mod service_quotas;
 mod utils;
+mod scheduled_tasks;
 
 use std::collections::HashMap;
 
 use anyhow::Context;
 use chrono;
 use clap::Parser;
+use tokio::time::{Duration, interval};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -28,6 +30,24 @@ struct Cli {
 
     #[clap(long, value_parser)]
     request_id: Option<String>,
+
+    #[clap(long, value_parser, default_value = "900")]
+    monitor_interval_secs: u64,
+
+    #[clap(long, value_parser, default_value = "5")]
+    no_update_days_threshold: i64,
+
+    #[clap(long, value_parser, default_value = "75.0")]
+    vcpu_usage_threshold_percent: f64,
+
+    #[clap(long, value_parser, default_value = "75.0")]
+    elastic_ip_usage_threshold_percent: f64,
+
+    #[clap(long, value_parser, default_value = "50.0")]
+    vcpu_qouta_increment_percent: f64,
+
+    #[clap(long, value_parser, default_value = "50.0")]
+    elastic_ip_quota_increment_percent: f64,
 }
 
 async fn limit_status() {
@@ -127,4 +147,14 @@ async fn main() {
     } else {
         println!("No recognised action specified.");
     }
+
+    let mut vcpu_request_id = service_quotas::get_latest_request_id(
+        service_quotas::EC2_SERVICE_CODE.to_string(), 
+        service_quotas::VCPU_QUOTA_CODE.to_string())
+        .await;
+    let mut elastic_ip_request_id = service_quotas::get_latest_request_id(
+        service_quotas::EC2_SERVICE_CODE.to_string(),
+        service_quotas::ELASTIC_IP_QUOTA_CODE.to_string())
+        .await;
+    
 }

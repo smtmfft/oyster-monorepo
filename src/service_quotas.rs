@@ -1,6 +1,9 @@
-use anyhow::{Context, Result};
+use crate::utils::log_data;
+
+use anyhow::{Result, Context, anyhow};
 use aws_config;
 use aws_sdk_servicequotas;
+use chrono::{DateTime, Local, TimeZone, LocalResult::Single};
 
 pub const VCPU_QUOTA_CODE: &str = "L-1216C47A";
 pub const ELASTIC_IP_QUOTA_CODE: &str = "L-0263D0A3";
@@ -71,4 +74,38 @@ pub async fn get_requested_service_quota_status(request_id: String) -> Result<St
         .to_string();
 
     Ok(status)
+}
+
+pub async fn get_latest_request_id(service: String, quota_code: String) -> Option<String> {
+    let config = aws_config::load_from_env().await;
+    let client = aws_sdk_servicequotas::Client::new(&config);
+
+    let get_requested_service_quota_change_list = client
+        .list_requested_service_quota_change_history_by_quota()
+        .quota_code(&quota_code)
+        .service_code(&service);
+        
+    match get_requested_service_quota_change_list.send().await {
+        Ok(res) => {
+            let requested_quota_change_history = res.requested_quotas.unwrap_or(Vec::new());
+
+            if requested_quota_change_history.is_empty() {
+                None
+            }else {
+                let latest_request_id = requested_quota_change_history
+                    .first()
+                    .unwrap()
+                    .id()
+                    .unwrap()
+                    .to_string();
+                
+                Some(latest_request_id)
+            }
+        }
+
+        Err(e) => {
+            log_data(format!("\n[SCHEDULER] Error fetching list of service quota change requests for service {} and code {}: {:?}", service, quota_code, e));
+            None
+        }
+    }
 }
