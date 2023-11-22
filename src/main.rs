@@ -157,4 +157,23 @@ async fn main() {
         service_quotas::ELASTIC_IP_QUOTA_CODE.to_string())
         .await;
     
+    let interval_duration = Duration::from_secs(cli.monitor_interval_secs); 
+    let mut interval = interval(interval_duration);
+    
+    loop {
+        interval.tick().await;
+    
+        scheduled_tasks::request_monitor(&mut vcpu_request_id, 
+            &mut elastic_ip_request_id, 
+            cli.no_update_days_threshold)
+            .await;
+    
+        scheduled_tasks::usage_monitor(&mut vcpu_request_id, 
+            &mut elastic_ip_request_id, 
+            cli.vcpu_usage_threshold_percent, 
+            cli.vcpu_qouta_increment_percent, 
+            cli.elastic_ip_usage_threshold_percent, 
+            cli.elastic_ip_quota_increment_percent)
+            .await;
+    }
 }
