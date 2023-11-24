@@ -3,9 +3,7 @@ port = "8080"
 ip = "127.0.0.1"
 
 [enclave]
-privatekeypath = "./enclave_private.key"
 publickeypath = "./enclave_public.key"
 
 [scep]
 privatekeypath = "./secret.key"
-publickeypath = "./public.key"
