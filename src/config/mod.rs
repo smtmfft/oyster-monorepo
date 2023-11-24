@@ -14,7 +14,7 @@ pub struct Enclave {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct Scep {
+pub struct Secp {
     pub privatekeypath: String,
 }
 
@@ -22,7 +22,7 @@ pub struct Scep {
 pub struct Configuration {
     pub server: Server,
     pub enclave: Enclave,
-    pub scep: Scep,
+    pub secp: Secp,
     pub env: ENV,
 }
 impl Configuration {
