@@ -1,3 +1,3 @@
 # oyster-attestation-verifier
 
-Edit key paths in src/config before running
+cargo run -- --enclavepublickey enclave_public.key --secpprivatekey secret.key --ip 127.0.0.1 --port 8080
