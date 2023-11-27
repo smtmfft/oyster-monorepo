@@ -1,24 +1,37 @@
-#[macro_use]
-extern crate lazy_static;
 use actix_web::{web, App, HttpServer};
 use std::error::Error;
 use std::fs;
 
-mod config;
 mod handlers;
 mod types;
 
+use clap::Parser;
 use types::handlers::AppState;
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    /// path to enclave public key file
+    #[arg(short, long)]
+    enclavepublickey: String,
 
-// global config
-lazy_static! {
-    static ref CONFIG: config::Configuration =
-        config::Configuration::new().expect("config can be loaded");
+    /// path to secp private key file
+    #[arg(short, long)]
+    secpprivatekey: String,
+
+    /// server ip
+    #[arg(short, long)]
+    ip: String,
+
+    /// server port
+    #[arg(short, long)]
+    port: u16,
 }
+
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let enclave_public_key = fs::read(CONFIG.enclave.publickeypath.clone())?;
-    let secp_private_key = fs::read(CONFIG.secp.privatekeypath.clone())?;
+    let cli = Cli::parse();
+    let enclave_public_key = fs::read(cli.enclavepublickey.clone())?;
+    let secp_private_key = fs::read(cli.secpprivatekey.clone())?;
     let secp_private_key = secp256k1::SecretKey::from_slice(&secp_private_key)?;
     let secp = secp256k1::Secp256k1::new();
     let secp_public_key = secp_private_key.public_key(&secp).serialize_uncompressed();
@@ -31,12 +44,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }))
             .service(handlers::attestationdoc::verify)
     })
-    .bind((CONFIG.server.ip.clone(), CONFIG.server.port))?
+    .bind((cli.ip.clone(), cli.port))?
     .run();
-    println!(
-        "api server running at {}:{}",
-        CONFIG.server.ip, CONFIG.server.port
-    );
+    println!("api server running at {}:{}", cli.ip, cli.port);
     server.await?;
     Ok(())
 }
