@@ -1,147 +1,112 @@
-use crate::utils::log_data;
-
 use anyhow::{Result, Context, anyhow};
 use aws_config;
 use aws_sdk_servicequotas;
-use chrono::{DateTime, Local, TimeZone, LocalResult::Single};
-
-pub const VCPU_QUOTA_CODE: &str = "L-1216C47A";
-pub const ELASTIC_IP_QUOTA_CODE: &str = "L-0263D0A3";
-pub const EC2_SERVICE_CODE: &str = "ec2";
+use chrono::{DateTime, Local, TimeZone};
 
 pub async fn get_service_quota_limit(service: String, quota_code: String) -> Result<f64> {
     let config = aws_config::load_from_env().await;
     let client = aws_sdk_servicequotas::Client::new(&config);
-    let get_service_quota = client
+
+    Ok(client
         .get_service_quota()
         .quota_code(quota_code)
-        .service_code(service);
-
-    let res = get_service_quota
+        .service_code(service)
         .send()
         .await
-        .context("Error getting service quota")?;
-
-    let quota = res.quota().unwrap().value().unwrap();
-
-    Ok(quota)
+        .context("Error getting service quota from AWS client")?
+        .quota()
+        .ok_or(anyhow!("Could not parse service quota from AWS response"))?
+        .value()
+        .ok_or(anyhow!("Could not parse service quota value"))?
+    )
 }
 
 pub async fn request_service_quota_increase(
     service: String,
     quota_code: String,
-    desired_value: f64,
+    desired_value: f64
 ) -> Result<String> {
     let config = aws_config::load_from_env().await;
     let client = aws_sdk_servicequotas::Client::new(&config);
-    let request_service_quota_increase = client
+
+    Ok(client
         .request_service_quota_increase()
         .quota_code(quota_code)
         .service_code(service)
-        .desired_value(desired_value);
-
-    let res = request_service_quota_increase
+        .desired_value(desired_value)
         .send()
         .await
-        .context("Error requesting service quota increase")?;
-
-    let request_service_quota_change_id: String =
-        res.requested_quota().unwrap().id().unwrap().to_string();
-
-    Ok(request_service_quota_change_id)
+        .context("Error occurred while requesting service quota increase from AWS client")?
+        .requested_quota()
+        .ok_or(anyhow!("Could not parse requested service quota from AWS response"))?
+        .id()
+        .ok_or(anyhow!("Could not parse quota request ID"))?
+        .to_string()
+    )
 }
 
 pub async fn get_requested_service_quota_status(request_id: String) -> Result<String> {
     let config = aws_config::load_from_env().await;
     let client = aws_sdk_servicequotas::Client::new(&config);
 
-    let get_requested_service_quota_change = client
+    Ok(client
         .get_requested_service_quota_change()
-        .request_id(request_id);
-
-    let res = get_requested_service_quota_change
+        .request_id(request_id)
         .send()
         .await
-        .context("Error getting service quota increase request status")?;
-
-    let status = res
+        .context("Error getting service quota change request from AWS client")?
         .requested_quota()
-        .unwrap()
+        .ok_or(anyhow!("Could not parse requested service quota from AWS response"))?
         .status()
-        .unwrap()
+        .ok_or(anyhow!("Could not parse quota request status"))?
         .to_owned()
         .as_str()
-        .to_string();
-
-    Ok(status)
+        .to_string()
+    )
 }
 
 pub async fn get_requested_service_quota_last_updated(request_id: String) -> Result<DateTime<Local>> {
     let config = aws_config::load_from_env().await;
     let client = aws_sdk_servicequotas::Client::new(&config);
 
-    let get_requested_service_quota_change = client
-        .get_requested_service_quota_change()
-        .request_id(request_id);
-
-    let res = get_requested_service_quota_change
-        .send()
-        .await
-        .context("Error getting service quota increase request info")?;
-
-    let aws_time = res
-        .requested_quota()
-        .unwrap()
-        .last_updated()
-        .unwrap()
-        .to_owned();
-
-    let chrono_time = Local
-        .timestamp_millis_opt(aws_time
+    Ok(Local
+        .timestamp_millis_opt(client
+            .get_requested_service_quota_change()
+            .request_id(request_id)
+            .send()
+            .await
+            .context("Error getting service quota change request from AWS client")?
+            .requested_quota()
+            .ok_or(anyhow!("Could not parse requested service quota from AWS response"))?
+            .last_updated()
+            .ok_or(anyhow!("Could not parse quota request last updated time"))?
+            .to_owned()
             .to_millis()
-            .context("Error during translation of AWS_SDK_EC2 primitive DateTime to millis")?);
-
-    match chrono_time {
-        Single(time) => {
-            Ok(time)
-        }
-
-        _ => {
-            Err(anyhow!("Error during conversion of AWS_SDK_EC2 primitive DateTime to chrono DateTime"))
-        }    
-    }
+            .context("Error during translation of aws_sdk_ec2 primitive DateTime to millis")?
+        )
+        .earliest()
+        .ok_or(anyhow!("Error during conversion of aws_sdk_ec2 primitive DateTime to chrono DateTime"))?
+    )    
 }
 
-pub async fn get_latest_request_id(service: String, quota_code: String) -> Option<String> {
+pub async fn get_latest_request_id(service: String, quota_code: String) -> Result<Option<String>> {
     let config = aws_config::load_from_env().await;
     let client = aws_sdk_servicequotas::Client::new(&config);
 
-    let get_requested_service_quota_change_list = client
+    Ok(client
         .list_requested_service_quota_change_history_by_quota()
-        .quota_code(&quota_code)
-        .service_code(&service);
-        
-    match get_requested_service_quota_change_list.send().await {
-        Ok(res) => {
-            let requested_quota_change_history = res.requested_quotas.unwrap_or(Vec::new());
-
-            if requested_quota_change_history.is_empty() {
-                None
-            }else {
-                let latest_request_id = requested_quota_change_history
-                    .first()
-                    .unwrap()
-                    .id()
-                    .unwrap()
-                    .to_string();
-                
-                Some(latest_request_id)
-            }
-        }
-
-        Err(e) => {
-            log_data(format!("\n[SCHEDULER] Error fetching list of service quota change requests for service {} and code {}: {:?}", service, quota_code, e));
-            None
-        }
-    }
+        .quota_code(quota_code)
+        .service_code(service)
+        .send()
+        .await
+        .context("Error fetching the list of service quota change requests from AWS client")?
+        .requested_quotas
+        .ok_or(anyhow!("Could not parse requested service quotas from AWS response"))?
+        .first()
+        .map(|x| x
+            .id()
+            .ok_or(anyhow!("Could not parse quota request ID")))
+        .transpose()?
+        .map(|id| id.to_string())          
+    )
 }
