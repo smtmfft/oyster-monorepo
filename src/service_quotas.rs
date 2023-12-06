@@ -1,11 +1,14 @@
 use anyhow::{Result, Context, anyhow};
-use aws_config;
+use aws_config::SdkConfig;
 use aws_sdk_servicequotas;
 use chrono::{DateTime, Local, TimeZone};
 
-pub async fn get_service_quota_limit(service: String, quota_code: String) -> Result<f64> {
-    let config = aws_config::load_from_env().await;
-    let client = aws_sdk_servicequotas::Client::new(&config);
+pub async fn get_service_quota_limit(
+    config: &SdkConfig, 
+    service: String, 
+    quota_code: String
+) -> Result<f64> {
+    let client = aws_sdk_servicequotas::Client::new(config);
 
     Ok(client
         .get_service_quota()
@@ -22,12 +25,12 @@ pub async fn get_service_quota_limit(service: String, quota_code: String) -> Res
 }
 
 pub async fn request_service_quota_increase(
+    config: &SdkConfig,
     service: String,
     quota_code: String,
     desired_value: f64
 ) -> Result<String> {
-    let config = aws_config::load_from_env().await;
-    let client = aws_sdk_servicequotas::Client::new(&config);
+    let client = aws_sdk_servicequotas::Client::new(config);
 
     Ok(client
         .request_service_quota_increase()
@@ -45,9 +48,8 @@ pub async fn request_service_quota_increase(
     )
 }
 
-pub async fn get_requested_service_quota_status(request_id: String) -> Result<String> {
-    let config = aws_config::load_from_env().await;
-    let client = aws_sdk_servicequotas::Client::new(&config);
+pub async fn get_requested_service_quota_status(config: &SdkConfig, request_id: String) -> Result<String> {
+    let client = aws_sdk_servicequotas::Client::new(config);
 
     Ok(client
         .get_requested_service_quota_change()
@@ -65,9 +67,8 @@ pub async fn get_requested_service_quota_status(request_id: String) -> Result<St
     )
 }
 
-pub async fn get_requested_service_quota_last_updated(request_id: String) -> Result<DateTime<Local>> {
-    let config = aws_config::load_from_env().await;
-    let client = aws_sdk_servicequotas::Client::new(&config);
+pub async fn get_requested_service_quota_last_updated(config: &SdkConfig, request_id: String) -> Result<DateTime<Local>> {
+    let client = aws_sdk_servicequotas::Client::new(config);
 
     Ok(Local
         .timestamp_millis_opt(client
@@ -89,9 +90,12 @@ pub async fn get_requested_service_quota_last_updated(request_id: String) -> Res
     )    
 }
 
-pub async fn get_latest_request_id(service: String, quota_code: String) -> Result<Option<String>> {
-    let config = aws_config::load_from_env().await;
-    let client = aws_sdk_servicequotas::Client::new(&config);
+pub async fn get_latest_request_id(
+    config: &SdkConfig, 
+    service: String, 
+    quota_code: String
+) -> Result<Option<String>> {
+    let client = aws_sdk_servicequotas::Client::new(config);
 
     Ok(client
         .list_requested_service_quota_change_history_by_quota()

@@ -3,8 +3,10 @@ mod service_quotas;
 mod utils;
 mod scheduled_tasks;
 
+use aws_config::SdkConfig;
+use aws_types::region::Region;
 use clap::Parser;
-use chrono;
+use chrono::Local;
 use tokio::time::{Duration, interval};
 
 #[derive(Parser)]
@@ -45,16 +47,45 @@ struct Cli {
 
     #[clap(long, value_parser, default_value = "50.0")]
     elastic_ip_quota_increment_percent: f64,
+
+    #[clap(long, value_parser)]
+    aws_profile: String,
+
+    #[clap(long, value_parser,
+        default_value = "us-east-1,us-east-2,us-west-1,us-west-2,ca-central-1,sa-east-1,eu-north-1,eu-west-3,eu-west-2,eu-west-1,eu-central-1,eu-central-2,eu-south-1,eu-south-2,me-south-1,me-central-1,af-south-1,ap-south-1,ap-south-2,ap-northeast-1,ap-northeast-2,ap-northeast-3,ap-southeast-1,ap-southeast-2,ap-southeast-3,ap-southeast-4,ap-east-1")]
+    aws_regions: String,
 }
 
-async fn limit_status(quota_name: &str) {
-    let current_usage = current_usage::get_current_usage(quota_name).await;
+impl Cli {
+    fn clone(&self) -> Self {
+        Self {
+            limit_status: self.limit_status.clone(),
+            limit_increase: self.limit_increase.clone(),
+            request_status: self.request_status.clone(),
+            quota_name: self.quota_name.clone(),
+            quota_value: self.quota_value.clone(),
+            request_id: self.request_id.clone(),
+            monitor_interval_secs: self.monitor_interval_secs.clone(),
+            no_update_days_threshold: self.no_update_days_threshold.clone(),
+            vcpu_usage_threshold_percent: self.vcpu_usage_threshold_percent.clone(),
+            elastic_ip_usage_threshold_percent: self.elastic_ip_usage_threshold_percent.clone(),
+            vcpu_quota_increment_percent: self.vcpu_quota_increment_percent.clone(),
+            elastic_ip_quota_increment_percent: self.elastic_ip_quota_increment_percent.clone(),
+            aws_profile: self.aws_profile.clone(),
+            aws_regions: self.aws_regions.clone(),
+        }
+    }
+}
+
+async fn limit_status(quota_name: &str, config: &SdkConfig) {
+    let current_usage = current_usage::get_current_usage(quota_name, config).await;
     if current_usage.is_err() {
         eprintln!("Failed to get current usage of {}: {}", quota_name, current_usage.unwrap_err());
         return;
     }
 
     let quota_limit = service_quotas::get_service_quota_limit(
+        config,
         utils::EC2_SERVICE_CODE.to_string(), 
         utils::map_quota_to_code(quota_name).unwrap()
         ).await;
@@ -66,7 +97,10 @@ async fn limit_status(quota_name: &str) {
     println!("{}: {}/{}", quota_name, current_usage.unwrap(), quota_limit.unwrap());
 }
 
-async fn limit_increase(quota_name: &str, quota_value: f64) {
+async fn limit_increase(
+    quota_name: &str, 
+    quota_value: f64, 
+    config: &SdkConfig) {
     let quota_code = utils::map_quota_to_code(quota_name);
     if quota_code.is_none() {
         eprintln!("Quota name must be one of these:\n1. vcpu\n2. elastic_ip");
@@ -79,6 +113,7 @@ async fn limit_increase(quota_name: &str, quota_value: f64) {
     }
 
     match service_quotas::request_service_quota_increase(
+        config,
         utils::EC2_SERVICE_CODE.to_string(), 
         quota_code.unwrap(),
         quota_value)
@@ -88,7 +123,7 @@ async fn limit_increase(quota_name: &str, quota_value: f64) {
                 id,
                 quota_name,
                 quota_value,
-                chrono::Local::now().format("%Y-%m-%d %H:%M:%S")));
+                Local::now().format("%Y-%m-%d %H:%M:%S")));
 
             println!("Service quota increase requested!");
             println!("Request ID: {}", id);
@@ -97,44 +132,54 @@ async fn limit_increase(quota_name: &str, quota_value: f64) {
     }
 }
 
-async fn request_status(request_id: &str) {
+async fn request_status(request_id: &str, config: &SdkConfig) {
     if request_id.is_empty() {
         eprintln!("Valid request ID must be provided");
         return;
     }
             
-    match service_quotas::get_requested_service_quota_status(request_id.to_string())
+    match service_quotas::get_requested_service_quota_status(config, request_id.to_string())
         .await {
         Ok(stat) => println!("Status: {}", stat),
         Err(err) => eprintln!("Failed to get the status of provided request ID: {}", err),
     }
 }
 
-async fn schedule_monitoring(cli: Cli) {
-    let mut vcpu_request_id = scheduled_tasks::get_id(utils::VCPU_QUOTA_NAME).await;
-    let mut elastic_ip_request_id = scheduled_tasks::get_id(utils::ELASTIC_IP_QUOTA_NAME).await;   
+async fn schedule_monitoring(cli: Cli, region: String) {
+    let config = aws_config::from_env()
+        .profile_name(cli.aws_profile.as_str())
+        .region(Region::new(region))
+        .load()
+        .await;
+
+    let mut vcpu_request_id = scheduled_tasks::get_id(&config, utils::VCPU_QUOTA_NAME).await;
+    let mut elastic_ip_request_id = scheduled_tasks::get_id(&config, utils::ELASTIC_IP_QUOTA_NAME).await;   
     
     let interval_duration = Duration::from_secs(cli.monitor_interval_secs); 
     let mut interval = interval(interval_duration);
     
     loop {
         interval.tick().await;
-
-        vcpu_request_id = scheduled_tasks::request_monitor(vcpu_request_id, 
+        
+        vcpu_request_id = scheduled_tasks::request_monitor(&config, 
+            vcpu_request_id, 
             utils::VCPU_QUOTA_NAME, 
             cli.no_update_days_threshold)
             .await;
-        elastic_ip_request_id = scheduled_tasks::request_monitor(elastic_ip_request_id, 
+        elastic_ip_request_id = scheduled_tasks::request_monitor(&config, 
+            elastic_ip_request_id, 
             utils::ELASTIC_IP_QUOTA_NAME, 
             cli.no_update_days_threshold)
             .await;
     
-        vcpu_request_id = scheduled_tasks::usage_monitor(vcpu_request_id, 
+        vcpu_request_id = scheduled_tasks::usage_monitor(&config, 
+            vcpu_request_id, 
             utils::VCPU_QUOTA_NAME, 
             cli.vcpu_usage_threshold_percent, 
             cli.vcpu_quota_increment_percent)
             .await;
-        elastic_ip_request_id = scheduled_tasks::usage_monitor(elastic_ip_request_id, 
+        elastic_ip_request_id = scheduled_tasks::usage_monitor(&config, 
+            elastic_ip_request_id, 
             utils::ELASTIC_IP_QUOTA_NAME, 
             cli.elastic_ip_usage_threshold_percent, 
             cli.elastic_ip_quota_increment_percent)
@@ -145,15 +190,38 @@ async fn schedule_monitoring(cli: Cli) {
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
+    let config = aws_config::load_from_env().await;
 
     if cli.limit_status {
-        limit_status(utils::VCPU_QUOTA_NAME).await;
-        limit_status(utils::ELASTIC_IP_QUOTA_NAME).await;
+        limit_status(utils::VCPU_QUOTA_NAME, &config).await;
+        limit_status(utils::ELASTIC_IP_QUOTA_NAME, &config).await;
     } else if cli.limit_increase {
-        limit_increase(cli.quota_name.as_str(), cli.quota_value).await;
+        limit_increase(cli.quota_name.as_str(), 
+            cli.quota_value, 
+            &config)
+            .await;
     } else if cli.request_status {
-        request_status(cli.request_id.as_str()).await;
+        request_status(cli.request_id.as_str(), &config).await;
+    }
+    
+    if cli.aws_profile.is_empty() {
+        eprintln!("Valid AWS profile must be provided for quota monitoring");
+        return;
+    }
+    
+    let regions: Vec<String> = cli.aws_regions
+        .split(',')
+        .map(|r| r.into())
+        .collect();
+
+    let mut handles = vec![];
+    for region in regions {
+        handles.push(tokio::spawn(schedule_monitoring(cli.clone(), region)));
     }
 
-    schedule_monitoring(cli).await;
+    for handle in handles {
+        if let Err(err) = handle.await {
+            utils::log_data(format!("[{}] Error occurred while running a scheduled monitor: {:?}", Local::now().format("%Y-%m-%d %H:%M:%S"), err));
+        }
+    }   
 }
