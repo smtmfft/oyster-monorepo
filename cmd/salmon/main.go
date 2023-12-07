@@ -45,8 +45,8 @@ func main() {
 	keypairs.SetupKeys(keyPairName, keyStoreLocation, profile, region)
 	privateKeyLocation := keyStoreLocation + "/" + keyPairName + ".pem"
 
-	exist_amd64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-amd64-????????", profile, region)
-	exist_arm64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-arm64-????????", profile, region)
+	exist_amd64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-salmon-amd64-????????", profile, region)
+	exist_arm64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-salmon-arm64-????????", profile, region)
 
 	if !exist_arm64 && !exist_amd64 {
 		var wg sync.WaitGroup
@@ -76,14 +76,14 @@ func main() {
 
 func create_ami(keyPairName string, keyStoreLocation string, profile string, region string, arch string) {
 	log.Info("Creating AMI for " + arch)
-	name := "oyster_" + arch
+	name := "oyster_salmon_" + arch
 	newInstanceID := ""
 	exist, instance := instances.GetInstanceFromNameTag(name, profile, region)
 	if exist {
 		log.Info("Found Existing instance for ", arch)
 		newInstanceID = *instance.InstanceId
 	} else {
-		newInstanceID = *instances.LaunchInstance(keyPairName, profile, region, arch)
+		newInstanceID = *instances.LaunchInstance(name, keyPairName, profile, region, arch)
 		time.Sleep(1 * time.Minute)
 		instance = instances.GetInstanceDetails(newInstanceID, profile, region)
 	}
@@ -96,7 +96,8 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 	)
 	SetupPreRequisites(client, *(instance.PublicIpAddress), newInstanceID, profile, region, arch)
 
-	instances.CreateAMI(newInstanceID, profile, region, arch)
+	amiName := "marlin/oyster/worker-salmon-" + arch + "-" + time.Now().UTC().Format("20060102")
+	instances.CreateAMI(amiName, newInstanceID, profile, region, arch)
 	time.Sleep(7 * time.Minute)
 	TearDown(newInstanceID, profile, region)
 }
@@ -131,7 +132,7 @@ func SetupPreRequisites(client *connect.SshClient, host string, instanceID strin
 
 	// supervisord
 	RunCommand(client, "sudo apt-get -y install supervisor")
-	connect.TransferFile(client.Config, host, "./proxies.conf", "/home/ubuntu/proxies.conf")
+	connect.TransferFile(client.Config, host, "./cmd/salmon/proxies.conf", "/home/ubuntu/proxies.conf")
 	RunCommand(client, "sudo mv /home/ubuntu/proxies.conf /etc/supervisor/conf.d/proxies.conf")
 	RunCommand(client, "sudo supervisorctl reload")
 
