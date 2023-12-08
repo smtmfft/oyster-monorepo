@@ -9,7 +9,7 @@ use clap::Parser;
 use chrono::Local;
 use tokio::time::{Duration, interval};
 
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
     #[clap(long, value_parser)]
@@ -54,27 +54,6 @@ struct Cli {
     #[clap(long, value_parser,
         default_value = "us-east-1,us-east-2,us-west-1,us-west-2,ca-central-1,sa-east-1,eu-north-1,eu-west-3,eu-west-2,eu-west-1,eu-central-1,eu-central-2,eu-south-1,eu-south-2,me-south-1,me-central-1,af-south-1,ap-south-1,ap-south-2,ap-northeast-1,ap-northeast-2,ap-northeast-3,ap-southeast-1,ap-southeast-2,ap-southeast-3,ap-southeast-4,ap-east-1")]
     aws_regions: String,
-}
-
-impl Cli {
-    fn clone(&self) -> Self {
-        Self {
-            limit_status: self.limit_status.clone(),
-            limit_increase: self.limit_increase.clone(),
-            request_status: self.request_status.clone(),
-            quota_name: self.quota_name.clone(),
-            quota_value: self.quota_value.clone(),
-            request_id: self.request_id.clone(),
-            monitor_interval_secs: self.monitor_interval_secs.clone(),
-            no_update_days_threshold: self.no_update_days_threshold.clone(),
-            vcpu_usage_threshold_percent: self.vcpu_usage_threshold_percent.clone(),
-            elastic_ip_usage_threshold_percent: self.elastic_ip_usage_threshold_percent.clone(),
-            vcpu_quota_increment_percent: self.vcpu_quota_increment_percent.clone(),
-            elastic_ip_quota_increment_percent: self.elastic_ip_quota_increment_percent.clone(),
-            aws_profile: self.aws_profile.clone(),
-            aws_regions: self.aws_regions.clone(),
-        }
-    }
 }
 
 async fn limit_status(quota_name: &str, config: &SdkConfig) {
