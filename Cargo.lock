@@ -1383,6 +1383,7 @@ dependencies = [
  "aws-config",
  "aws-sdk-ec2",
  "aws-sdk-servicequotas",
+ "aws-types",
  "chrono",
  "clap",
  "tokio",

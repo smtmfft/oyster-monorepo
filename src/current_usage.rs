@@ -1,11 +1,20 @@
-use anyhow::{anyhow, Context, Result};
-use aws_config;
+use crate::utils;
+
+use anyhow::{Result, Context, anyhow};
+use aws_config::SdkConfig;
 use aws_sdk_ec2;
 use aws_sdk_ec2::types::Filter;
 
-pub async fn get_no_of_vcpus() -> Result<i32> {
-    let config = aws_config::load_from_env().await;
-    let client = aws_sdk_ec2::Client::new(&config);
+pub async fn get_current_usage(quota_name: &str, config: &SdkConfig) -> Result<i32> {
+    match quota_name {
+        utils::VCPU_QUOTA_NAME => get_no_of_vcpus(config).await,
+        utils::ELASTIC_IP_QUOTA_NAME => get_no_of_elastic_ips(config).await,
+        _ => Err(anyhow!("Invalid quota name, must be one of 'vcpu' or 'elastic_ip'")),
+    }
+}
+
+async fn get_no_of_vcpus(config: &SdkConfig) -> Result<i32> {
+    let client = aws_sdk_ec2::Client::new(config);
 
     let res = client
         .describe_instances()
@@ -17,46 +26,45 @@ pub async fn get_no_of_vcpus() -> Result<i32> {
         )
         .send()
         .await
-        .context("could not describe instances")?;
-
+        .context("Error occurred while describing instances from AWS client")?;
     let reservations = res
         .reservations()
-        .ok_or(anyhow!("could not parse reservations"))?;
+        .ok_or(anyhow!("Could not parse reservations from AWS response"))?;
 
     let mut no_of_vcpus = 0;
 
     for reservation in reservations {
         let instances = reservation
             .instances()
-            .ok_or(anyhow!("could not parse instances"))?;
+            .ok_or(anyhow!("Could not parse instances from reservation"))?;
 
         for instance in instances {
             let cpu_options = instance
                 .cpu_options()
-                .ok_or(anyhow!("could not parse cpu options"))?;
+                .ok_or(anyhow!("Could not parse cpu options from instance"))?;
+
             no_of_vcpus += (cpu_options
                 .core_count()
-                .ok_or(anyhow!("could not parse core count"))?) as i32
+                .ok_or(anyhow!("Could not parse core count from cpu options"))?) as i32
                 * (cpu_options
                     .threads_per_core()
-                    .ok_or(anyhow!("could not parse threads per core"))?) as i32;
+                    .ok_or(anyhow!("Could not parse threads per core from cpu options"))?) as i32;
         }
     }
 
     Ok(no_of_vcpus)
 }
 
-pub async fn get_no_elatic_ips() -> Result<i32> {
-    let config = aws_config::load_from_env().await;
-    let client = aws_sdk_ec2::Client::new(&config);
+async fn get_no_of_elastic_ips(config: &SdkConfig) -> Result<i32> {
+    let client = aws_sdk_ec2::Client::new(config);
 
-    let res = client
+    Ok(client
         .describe_addresses()
         .send()
         .await
-        .context("could not describe addresses")?;
-
-    let no_of_ips = res.addresses().unwrap().len() as i32;
-
-    Ok(no_of_ips)
+        .context("Error occurred while describing addresses from AWS client")?
+        .addresses()
+        .ok_or(anyhow!("Could not parse addresses from AWS response"))?
+        .len() as i32
+    )
 }

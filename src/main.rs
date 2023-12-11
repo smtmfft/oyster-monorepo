@@ -1,14 +1,15 @@
 mod current_usage;
 mod service_quotas;
 mod utils;
+mod scheduled_tasks;
 
-use std::collections::HashMap;
-
-use anyhow::Context;
-use chrono;
+use aws_config::SdkConfig;
+use aws_types::region::Region;
 use clap::Parser;
+use chrono::Local;
+use tokio::time::{Duration, interval};
 
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
     #[clap(long, value_parser)]
@@ -20,111 +21,186 @@ struct Cli {
     #[clap(long, value_parser)]
     request_status: bool,
 
-    #[clap(long, value_parser)]
-    quota_name: Option<String>,
+    #[clap(long, value_parser, default_value = "")]
+    quota_name: String,
+
+    #[clap(long, value_parser, default_value = "0.0")]
+    quota_value: f64,
+
+    #[clap(long, value_parser, default_value = "")]
+    request_id: String,
+
+    #[clap(long, value_parser, default_value = "900")]
+    monitor_interval_secs: u64,
+
+    #[clap(long, value_parser, default_value = "5")]
+    no_update_days_threshold: i64,
+
+    #[clap(long, value_parser, default_value = "75.0")]
+    vcpu_usage_threshold_percent: f64,
+
+    #[clap(long, value_parser, default_value = "75.0")]
+    elastic_ip_usage_threshold_percent: f64,
+
+    #[clap(long, value_parser, default_value = "50.0")]
+    vcpu_quota_increment_percent: f64,
+
+    #[clap(long, value_parser, default_value = "50.0")]
+    elastic_ip_quota_increment_percent: f64,
 
     #[clap(long, value_parser)]
-    quota_value: Option<f64>,
+    aws_profile: String,
 
-    #[clap(long, value_parser)]
-    request_id: Option<String>,
+    #[clap(long, value_parser,
+        default_value = "us-east-1,us-east-2,us-west-1,us-west-2,ca-central-1,sa-east-1,eu-north-1,eu-west-3,eu-west-2,eu-west-1,eu-central-1,eu-central-2,eu-south-1,eu-south-2,me-south-1,me-central-1,af-south-1,ap-south-1,ap-south-2,ap-northeast-1,ap-northeast-2,ap-northeast-3,ap-southeast-1,ap-southeast-2,ap-southeast-3,ap-southeast-4,ap-east-1")]
+    aws_regions: String,
 }
 
-async fn limit_status() {
-    let no_vcpus = current_usage::get_no_of_vcpus()
-        .await
-        .context("Failed to get no of vcpus")
-        .unwrap();
-    let no_elastic_ips = current_usage::get_no_elatic_ips()
-        .await
-        .context("Failed to get no of elastic ips")
-        .unwrap();
-
-    let vcpu_limit = service_quotas::get_service_quota_limit(
-        service_quotas::EC2_SERVICE_CODE.to_string(),
-        service_quotas::VCPU_QUOTA_CODE.to_string(),
-    )
-    .await
-    .context("Failed to get vcpus quota")
-    .unwrap();
-    let elastic_ip_limit = service_quotas::get_service_quota_limit(
-        service_quotas::EC2_SERVICE_CODE.to_string(),
-        service_quotas::ELASTIC_IP_QUOTA_CODE.to_string(),
-    )
-    .await
-    .context("Failed to get elastic ips quota")
-    .unwrap();
-    println!(
-        "VCPU: {}/{},\nElastic IP: {}/{}",
-        no_vcpus, vcpu_limit, no_elastic_ips, elastic_ip_limit
-    );
-}
-
-async fn limit_increase(quota_name: String, quota_value: f64) {
-    let possible_quota_names: [&str; 2] = ["vcpu", "elastic_ip"];
-    if possible_quota_names.contains(&quota_name.as_str()) {
-        if quota_value == 0.0 {
-            println!("Quota value must be greater than 0.");
-            return;
-        }
-        let mut quota_code_hash = HashMap::new();
-        quota_code_hash.insert("vcpu", service_quotas::VCPU_QUOTA_CODE.to_string());
-        quota_code_hash.insert(
-            "elastic_ip",
-            service_quotas::ELASTIC_IP_QUOTA_CODE.to_string(),
-        );
-
-        let request_id = service_quotas::request_service_quota_increase(
-            service_quotas::EC2_SERVICE_CODE.to_string(),
-            quota_code_hash
-                .get(quota_name.as_str())
-                .unwrap()
-                .to_string(),
-            quota_value,
-        )
-        .await
-        .context("Failed to request quota increase")
-        .unwrap();
-
-        let log_data = format!(
-            "Request ID: {}\nQuota Name: {}\nQuota Value: {}\nTime: {}\n\n",
-            request_id,
-            quota_name,
-            quota_value,
-            chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
-        );
-        utils::log_data(log_data);
-
-        println!("Service quota increase requested.");
-        println!("Request ID: {}", request_id);
-    } else {
-        println!("Quota name must be one of these:\n1. vcpu\n2. elastic_ip");
+async fn limit_status(quota_name: &str, config: &SdkConfig) {
+    let current_usage = current_usage::get_current_usage(quota_name, config).await;
+    if current_usage.is_err() {
+        eprintln!("Failed to get current usage of {}: {}", quota_name, current_usage.unwrap_err());
+        return;
     }
+
+    let quota_limit = service_quotas::get_service_quota_limit(
+        config,
+        utils::EC2_SERVICE_CODE.to_string(), 
+        utils::map_quota_to_code(quota_name).unwrap()
+        ).await;
+    if quota_limit.is_err() {
+        eprintln!("Failed to get {} quota limit/value: {}", quota_name, quota_limit.unwrap_err());
+        return;
+    }
+
+    println!("{}: {}/{}", quota_name, current_usage.unwrap(), quota_limit.unwrap());
+}
+
+async fn limit_increase(
+    quota_name: &str, 
+    quota_value: f64, 
+    config: &SdkConfig) {
+    let quota_code = utils::map_quota_to_code(quota_name);
+    if quota_code.is_none() {
+        eprintln!("Quota name must be one of these:\n1. vcpu\n2. elastic_ip");
+        return;
+    }
+
+    if quota_value == 0.0 {
+        eprintln!("Quota value must be greater than 0.0");
+        return;
+    }
+
+    match service_quotas::request_service_quota_increase(
+        config,
+        utils::EC2_SERVICE_CODE.to_string(), 
+        quota_code.unwrap(),
+        quota_value)
+        .await {
+        Ok(id) => {
+            utils::log_data(format!("Request ID: {}\nQuota Name: {}\nQuota Value: {}\nTime: {}\n\n",
+                id,
+                quota_name,
+                quota_value,
+                Local::now().format("%Y-%m-%d %H:%M:%S")));
+
+            println!("Service quota increase requested!");
+            println!("Request ID: {}", id);
+        }
+        Err(err) => eprintln!("Failed to request limit increase: {}", err),
+    }
+}
+
+async fn request_status(request_id: &str, config: &SdkConfig) {
+    if request_id.is_empty() {
+        eprintln!("Valid request ID must be provided");
+        return;
+    }
+            
+    match service_quotas::get_requested_service_quota_status(config, request_id.to_string())
+        .await {
+        Ok(stat) => println!("Status: {}", stat),
+        Err(err) => eprintln!("Failed to get the status of provided request ID: {}", err),
+    }
+}
+
+async fn schedule_monitoring(cli: Cli, region: String) {
+    let config = aws_config::from_env()
+        .profile_name(cli.aws_profile.as_str())
+        .region(Region::new(region))
+        .load()
+        .await;
+
+    let mut vcpu_request_id = scheduled_tasks::get_id(&config, utils::VCPU_QUOTA_NAME).await;
+    let mut elastic_ip_request_id = scheduled_tasks::get_id(&config, utils::ELASTIC_IP_QUOTA_NAME).await;   
+    
+    let interval_duration = Duration::from_secs(cli.monitor_interval_secs); 
+    let mut interval = interval(interval_duration);
+    
+    loop {
+        interval.tick().await;
+        
+        vcpu_request_id = scheduled_tasks::request_monitor(&config, 
+            vcpu_request_id, 
+            utils::VCPU_QUOTA_NAME, 
+            cli.no_update_days_threshold)
+            .await;
+        elastic_ip_request_id = scheduled_tasks::request_monitor(&config, 
+            elastic_ip_request_id, 
+            utils::ELASTIC_IP_QUOTA_NAME, 
+            cli.no_update_days_threshold)
+            .await;
+    
+        vcpu_request_id = scheduled_tasks::usage_monitor(&config, 
+            vcpu_request_id, 
+            utils::VCPU_QUOTA_NAME, 
+            cli.vcpu_usage_threshold_percent, 
+            cli.vcpu_quota_increment_percent)
+            .await;
+        elastic_ip_request_id = scheduled_tasks::usage_monitor(&config, 
+            elastic_ip_request_id, 
+            utils::ELASTIC_IP_QUOTA_NAME, 
+            cli.elastic_ip_usage_threshold_percent, 
+            cli.elastic_ip_quota_increment_percent)
+            .await;
+    } 
 }
 
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
+    let config = aws_config::load_from_env().await;
 
     if cli.limit_status {
-        limit_status().await;
+        limit_status(utils::VCPU_QUOTA_NAME, &config).await;
+        limit_status(utils::ELASTIC_IP_QUOTA_NAME, &config).await;
     } else if cli.limit_increase {
-        let quota_name = cli.quota_name.unwrap_or(String::new());
-        let quota_value = cli.quota_value.unwrap_or(0.0);
-        limit_increase(quota_name, quota_value).await;
+        limit_increase(cli.quota_name.as_str(), 
+            cli.quota_value, 
+            &config)
+            .await;
     } else if cli.request_status {
-        let request_id = cli.request_id.unwrap_or(String::new());
-        if request_id.is_empty() {
-            println!("Request ID must be provided.");
-            return;
-        }
-        let status = service_quotas::get_requested_service_quota_status(request_id)
-            .await
-            .context("Failed to get requested service quota status")
-            .unwrap();
-
-        println!("Status: {}", status);
-    } else {
-        println!("No recognised action specified.");
+        request_status(cli.request_id.as_str(), &config).await;
     }
+    
+    if cli.aws_profile.is_empty() {
+        eprintln!("Valid AWS profile must be provided for quota monitoring");
+        return;
+    }
+    
+    let regions: Vec<String> = cli.aws_regions
+        .split(',')
+        .map(|r| r.into())
+        .collect();
+
+    let mut handles = vec![];
+    for region in regions {
+        handles.push(tokio::spawn(schedule_monitoring(cli.clone(), region)));
+    }
+
+    for handle in handles {
+        if let Err(err) = handle.await {
+            utils::log_data(format!("[{}] Error occurred while running a scheduled monitor: {:?}", Local::now().format("%Y-%m-%d %H:%M:%S"), err));
+        }
+    }   
 }
