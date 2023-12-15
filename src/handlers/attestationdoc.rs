@@ -83,6 +83,17 @@ async fn verify(
     req: web::Json<VerifyAttestation>,
     state: web::Data<AppState>,
 ) -> actix_web::Result<impl Responder, UserError> {
+    let attestationdoc_bytes =
+        hex::decode(&req.attestation_doc).map_err(|_| UserError::InternalServerError)?;
+    let requester_pub_key = oyster::verify(
+        attestationdoc_bytes,
+        req.pcrs.clone(),
+        req.min_cpus,
+        req.min_mem,
+        req.max_age,
+    )
+    .map_err(|_| UserError::InternalServerError)?;
+
     let msg = verification_message(&req.secp_key);
     let sig_bytes = hex::decode(&req.signature).map_err(|_| UserError::InternalServerError)?;
 
@@ -91,23 +102,12 @@ async fn verify(
             sig_bytes.clone().as_mut_ptr(),
             msg.as_ptr(),
             msg.len() as u64,
-            state.enclave_public_key.as_ptr(),
+            requester_pub_key.as_ptr(),
         );
         if is_verified != 0 {
             return Err(UserError::InternalServerError);
         }
     }
-
-    let attestationdoc_bytes =
-        hex::decode(&req.attestation_doc).map_err(|_| UserError::InternalServerError)?;
-    let _ = oyster::verify(
-        attestationdoc_bytes,
-        req.pcrs.clone(),
-        req.min_cpus,
-        req.min_mem,
-        req.max_age,
-    )
-    .map_err(|_| UserError::InternalServerError)?;
 
     let mut pubkey_bytes = [0u8; 65];
     hex::decode_to_slice(&req.secp_key, &mut pubkey_bytes)
