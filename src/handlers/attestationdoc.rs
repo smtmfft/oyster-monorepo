@@ -73,11 +73,6 @@ fn address_from_pubkey(pub_key: &[u8; 65]) -> ethers::types::Address {
     ethers::types::Address::from_slice(&hash[12..])
 }
 
-fn verification_message(pubkey: &String) -> String {
-    const PREFIX: &str = "attestation-verification-";
-    format!("{}{:?}", PREFIX.to_string(), pubkey)
-}
-
 #[post("/verify/attestation")]
 async fn verify(
     req: web::Json<VerifyAttestation>,
@@ -94,7 +89,13 @@ async fn verify(
     )
     .map_err(|_| UserError::InternalServerError)?;
 
-    let msg = verification_message(&req.secp_key);
+    let secp256k1_pubkey =
+        hex::decode(&req.secp_key).map_err(|_| UserError::InternalServerError)?;
+    let msg = ethers::abi::encode_packed(&[
+        ethers::abi::Token::String("attestation-verification-".to_string()),
+        ethers::abi::Token::Bytes(secp256k1_pubkey),
+    ])
+    .map_err(|_| UserError::InternalServerError)?;
     let sig_bytes = hex::decode(&req.signature).map_err(|_| UserError::InternalServerError)?;
 
     unsafe {
