@@ -1,22 +1,22 @@
 use actix_web::{web, App, HttpServer};
-use std::error::Error;
 use std::fs;
 
-mod handlers;
+mod attestationdoc;
 mod types;
 
+use anyhow::{Context, Result};
 use clap::Parser;
-use types::handlers::AppState;
+use types::AppState;
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    /// path to enclave public key file
+    /// path to ed25519 public key file
     #[arg(short, long)]
-    enclavepublickey: String,
+    ed25519_public: String,
 
-    /// path to secp private key file
+    /// path to secp256k1 private key file
     #[arg(short, long)]
-    secpprivatekey: String,
+    secp256k1_private: String,
 
     /// server ip
     #[arg(short, long)]
@@ -28,25 +28,35 @@ struct Cli {
 }
 
 #[actix_web::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     let cli = Cli::parse();
-    let enclave_public_key = fs::read(cli.enclavepublickey.clone())?;
-    let secp_private_key = fs::read(cli.secpprivatekey.clone())?;
-    let secp_private_key = secp256k1::SecretKey::from_slice(&secp_private_key)?;
-    let secp = secp256k1::Secp256k1::new();
-    let secp_public_key = secp_private_key.public_key(&secp).serialize_uncompressed();
+    let ed25519_public_key = fs::read(cli.ed25519_public.clone())
+        .with_context(|| format!("Failed to read ed25519_public from {}", cli.ed25519_public))?;
+    let secp256k1_private_key = fs::read(cli.secp256k1_private.clone()).with_context(|| {
+        format!(
+            "Failed to read secp256k1_private from {}",
+            cli.secp256k1_private
+        )
+    })?;
+    let secp256k1_private_key = secp256k1::SecretKey::from_slice(&secp256k1_private_key)
+        .context("unable to decode secp256k1_private key from slice")?;
+    let secp256k1 = secp256k1::Secp256k1::new();
+    let secp256k1_public_key = secp256k1_private_key
+        .public_key(&secp256k1)
+        .serialize_uncompressed();
     let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
-                enclave_public_key: enclave_public_key.clone(),
-                secp_private_key: secp_private_key.clone(),
-                secp_public_key,
+                ed25519_public_key: ed25519_public_key.clone(),
+                secp256k1_private_key: secp256k1_private_key.clone(),
+                secp256k1_public_key,
             }))
-            .service(handlers::attestationdoc::verify)
+            .service(attestationdoc::verify)
     })
-    .bind((cli.ip.clone(), cli.port))?
+    .bind((cli.ip.clone(), cli.port))
+    .context("unable to start the server")?
     .run();
     println!("api server running at {}:{}", cli.ip, cli.port);
-    server.await?;
+    server.await.context("error while running server")?;
     Ok(())
 }
