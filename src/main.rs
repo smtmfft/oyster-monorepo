@@ -1,11 +1,11 @@
 use actix_web::{web, App, HttpServer};
 use std::fs;
 
-mod attestationdoc;
+mod handler;
 
 use anyhow::{Context, Result};
-use attestationdoc::AppState;
 use clap::Parser;
+use handler::AppState;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
                 secp256k1_private_key: secp256k1_private_key.clone(),
                 secp256k1_public_key,
             }))
-            .service(attestationdoc::verify)
+            .service(handler::verify)
     })
     .bind((cli.ip.clone(), cli.port))
     .context("unable to start the server")?
