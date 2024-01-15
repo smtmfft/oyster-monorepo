@@ -1,5 +1,5 @@
 use crate::types::AppState;
-use actix_web::{error, http::StatusCode, post, web, Responder};
+use actix_web::{error, get, http::StatusCode, web, Responder};
 use derive_more::{Display, Error};
 use ethers;
 use hex;
@@ -86,7 +86,7 @@ fn address_from_pubkey(pub_key: &[u8; 65]) -> ethers::types::Address {
     ethers::types::Address::from_slice(&hash[12..])
 }
 
-#[post("/verify/attestation")]
+#[get("/verify")]
 async fn verify(
     req: web::Json<VerifyAttestation>,
     state: web::Data<AppState>,
