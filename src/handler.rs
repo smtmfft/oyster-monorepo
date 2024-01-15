@@ -1,5 +1,4 @@
 use actix_web::{error, get, http::StatusCode, web, Responder};
-// use derive_more::{Display, Error};
 use ethers;
 use hex;
 use libsodium_sys::crypto_sign_verify_detached;
