@@ -47,7 +47,6 @@ async fn main() -> Result<()> {
     let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
-                ed25519_public_key: ed25519_public_key.clone(),
                 secp256k1_private_key: secp256k1_private_key.clone(),
                 secp256k1_public_key,
             }))

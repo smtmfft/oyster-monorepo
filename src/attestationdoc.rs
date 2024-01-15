@@ -155,7 +155,6 @@ async fn verify(
 }
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
     use actix_web::{test, web, App};
@@ -194,7 +193,6 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(AppState {
-                    ed25519_public_key: enclave_pub_key.clone(),
                     secp256k1_private_key: secp_priv_key.clone(),
                     secp256k1_public_key: secp_pub_key.clone(),
                 }))
