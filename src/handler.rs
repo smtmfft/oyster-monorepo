@@ -1,5 +1,5 @@
 use actix_web::{error, get, http::StatusCode, web, Responder};
-use derive_more::{Display, Error};
+// use derive_more::{Display, Error};
 use ethers;
 use hex;
 use libsodium_sys::crypto_sign_verify_detached;
@@ -7,6 +7,7 @@ use oyster;
 use secp256k1;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use thiserror::Error;
 
 pub struct AppState {
     pub secp256k1_secret: secp256k1::SecretKey,
@@ -37,23 +38,23 @@ struct VerifyAttestationResponse {
     secp256k1_public: String,
 }
 
-#[derive(Debug, Display, Error)]
+#[derive(Error, Debug)]
 pub enum UserError {
-    #[display(fmt = "error while decoding attestation doc from hex")]
+    #[error("error while decoding attestation doc from hex")]
     AttestationDecodeError,
-    #[display(fmt = "Attestation verification error: {}", field)]
+    #[error("Attestation verification error: {}", field)]
     AttestationVerificationError { field: String },
-    #[display(fmt = "error while decoding secp256k1 key from hex")]
+    #[error("error while decoding secp256k1 key from hex")]
     Secp256k1DecodeError,
-    #[display(fmt = "error while encoding signature")]
+    #[error("error while encoding signature")]
     SignatureEncodingError,
-    #[display(fmt = "error while decoding signature")]
+    #[error("error while decoding signature")]
     SignatureDecodingError,
-    #[display(fmt = "Signature verification failed")]
+    #[error("Signature verification failed")]
     SignatureVerificationError,
-    #[display(fmt = "Message generation failed")]
+    #[error("Message generation failed")]
     MessageGenerationError,
-    #[display(fmt = "error while decoding pcrs")]
+    #[error("error while decoding pcrs")]
     PCRDecodeError,
 }
 
