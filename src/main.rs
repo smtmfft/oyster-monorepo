@@ -1,10 +1,11 @@
-use actix_web::{web, App, HttpServer};
-use std::fs;
-
 mod handler;
 
+use std::fs;
+
+use actix_web::{web, App, HttpServer};
 use anyhow::{Context, Result};
 use clap::Parser;
+
 use handler::AppState;
 
 #[derive(Parser)]
