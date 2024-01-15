@@ -27,14 +27,14 @@ struct VerifyAttestation {
     min_mem: usize,
     max_age: usize,
     signature: String,
-    secp256k1_key: String,
+    secp256k1_public: String,
 }
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
 struct VerifyAttestationResponse {
     sig: String,
-    secp256k1_key: String,
+    secp256k1_public: String,
 }
 
 #[derive(Debug, Display, Error)]
@@ -115,7 +115,7 @@ async fn verify(
     })?;
 
     let secp256k1_pubkey =
-        hex::decode(&req.secp256k1_key).map_err(|_| UserError::Secp256k1DecodeError)?;
+        hex::decode(&req.secp256k1_public).map_err(|_| UserError::Secp256k1DecodeError)?;
     let msg = ethers::abi::encode_packed(&[
         ethers::abi::Token::String("attestation-verification-".to_string()),
         ethers::abi::Token::Bytes(secp256k1_pubkey),
@@ -136,7 +136,7 @@ async fn verify(
     }
 
     let mut pubkey_bytes = [0u8; 65];
-    hex::decode_to_slice(&req.secp256k1_key, &mut pubkey_bytes)
+    hex::decode_to_slice(&req.secp256k1_public, &mut pubkey_bytes)
         .map_err(|_| UserError::Secp256k1DecodeError)?;
 
     let abi_encoded = abi_encode(
@@ -160,7 +160,7 @@ async fn verify(
     let sig = format!("{}1c", sig);
     Ok(web::Json(VerifyAttestationResponse {
         sig,
-        secp256k1_key: hex::encode(state.secp256k1_public),
+        secp256k1_public: hex::encode(state.secp256k1_public),
     }))
 }
 
@@ -220,7 +220,7 @@ mod tests {
             min_mem: 4134580224,
             max_age: 300000000,
             signature: hex::encode(sig),
-            secp256k1_key: hex::encode(&secp_pub_key).clone(),
+            secp256k1_public: hex::encode(&secp_pub_key).clone(),
         };
         let req = test::TestRequest::post()
             .uri("/verify/attestation")
@@ -230,7 +230,7 @@ mod tests {
         let resp: VerifyAttestationResponse = test::call_and_read_body_json(&app, req).await;
 
         println!("resp sig: {}", resp.sig);
-        println!("resp secpkey: {}", resp.secp256k1_key);
+        println!("resp secpkey: {}", resp.secp256k1_public);
     }
 
     #[actix_web::test]
