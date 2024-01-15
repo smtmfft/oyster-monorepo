@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 pub struct AppState {
-    pub secp256k1_private_key: secp256k1::SecretKey,
+    pub secp256k1_secret: secp256k1::SecretKey,
     pub secp256k1_public_key: [u8; 65],
 }
 
@@ -154,7 +154,7 @@ async fn verify(
         .map_err(|_| UserError::MessageGenerationError)?;
     let secp = secp256k1::Secp256k1::new();
     let sig = secp
-        .sign_ecdsa(&msg_to_sign, &state.secp256k1_private_key)
+        .sign_ecdsa(&msg_to_sign, &state.secp256k1_secret)
         .serialize_compact();
     let sig = hex::encode(sig);
     let sig = format!("{}1c", sig);
@@ -202,7 +202,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(AppState {
-                    secp256k1_private_key: secp_priv_key.clone(),
+                    secp256k1_secret: secp_priv_key.clone(),
                     secp256k1_public_key: secp_pub_key.clone(),
                 }))
                 .service(verify),
