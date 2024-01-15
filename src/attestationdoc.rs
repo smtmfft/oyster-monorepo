@@ -163,7 +163,6 @@ mod tests {
 
     #[actix_web::test]
     async fn test_handler() {
-        let enclave_pub_key = fs::read("./enclave_public.key").unwrap();
         let enclave_priv_key = fs::read("./enclave_private.key").unwrap();
         let secp_priv_key = fs::read("./secret.key").unwrap();
         let secp_priv_key = secp256k1::SecretKey::from_slice(&secp_priv_key).unwrap();
