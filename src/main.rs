@@ -14,6 +14,10 @@ struct Cli {
     #[arg(short, long)]
     secp256k1_secret: String,
 
+    /// path to secp256k1 public key file
+    #[arg(short, long)]
+    secp256k1_public: String,
+
     /// server ip
     #[arg(short, long)]
     ip: String,
