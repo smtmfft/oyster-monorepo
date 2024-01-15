@@ -5,8 +5,8 @@ mod attestationdoc;
 mod types;
 
 use anyhow::{Context, Result};
+use attestationdoc::AppState;
 use clap::Parser;
-use types::AppState;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
