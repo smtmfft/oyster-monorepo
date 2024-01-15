@@ -1,4 +1,3 @@
-use crate::types::AppState;
 use actix_web::{error, get, http::StatusCode, web, Responder};
 use derive_more::{Display, Error};
 use ethers;

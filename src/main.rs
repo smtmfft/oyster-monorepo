@@ -2,7 +2,6 @@ use actix_web::{web, App, HttpServer};
 use std::fs;
 
 mod attestationdoc;
-mod types;
 
 use anyhow::{Context, Result};
 use attestationdoc::AppState;
