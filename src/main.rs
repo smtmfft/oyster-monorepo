@@ -35,14 +35,14 @@ async fn main() -> Result<()> {
     let secp256k1_secret = secp256k1::SecretKey::from_slice(&secp256k1_secret)
         .context("unable to decode secp256k1_private key from slice")?;
     let secp256k1 = secp256k1::Secp256k1::new();
-    let secp256k1_public_key = secp256k1_secret
+    let secp256k1_public = secp256k1_secret
         .public_key(&secp256k1)
         .serialize_uncompressed();
     let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
                 secp256k1_secret: secp256k1_secret.clone(),
-                secp256k1_public_key,
+                secp256k1_public,
             }))
             .service(handler::verify)
     })

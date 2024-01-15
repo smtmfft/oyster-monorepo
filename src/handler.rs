@@ -10,7 +10,7 @@ use serde_with::serde_as;
 
 pub struct AppState {
     pub secp256k1_secret: secp256k1::SecretKey,
-    pub secp256k1_public_key: [u8; 65],
+    pub secp256k1_public: [u8; 65],
 }
 
 #[derive(Deserialize)]
@@ -160,7 +160,7 @@ async fn verify(
     let sig = format!("{}1c", sig);
     Ok(web::Json(VerifyAttestationResponse {
         sig,
-        secp256k1_key: hex::encode(state.secp256k1_public_key),
+        secp256k1_key: hex::encode(state.secp256k1_public),
     }))
 }
 
@@ -203,7 +203,7 @@ mod tests {
             App::new()
                 .app_data(web::Data::new(AppState {
                     secp256k1_secret: secp_priv_key.clone(),
-                    secp256k1_public_key: secp_pub_key.clone(),
+                    secp256k1_public: secp_pub_key.clone(),
                 }))
                 .service(verify),
         )
