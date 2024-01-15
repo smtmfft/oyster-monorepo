@@ -12,7 +12,7 @@ use handler::AppState;
 struct Cli {
     /// path to secp256k1 private key file
     #[arg(short, long)]
-    secp256k1_private: String,
+    secp256k1_secret: String,
 
     /// server ip
     #[arg(short, long)]
@@ -26,10 +26,10 @@ struct Cli {
 #[actix_web::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
-    let secp256k1_private_key = fs::read(cli.secp256k1_private.clone()).with_context(|| {
+    let secp256k1_private_key = fs::read(cli.secp256k1_secret.clone()).with_context(|| {
         format!(
             "Failed to read secp256k1_private from {}",
-            cli.secp256k1_private
+            cli.secp256k1_secret
         )
     })?;
     let secp256k1_private_key = secp256k1::SecretKey::from_slice(&secp256k1_private_key)
