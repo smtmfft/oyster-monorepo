@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use actix_web::{error, get, http::StatusCode, web, Responder};
 use ethers;
 use hex;
@@ -35,7 +37,7 @@ struct VerifyAttestationResponse {
     secp256k1_public: String,
 }
 
-#[derive(Error, Debug)]
+#[derive(Error)]
 pub enum UserError {
     #[error("error while decoding attestation doc from hex")]
     AttestationDecodeError(hex::FromHexError),
@@ -64,6 +66,27 @@ impl error::ResponseError for UserError {
 
     fn status_code(&self) -> actix_web::http::StatusCode {
         StatusCode::INTERNAL_SERVER_ERROR
+    }
+}
+
+impl std::fmt::Debug for UserError {
+    // pretty print like anyhow
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)?;
+
+        if self.source().is_some() {
+            writeln!(f, "\n\nCaused by:")?;
+        }
+
+        let mut err: &dyn Error = self;
+        loop {
+            let Some(source) = err.source() else { break };
+            writeln!(f, "\t{}", source)?;
+
+            err = source;
+        }
+
+        Ok(())
     }
 }
 
