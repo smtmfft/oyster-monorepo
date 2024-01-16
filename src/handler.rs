@@ -12,12 +12,17 @@ pub struct AppState {
     pub secp256k1_public: [u8; 65],
 }
 
+fn default_max_age() -> usize {
+    300
+}
+
 #[derive(Deserialize, Serialize)]
 struct VerifyAttestation {
     attestation: String,
     pcrs: Vec<String>,
     min_cpus: usize,
     min_mem: usize,
+    #[serde(default = "default_max_age")]
     max_age: usize,
     signature: String,
     secp256k1_public: String,
