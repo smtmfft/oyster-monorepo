@@ -31,7 +31,7 @@ struct VerifyAttestation {
 
 #[derive(Serialize, Deserialize)]
 struct VerifyAttestationResponse {
-    sig: String,
+    signature: String,
     secp256k1_public: String,
 }
 
@@ -155,7 +155,7 @@ async fn verify(
     let sig = hex::encode(sig);
     let sig = format!("{}1c", sig);
     Ok(web::Json(VerifyAttestationResponse {
-        sig,
+        signature,
         secp256k1_public: hex::encode(state.secp256k1_public),
     }))
 }
@@ -225,7 +225,7 @@ mod tests {
 
         let resp: VerifyAttestationResponse = test::call_and_read_body_json(&app, req).await;
 
-        println!("resp sig: {}", resp.sig);
+        println!("resp sig: {}", resp.signature);
         println!("resp secpkey: {}", resp.secp256k1_public);
     }
 
