@@ -5,7 +5,6 @@ use libsodium_sys::crypto_sign_verify_detached;
 use oyster;
 use secp256k1;
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use thiserror::Error;
 
 pub struct AppState {
@@ -30,7 +29,6 @@ struct VerifyAttestation {
     secp256k1_public: String,
 }
 
-#[serde_as]
 #[derive(Serialize, Deserialize)]
 struct VerifyAttestationResponse {
     sig: String,
