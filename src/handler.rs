@@ -2,11 +2,7 @@ use std::error::Error;
 use std::num::TryFromIntError;
 
 use actix_web::{error, get, http::StatusCode, web, Responder};
-use ethers;
-use hex;
 use libsodium_sys::crypto_sign_verify_detached;
-use oyster;
-use secp256k1;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -41,23 +37,23 @@ struct VerifyAttestationResponse {
 #[derive(Error)]
 pub enum UserError {
     #[error("error while decoding attestation doc from hex")]
-    AttestationDecodeError(hex::FromHexError),
+    AttestationDecode(hex::FromHexError),
     #[error("error while verifying attestation")]
-    AttestationVerificationError(oyster::AttestationError),
+    AttestationVerification(oyster::AttestationError),
     #[error("error while decoding secp256k1 key from hex")]
-    Secp256k1DecodeError(hex::FromHexError),
+    Secp256k1Decode(hex::FromHexError),
     #[error("error while encoding signature")]
-    SignatureEncodingError(ethers::abi::EncodePackedError),
+    SignatureEncoding(ethers::abi::EncodePackedError),
     #[error("error while decoding signature")]
-    SignatureDecodingError(hex::FromHexError),
+    SignatureDecoding(hex::FromHexError),
     #[error("Signature verification failed")]
-    SignatureVerificationError,
+    SignatureVerification,
     #[error("Message generation failed")]
-    MessageGenerationError(secp256k1::Error),
+    MessageGeneration(secp256k1::Error),
     #[error("error while decoding pcrs")]
-    PCRDecodeError(hex::FromHexError),
+    PCRDecode(hex::FromHexError),
     #[error("invalid recovery id")]
-    InvalidRecoveryError(TryFromIntError),
+    InvalidRecovery(TryFromIntError),
 }
 
 impl error::ResponseError for UserError {
@@ -102,16 +98,15 @@ fn abi_encode(
     enclave_cpu: usize,
     enclave_mem: usize,
 ) -> Vec<u8> {
-    let mut encoded_data = Vec::new();
-    encoded_data.push(ethers::abi::Token::String(prefix));
-    encoded_data.push(ethers::abi::Token::Address(address_from_pubkey(
-        enclave_pubkey,
-    )));
-    encoded_data.push(ethers::abi::Token::Bytes(pcr_0));
-    encoded_data.push(ethers::abi::Token::Bytes(pcr_1));
-    encoded_data.push(ethers::abi::Token::Bytes(pcr_2));
-    encoded_data.push(ethers::abi::Token::Uint(enclave_cpu.into()));
-    encoded_data.push(ethers::abi::Token::Uint(enclave_mem.into()));
+    let encoded_data = vec![
+        ethers::abi::Token::String(prefix),
+        ethers::abi::Token::Address(address_from_pubkey(enclave_pubkey)),
+        ethers::abi::Token::Bytes(pcr_0),
+        ethers::abi::Token::Bytes(pcr_1),
+        ethers::abi::Token::Bytes(pcr_2),
+        ethers::abi::Token::Uint(enclave_cpu.into()),
+        ethers::abi::Token::Uint(enclave_mem.into()),
+    ];
     ethers::abi::encode(&encoded_data)
 }
 
@@ -126,7 +121,7 @@ async fn verify(
     state: web::Data<AppState>,
 ) -> actix_web::Result<impl Responder, UserError> {
     let attestationdoc_bytes =
-        hex::decode(&req.attestation_doc).map_err(UserError::AttestationDecodeError)?;
+        hex::decode(&req.attestation_doc).map_err(UserError::AttestationDecode)?;
     let requester_pub_key = oyster::verify(
         attestationdoc_bytes,
         req.pcrs.clone(),
@@ -134,16 +129,16 @@ async fn verify(
         req.min_mem,
         req.max_age,
     )
-    .map_err(UserError::AttestationVerificationError)?;
+    .map_err(UserError::AttestationVerification)?;
 
     let secp256k1_pubkey =
-        hex::decode(&req.secp256k1_public).map_err(UserError::Secp256k1DecodeError)?;
+        hex::decode(&req.secp256k1_public).map_err(UserError::Secp256k1Decode)?;
     let msg = ethers::abi::encode_packed(&[
         ethers::abi::Token::String("attestation-verification-".to_string()),
         ethers::abi::Token::Bytes(secp256k1_pubkey),
     ])
-    .map_err(UserError::SignatureEncodingError)?;
-    let sig_bytes = hex::decode(&req.signature).map_err(UserError::SignatureDecodingError)?;
+    .map_err(UserError::SignatureEncoding)?;
+    let sig_bytes = hex::decode(&req.signature).map_err(UserError::SignatureDecoding)?;
 
     unsafe {
         let is_verified = crypto_sign_verify_detached(
@@ -153,27 +148,27 @@ async fn verify(
             requester_pub_key.as_ptr(),
         );
         if is_verified != 0 {
-            return Err(UserError::SignatureVerificationError);
+            return Err(UserError::SignatureVerification);
         }
     }
 
     let mut pubkey_bytes = [0u8; 65];
     hex::decode_to_slice(&req.secp256k1_public, &mut pubkey_bytes)
-        .map_err(UserError::Secp256k1DecodeError)?;
+        .map_err(UserError::Secp256k1Decode)?;
 
     let abi_encoded = abi_encode(
         "Enclave Attestation Verified".to_string(),
         &pubkey_bytes,
-        hex::decode(req.pcrs[0].clone()).map_err(UserError::PCRDecodeError)?,
-        hex::decode(req.pcrs[1].clone()).map_err(UserError::PCRDecodeError)?,
-        hex::decode(req.pcrs[2].clone()).map_err(UserError::PCRDecodeError)?,
+        hex::decode(req.pcrs[0].clone()).map_err(UserError::PCRDecode)?,
+        hex::decode(req.pcrs[1].clone()).map_err(UserError::PCRDecode)?,
+        hex::decode(req.pcrs[2].clone()).map_err(UserError::PCRDecode)?,
         req.min_cpus,
         req.min_mem,
     );
 
     let msg_to_sign = ethers::utils::keccak256(abi_encoded);
     let msg_to_sign = secp256k1::Message::from_digest_slice(&msg_to_sign)
-        .map_err(UserError::MessageGenerationError)?;
+        .map_err(UserError::MessageGeneration)?;
 
     let secp = secp256k1::Secp256k1::new();
     let (recid, sig) = secp
@@ -184,7 +179,7 @@ async fn verify(
     let recid: u8 = recid
         .to_i32()
         .try_into()
-        .map_err(UserError::InvalidRecoveryError)?;
+        .map_err(UserError::InvalidRecovery)?;
     let recid = hex::encode([recid]);
 
     Ok(web::Json(VerifyAttestationResponse {
