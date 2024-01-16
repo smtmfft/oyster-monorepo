@@ -139,7 +139,7 @@ async fn verify(
     .map_err(UserError::SignatureEncoding)?;
     unsafe {
         let ret = crypto_sign_verify_detached(
-            requester_signature.clone().as_mut_ptr(),
+            requester_signature.as_ptr(),
             requester_msg.as_ptr(),
             requester_msg.len() as u64,
             requester_ed25519_public.as_ptr(),
