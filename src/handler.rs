@@ -37,27 +37,27 @@ struct VerifyAttestationResponse {
 #[derive(Error)]
 pub enum UserError {
     #[error("error while decoding attestation doc from hex")]
-    AttestationDecode(hex::FromHexError),
+    AttestationDecode(#[source] hex::FromHexError),
     #[error("error while verifying attestation")]
-    AttestationVerification(oyster::AttestationError),
+    AttestationVerification(#[source] oyster::AttestationError),
     #[error("error while decoding secp256k1 key from hex")]
-    Secp256k1Decode(hex::FromHexError),
+    Secp256k1Decode(#[source] hex::FromHexError),
     #[error("invalid secp256k1 length, expected 65")]
-    InvalidSecp256k1Length(TryFromSliceError),
+    InvalidSecp256k1Length(#[source] TryFromSliceError),
     #[error("error while encoding signature")]
-    SignatureEncoding(ethers::abi::EncodePackedError),
+    SignatureEncoding(#[source] ethers::abi::EncodePackedError),
     #[error("invalid signature length, expected 64")]
-    InvalidSignatureLength(TryFromSliceError),
+    InvalidSignatureLength(#[source] TryFromSliceError),
     #[error("error while decoding signature")]
-    SignatureDecoding(hex::FromHexError),
+    SignatureDecoding(#[source] hex::FromHexError),
     #[error("Signature verification failed")]
     SignatureVerification,
     #[error("Message generation failed")]
-    MessageGeneration(secp256k1::Error),
+    MessageGeneration(#[source] secp256k1::Error),
     #[error("error while decoding pcrs")]
-    PCRDecode(hex::FromHexError),
+    PCRDecode(#[source] hex::FromHexError),
     #[error("invalid recovery id")]
-    InvalidRecovery(TryFromIntError),
+    InvalidRecovery(#[source] TryFromIntError),
 }
 
 impl error::ResponseError for UserError {
