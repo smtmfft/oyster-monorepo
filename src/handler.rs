@@ -156,9 +156,9 @@ async fn verify(
     let abi_encoded = abi_encode(
         "Enclave Attestation Verified".to_string(),
         &pubkey_bytes,
-        hex::decode(req.pcrs[0].clone()).map_err(UserError::PCRDecode)?,
-        hex::decode(req.pcrs[1].clone()).map_err(UserError::PCRDecode)?,
-        hex::decode(req.pcrs[2].clone()).map_err(UserError::PCRDecode)?,
+        hex::decode(&req.pcrs[0]).map_err(UserError::PCRDecode)?,
+        hex::decode(&req.pcrs[1]).map_err(UserError::PCRDecode)?,
+        hex::decode(&req.pcrs[2]).map_err(UserError::PCRDecode)?,
         req.min_cpus,
         req.min_mem,
     );
