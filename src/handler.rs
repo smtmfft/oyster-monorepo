@@ -119,34 +119,32 @@ async fn verify(
     req: web::Json<VerifyAttestation>,
     state: web::Data<AppState>,
 ) -> actix_web::Result<impl Responder, UserError> {
-    let attestationdoc_bytes =
-        hex::decode(&req.attestation).map_err(UserError::AttestationDecode)?;
-    let requester_pub_key = oyster::verify(
-        attestationdoc_bytes,
+    let attestation = hex::decode(&req.attestation).map_err(UserError::AttestationDecode)?;
+    let requester_ed25519_public = oyster::verify(
+        attestation,
         req.pcrs.clone(),
         req.min_cpus,
         req.min_mem,
         req.max_age,
     )
     .map_err(UserError::AttestationVerification)?;
-
-    let secp256k1_pubkey =
+    let requester_secp256k1_public =
         hex::decode(&req.secp256k1_public).map_err(UserError::Secp256k1Decode)?;
-    let msg = ethers::abi::encode_packed(&[
+    let requester_signature = hex::decode(&req.signature).map_err(UserError::SignatureDecoding)?;
+
+    let requester_msg = ethers::abi::encode_packed(&[
         ethers::abi::Token::String("attestation-verification-".to_string()),
-        ethers::abi::Token::Bytes(secp256k1_pubkey),
+        ethers::abi::Token::Bytes(requester_secp256k1_public),
     ])
     .map_err(UserError::SignatureEncoding)?;
-    let sig_bytes = hex::decode(&req.signature).map_err(UserError::SignatureDecoding)?;
-
     unsafe {
-        let is_verified = crypto_sign_verify_detached(
-            sig_bytes.clone().as_mut_ptr(),
-            msg.as_ptr(),
-            msg.len() as u64,
-            requester_pub_key.as_ptr(),
+        let ret = crypto_sign_verify_detached(
+            requester_signature.clone().as_mut_ptr(),
+            requester_msg.as_ptr(),
+            requester_msg.len() as u64,
+            requester_ed25519_public.as_ptr(),
         );
-        if is_verified != 0 {
+        if ret != 0 {
             return Err(UserError::SignatureVerification);
         }
     }
