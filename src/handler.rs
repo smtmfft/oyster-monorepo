@@ -19,7 +19,7 @@ pub struct AttestationVerificationResponse {
 
 #[derive(Deserialize, Serialize)]
 struct VerifyAttestation {
-    attestation_doc: String,
+    attestation: String,
     pcrs: Vec<String>,
     min_cpus: usize,
     min_mem: usize,
@@ -120,7 +120,7 @@ async fn verify(
     state: web::Data<AppState>,
 ) -> actix_web::Result<impl Responder, UserError> {
     let attestationdoc_bytes =
-        hex::decode(&req.attestation_doc).map_err(UserError::AttestationDecode)?;
+        hex::decode(&req.attestation).map_err(UserError::AttestationDecode)?;
     let requester_pub_key = oyster::verify(
         attestationdoc_bytes,
         req.pcrs.clone(),
@@ -237,7 +237,7 @@ mod tests {
         pcrs.push("2cd79888cf800407c2bdd2165be71b8484561430942b314832cb11208ce774c757767893a84f52c46a41185f2248989f".to_string());
 
         let req_data = VerifyAttestation {
-            attestation_doc: hex::encode(fs::read("./attestation_doc").unwrap()),
+            attestation: hex::encode(fs::read("./attestation_doc").unwrap()),
             pcrs,
             min_cpus: 2,
             min_mem: 4134580224,
