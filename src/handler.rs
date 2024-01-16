@@ -98,7 +98,7 @@ fn abi_encode(
     enclave_cpu: usize,
     enclave_mem: usize,
 ) -> Vec<u8> {
-    let encoded_data = vec![
+    ethers::abi::encode(&[
         ethers::abi::Token::String(prefix),
         ethers::abi::Token::Address(address_from_pubkey(enclave_pubkey)),
         ethers::abi::Token::Bytes(pcr_0),
@@ -106,8 +106,7 @@ fn abi_encode(
         ethers::abi::Token::Bytes(pcr_2),
         ethers::abi::Token::Uint(enclave_cpu.into()),
         ethers::abi::Token::Uint(enclave_mem.into()),
-    ];
-    ethers::abi::encode(&encoded_data)
+    ])
 }
 
 fn address_from_pubkey(pub_key: &[u8; 65]) -> ethers::types::Address {
