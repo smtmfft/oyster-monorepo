@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::num::TryFromIntError;
 
 use actix_web::{error, get, http::StatusCode, web, Responder};
 use ethers;
@@ -55,6 +56,8 @@ pub enum UserError {
     MessageGenerationError(secp256k1::Error),
     #[error("error while decoding pcrs")]
     PCRDecodeError(hex::FromHexError),
+    #[error("invalid recovery id")]
+    InvalidRecoveryError(TryFromIntError),
 }
 
 impl error::ResponseError for UserError {
@@ -171,14 +174,21 @@ async fn verify(
     let msg_to_sign = ethers::utils::keccak256(abi_encoded);
     let msg_to_sign = secp256k1::Message::from_digest_slice(&msg_to_sign)
         .map_err(UserError::MessageGenerationError)?;
+
     let secp = secp256k1::Secp256k1::new();
-    let sig = secp
-        .sign_ecdsa(&msg_to_sign, &state.secp256k1_secret)
+    let (recid, sig) = secp
+        .sign_ecdsa_recoverable(&msg_to_sign, &state.secp256k1_secret)
         .serialize_compact();
+
     let sig = hex::encode(sig);
-    let sig = format!("{}1c", sig);
+    let recid: u8 = recid
+        .to_i32()
+        .try_into()
+        .map_err(UserError::InvalidRecoveryError)?;
+    let recid = hex::encode([recid]);
+
     Ok(web::Json(VerifyAttestationResponse {
-        signature: sig,
+        signature: sig + &recid,
         secp256k1_public: hex::encode(state.secp256k1_public),
     }))
 }
