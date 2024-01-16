@@ -13,7 +13,7 @@ pub struct AppState {
 }
 
 fn default_max_age() -> usize {
-    300
+    300000
 }
 
 #[derive(Deserialize, Serialize)]
