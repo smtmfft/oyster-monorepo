@@ -142,16 +142,16 @@ async fn verify(
         ethers::abi::Token::Bytes(requester_secp256k1_public.clone()),
     ])
     .map_err(UserError::SignatureEncoding)?;
-    unsafe {
-        let ret = crypto_sign_verify_detached(
+    let ret = unsafe {
+        crypto_sign_verify_detached(
             requester_signature.as_ptr(),
             requester_msg.as_ptr(),
             requester_msg.len() as u64,
             requester_ed25519_public.as_ptr(),
-        );
-        if ret != 0 {
-            return Err(UserError::SignatureVerification);
-        }
+        )
+    };
+    if ret != 0 {
+        return Err(UserError::SignatureVerification);
     }
 
     let requester_secp256k1_public: [u8; 65] = requester_secp256k1_public
