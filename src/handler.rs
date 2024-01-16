@@ -1,3 +1,4 @@
+use std::array::TryFromSliceError;
 use std::error::Error;
 use std::num::TryFromIntError;
 
@@ -44,6 +45,8 @@ pub enum UserError {
     Secp256k1Decode(hex::FromHexError),
     #[error("error while encoding signature")]
     SignatureEncoding(ethers::abi::EncodePackedError),
+    #[error("invalid signature length, expected 64")]
+    InvalidSignatureLength(TryFromSliceError),
     #[error("error while decoding signature")]
     SignatureDecoding(hex::FromHexError),
     #[error("Signature verification failed")]
@@ -130,7 +133,11 @@ async fn verify(
     .map_err(UserError::AttestationVerification)?;
     let requester_secp256k1_public =
         hex::decode(&req.secp256k1_public).map_err(UserError::Secp256k1Decode)?;
-    let requester_signature = hex::decode(&req.signature).map_err(UserError::SignatureDecoding)?;
+    let requester_signature: [u8; 64] = hex::decode(&req.signature)
+        .map_err(UserError::SignatureDecoding)?
+        .as_slice()
+        .try_into()
+        .map_err(UserError::InvalidSignatureLength)?;
 
     let requester_msg = ethers::abi::encode_packed(&[
         ethers::abi::Token::String("attestation-verification-".to_string()),
