@@ -43,6 +43,8 @@ pub enum UserError {
     AttestationVerification(oyster::AttestationError),
     #[error("error while decoding secp256k1 key from hex")]
     Secp256k1Decode(hex::FromHexError),
+    #[error("invalid secp256k1 length, expected 65")]
+    InvalidSecp256k1Length(TryFromSliceError),
     #[error("error while encoding signature")]
     SignatureEncoding(ethers::abi::EncodePackedError),
     #[error("invalid signature length, expected 64")]
@@ -141,7 +143,7 @@ async fn verify(
 
     let requester_msg = ethers::abi::encode_packed(&[
         ethers::abi::Token::String("attestation-verification-".to_string()),
-        ethers::abi::Token::Bytes(requester_secp256k1_public),
+        ethers::abi::Token::Bytes(requester_secp256k1_public.clone()),
     ])
     .map_err(UserError::SignatureEncoding)?;
     unsafe {
@@ -156,13 +158,14 @@ async fn verify(
         }
     }
 
-    let mut pubkey_bytes = [0u8; 65];
-    hex::decode_to_slice(&req.secp256k1_public, &mut pubkey_bytes)
-        .map_err(UserError::Secp256k1Decode)?;
+    let requester_secp256k1_public: [u8; 65] = requester_secp256k1_public
+        .as_slice()
+        .try_into()
+        .map_err(UserError::InvalidSecp256k1Length)?;
 
     let abi_encoded = abi_encode(
         "Enclave Attestation Verified".to_string(),
-        &pubkey_bytes,
+        &requester_secp256k1_public,
         hex::decode(&req.pcrs[0]).map_err(UserError::PCRDecode)?,
         hex::decode(&req.pcrs[1]).map_err(UserError::PCRDecode)?,
         hex::decode(&req.pcrs[2]).map_err(UserError::PCRDecode)?,
