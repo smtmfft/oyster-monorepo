@@ -2,7 +2,7 @@ use std::array::TryFromSliceError;
 use std::error::Error;
 use std::num::TryFromIntError;
 
-use actix_web::{error, get, http::StatusCode, web, Responder};
+use actix_web::{error, http::StatusCode, post, web, Responder};
 use libsodium_sys::crypto_sign_verify_detached;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -120,7 +120,7 @@ fn address_from_pubkey(pub_key: &[u8; 65]) -> ethers::types::Address {
     ethers::types::Address::from_slice(&hash[12..])
 }
 
-#[get("/verify")]
+#[post("/verify")]
 async fn verify(
     req: web::Json<VerifyAttestation>,
     state: web::Data<AppState>,
