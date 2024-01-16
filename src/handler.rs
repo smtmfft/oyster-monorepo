@@ -163,13 +163,13 @@ async fn verify(
         req.min_mem,
     );
 
-    let msg_to_sign = ethers::utils::keccak256(abi_encoded);
-    let msg_to_sign = secp256k1::Message::from_digest_slice(&msg_to_sign)
+    let response_msg = ethers::utils::keccak256(abi_encoded);
+    let response_msg = secp256k1::Message::from_digest_slice(&response_msg)
         .map_err(UserError::MessageGeneration)?;
 
     let secp = secp256k1::Secp256k1::new();
     let (recid, sig) = secp
-        .sign_ecdsa_recoverable(&msg_to_sign, &state.secp256k1_secret)
+        .sign_ecdsa_recoverable(&response_msg, &state.secp256k1_secret)
         .serialize_compact();
 
     let sig = hex::encode(sig);
