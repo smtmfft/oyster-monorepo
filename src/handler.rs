@@ -178,7 +178,7 @@ async fn verify(
     let sig = hex::encode(sig);
     let sig = format!("{}1c", sig);
     Ok(web::Json(VerifyAttestationResponse {
-        signature,
+        signature: sig,
         secp256k1_public: hex::encode(state.secp256k1_public),
     }))
 }
