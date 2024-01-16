@@ -12,12 +12,6 @@ pub struct AppState {
     pub secp256k1_public: [u8; 65],
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AttestationVerificationResponse {
-    pub signed_message: String,
-}
-
 #[derive(Deserialize, Serialize)]
 struct VerifyAttestation {
     attestation: String,
