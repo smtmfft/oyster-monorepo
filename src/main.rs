@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
             cli.secp256k1_public
         )
     })?;
-    let secp256k1_public: [u8; 65] = secp256k1_public
+    let secp256k1_public: [u8; 64] = secp256k1_public
         .as_slice()
         .try_into()
         .context("invalid public key length")?;

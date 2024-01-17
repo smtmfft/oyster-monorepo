@@ -9,7 +9,7 @@ use thiserror::Error;
 
 pub struct AppState {
     pub secp256k1_secret: secp256k1::SecretKey,
-    pub secp256k1_public: [u8; 65],
+    pub secp256k1_public: [u8; 64],
 }
 
 fn default_max_age() -> usize {
@@ -95,7 +95,7 @@ impl std::fmt::Debug for UserError {
 
 fn abi_encode(
     prefix: String,
-    enclave_pubkey: &[u8; 65],
+    enclave_pubkey: &[u8; 64],
     pcr_0: Vec<u8>,
     pcr_1: Vec<u8>,
     pcr_2: Vec<u8>,
@@ -115,8 +115,8 @@ fn abi_encode(
     ])
 }
 
-fn address_from_pubkey(pub_key: &[u8; 65]) -> ethers::types::Address {
-    let hash = ethers::utils::keccak256(&pub_key[1..]);
+fn address_from_pubkey(pub_key: &[u8; 64]) -> ethers::types::Address {
+    let hash = ethers::utils::keccak256(pub_key);
     ethers::types::Address::from_slice(&hash[12..])
 }
 
@@ -159,7 +159,7 @@ async fn verify(
         return Err(UserError::SignatureVerification);
     }
 
-    let requester_secp256k1_public: [u8; 65] = requester_secp256k1_public
+    let requester_secp256k1_public: [u8; 64] = requester_secp256k1_public
         .as_slice()
         .try_into()
         .map_err(UserError::InvalidSecp256k1Length)?;
