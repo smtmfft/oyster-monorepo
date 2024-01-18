@@ -96,7 +96,7 @@ fn abi_encode(
     pcr_2: Vec<u8>,
     enclave_cpu: usize,
     enclave_mem: usize,
-    max_age: usize,
+    timestamp: usize,
 ) -> Vec<u8> {
     ethers::abi::encode(&[
         ethers::abi::Token::String(prefix),
@@ -106,7 +106,7 @@ fn abi_encode(
         ethers::abi::Token::Bytes(pcr_2),
         ethers::abi::Token::Uint(enclave_cpu.into()),
         ethers::abi::Token::Uint(enclave_mem.into()),
-        ethers::abi::Token::Uint(max_age.into()),
+        ethers::abi::Token::Uint(timestamp.into()),
     ])
 }
 
