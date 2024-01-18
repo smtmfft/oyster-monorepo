@@ -12,18 +12,13 @@ pub struct AppState {
     pub secp256k1_public: [u8; 64],
 }
 
-fn default_max_age() -> usize {
-    300000
-}
-
 #[derive(Deserialize, Serialize)]
 struct VerifyAttestation {
     attestation: String,
     pcrs: Vec<String>,
     min_cpus: usize,
     min_mem: usize,
-    #[serde(default = "default_max_age")]
-    max_age: usize,
+    timestamp: usize,
     signature: String,
     secp256k1_public: String,
 }
@@ -131,7 +126,7 @@ async fn verify(
         req.pcrs.clone(),
         req.min_cpus,
         req.min_mem,
-        req.max_age,
+        req.timestamp,
     )
     .map_err(UserError::AttestationVerification)?;
     let requester_secp256k1_public =
@@ -172,7 +167,7 @@ async fn verify(
         hex::decode(&req.pcrs[2]).map_err(UserError::PCRDecode)?,
         req.min_cpus,
         req.min_mem,
-        req.max_age,
+        req.timestamp,
     );
 
     let response_msg = ethers::utils::keccak256(abi_encoded);
