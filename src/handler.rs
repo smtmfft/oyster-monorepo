@@ -184,7 +184,7 @@ async fn verify(
         .to_i32()
         .try_into()
         .map_err(UserError::InvalidRecovery)?;
-    let recid = hex::encode([recid]);
+    let recid = hex::encode([recid + 27]);
 
     Ok(web::Json(VerifyAttestationResponse {
         signature: sig + &recid,
