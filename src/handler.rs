@@ -121,7 +121,7 @@ async fn verify(
     state: web::Data<AppState>,
 ) -> actix_web::Result<impl Responder, UserError> {
     let attestation = hex::decode(&req.attestation).map_err(UserError::AttestationDecode)?;
-    let requester_ed25519_public = oyster::verify(
+    let requester_ed25519_public = oyster::verify_with_timestamp(
         attestation,
         req.pcrs.clone(),
         req.min_cpus,
