@@ -90,7 +90,7 @@ impl std::fmt::Debug for UserError {
 
 fn abi_encode(
     prefix: String,
-    enclave_pubkey: &[u8; 64],
+    enclave_pubkey: Vec<u8>,
     pcr_0: Vec<u8>,
     pcr_1: Vec<u8>,
     pcr_2: Vec<u8>,
@@ -100,7 +100,7 @@ fn abi_encode(
 ) -> Vec<u8> {
     ethers::abi::encode(&[
         ethers::abi::Token::String(prefix),
-        ethers::abi::Token::Address(address_from_pubkey(enclave_pubkey)),
+        ethers::abi::Token::Bytes(enclave_pubkey),
         ethers::abi::Token::Bytes(pcr_0),
         ethers::abi::Token::Bytes(pcr_1),
         ethers::abi::Token::Bytes(pcr_2),
@@ -161,7 +161,7 @@ async fn verify(
 
     let abi_encoded = abi_encode(
         "Enclave Attestation Verified".to_string(),
-        &requester_secp256k1_public,
+        requester_secp256k1_public.into(),
         hex::decode(&req.pcrs[0]).map_err(UserError::PCRDecode)?,
         hex::decode(&req.pcrs[1]).map_err(UserError::PCRDecode)?,
         hex::decode(&req.pcrs[2]).map_err(UserError::PCRDecode)?,
