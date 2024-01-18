@@ -110,11 +110,6 @@ fn abi_encode(
     ])
 }
 
-fn address_from_pubkey(pub_key: &[u8; 64]) -> ethers::types::Address {
-    let hash = ethers::utils::keccak256(pub_key);
-    ethers::types::Address::from_slice(&hash[12..])
-}
-
 #[post("/verify")]
 async fn verify(
     req: web::Json<VerifyAttestation>,
