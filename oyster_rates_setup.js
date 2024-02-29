@@ -174,11 +174,11 @@ async function run() {
         const found = newProds.find(el => el.region === curr.region);
 
         if (found) {
-            found.rate_cards.push({ instance: curr.instance, min_rate: curr.min_rate, cpu: curr.cpus, memory: curr.memory * 1024, arch: curr.arch });
+            found.rate_cards.push({ instance: curr.instance, min_rate: curr.min_rate, cpu: curr.cpus / 2, memory: curr.memory * 1024 / 2, arch: curr.arch });
         } else {
             newProds.push({
                 region: curr.region,
-                rate_cards: [{ instance: curr.instance, min_rate: curr.min_rate, cpu: curr.cpus, memory: curr.memory * 1024, arch: curr.arch },]
+                rate_cards: [{ instance: curr.instance, min_rate: curr.min_rate, cpu: curr.cpus / 2, memory: curr.memory * 1024 / 2, arch: curr.arch },]
             });
         }
         return newProds;
