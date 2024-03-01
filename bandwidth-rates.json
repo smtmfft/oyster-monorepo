@@ -90,11 +90,6 @@
     "rate": "109300000000000000"
   },
   {
-    "region": "Asia Pacific (Hyderabad)",
-    "region_code": "ap-south-2",
-    "rate": "109300000000000000"
-  },
-  {
     "region": "Asia Pacific (Tokyo)",
     "region_code": "ap-northeast-1",
     "rate": "114000000000000000"
