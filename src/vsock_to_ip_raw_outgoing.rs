@@ -41,7 +41,7 @@ use clap::Parser;
 use libc::{freeifaddrs, getifaddrs, ifaddrs, strncmp};
 use socket2::{SockAddr, Socket};
 
-use raw_proxy::{
+use oyster_raw_proxy::{
     accept_vsock_conn_with_backoff, new_ip_socket_with_backoff, new_vsock_server_with_backoff,
     ProxyError, SocketError, VsockAddrParser,
 };

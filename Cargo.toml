@@ -1,10 +1,10 @@
 [package]
-name = "raw-proxy"
-version = "0.1.0"
+name = "oyster-raw-proxy"
+version = "1.0.0"
 edition = "2021"
 
 [lib]
-name = "raw_proxy"
+name = "oyster_raw_proxy"
 path = "src/lib.rs"
 
 [[bin]]
@@ -22,8 +22,6 @@ path = "src/vsock_to_ip_raw_incoming.rs"
 [[bin]]
 name = "vsock-to-ip-raw-outgoing"
 path = "src/vsock_to_ip_raw_outgoing.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0.73"

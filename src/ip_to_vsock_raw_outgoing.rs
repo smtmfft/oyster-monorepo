@@ -31,7 +31,7 @@ use clap::Parser;
 use nfq::{Queue, Verdict};
 use socket2::{SockAddr, Socket};
 
-use raw_proxy::{
+use oyster_raw_proxy::{
     new_nfq_with_backoff, new_vsock_socket_with_backoff, ProxyError, SocketError, VsockAddrParser,
 };
 
