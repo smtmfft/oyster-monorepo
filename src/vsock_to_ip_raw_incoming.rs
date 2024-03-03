@@ -74,6 +74,19 @@ fn handle_conn(
             .map_err(SocketError::ReadError)
             .map_err(ProxyError::VsockError)?;
 
+        // get the destination IP
+        // filter out packets not matching the expected IP
+        let dst_addr = buf[16..20].iter().fold(String::new(), |acc, val| {
+            if acc != "" {
+                acc + "." + &val.to_string()
+            } else {
+                acc + &val.to_string()
+            }
+        });
+        if dst_addr != ip {
+            continue;
+        }
+
         // send through ip sock
         let mut total_sent = 0;
         while total_sent < size {
