@@ -91,7 +91,7 @@ fn get_eth_interface() -> anyhow::Result<(String, u32)> {
 
     unsafe { freeifaddrs(ifap) };
 
-    if ifname == "" {
+    if ifname.is_empty() {
         Err(anyhow::anyhow!("no matching interface found"))
     } else {
         Ok((ifname, ifaddr.to_be()))
