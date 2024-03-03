@@ -191,121 +191,35 @@ async fn verify(
 mod tests {
     use super::*;
     use actix_web::{test, web, App};
-    use libsodium_sys::crypto_sign_detached;
-    use std::fs;
 
     #[actix_web::test]
     async fn test_handler() {
-        let enclave_priv_key = fs::read("./enclave_private.key").unwrap();
-        let secp_priv_key = fs::read("./secret.key").unwrap();
-        let secp_priv_key = secp256k1::SecretKey::from_slice(&secp_priv_key).unwrap();
-        let secp = secp256k1::Secp256k1::new();
+        let secp256k1_secret = std::fs::read("./src/test/secp256k1.sec").unwrap();
+        let secp256k1_public = std::fs::read("./src/test/secp256k1.pub").unwrap();
 
-        let secp_pub_key = secp_priv_key.public_key(&secp).serialize_uncompressed();
-        println!("address : {}", address_from_pubkey(&secp_pub_key));
-        let msg_to_sign = ethers::abi::encode_packed(&[
-            ethers::abi::Token::String("attestation-verification-".to_string()),
-            ethers::abi::Token::Bytes(secp_pub_key.to_vec()),
-        ])
-        .unwrap();
-        let mut sig = [0u8; 64];
-        unsafe {
-            let is_signed = crypto_sign_detached(
-                sig.as_mut_ptr(),
-                std::ptr::null_mut(),
-                msg_to_sign.as_ptr(),
-                msg_to_sign.len() as u64,
-                enclave_priv_key.as_ptr(),
-            );
-            if is_signed != 0 {
-                panic!("not signed");
-            }
-        }
+        let secp256k1_secret = secp256k1::SecretKey::from_slice(&secp256k1_secret).unwrap();
+        let secp256k1_public: [u8; 64] = secp256k1_public.try_into().unwrap();
 
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(AppState {
-                    secp256k1_secret: secp_priv_key.clone(),
-                    secp256k1_public: secp_pub_key.clone(),
+                    secp256k1_secret,
+                    secp256k1_public,
                 }))
                 .service(verify),
         )
         .await;
-        let mut pcrs = Vec::new();
-        pcrs.push("3a2c64486fc890a1f65e82c195632b35a1b97d7595c666b8c83e91b56b92568abbeca0829269e40e4b76a6df963157da".to_string());
-        pcrs.push("be9dc8acb9b26e67f2919fe877f94271c79289989455013c66a5f2cc637a9355665bc9d89b7aed986f7b4c269acc1233".to_string());
-        pcrs.push("2cd79888cf800407c2bdd2165be71b8484561430942b314832cb11208ce774c757767893a84f52c46a41185f2248989f".to_string());
 
-        let req_data = VerifyAttestation {
-            attestation: hex::encode(fs::read("./attestation_doc").unwrap()),
-            pcrs,
-            min_cpus: 2,
-            min_mem: 4134580224,
-            max_age: 300000000,
-            signature: hex::encode(sig),
-            secp256k1_public: hex::encode(&secp_pub_key).clone(),
-        };
+        let attestation = std::fs::read("./src/test/attestation.json").unwrap();
         let req = test::TestRequest::post()
-            .uri("/verify/attestation")
-            .set_json(req_data)
+            .uri("/verify")
+            .insert_header(("Content-Type", "application/json"))
+            .set_payload(attestation)
             .to_request();
 
         let resp: VerifyAttestationResponse = test::call_and_read_body_json(&app, req).await;
 
-        println!("resp sig: {}", resp.signature);
-        println!("resp secpkey: {}", resp.secp256k1_public);
-    }
-
-    #[actix_web::test]
-    async fn test_attestation() {
-        println!("testing");
-        let attestation_doc = fs::read("./attestation_doc").unwrap();
-        let mut pcrs = Vec::new();
-        pcrs.push("3a2c64486fc890a1f65e82c195632b35a1b97d7595c666b8c83e91b56b92568abbeca0829269e40e4b76a6df963157da".to_string());
-
-        pcrs.push("be9dc8acb9b26e67f2919fe877f94271c79289989455013c66a5f2cc637a9355665bc9d89b7aed986f7b4c269acc1233".to_string());
-        pcrs.push("2cd79888cf800407c2bdd2165be71b8484561430942b314832cb11208ce774c757767893a84f52c46a41185f2248989f".to_string());
-        let result = oyster::verify(attestation_doc, pcrs, 2, 4134580224, 300000000).unwrap();
-        println!("publickey: {:?}", result);
-    }
-
-    #[actix_web::test]
-    async fn test_signature_verification() {
-        let enclave_pub_key = fs::read("./enclave_public.key").unwrap();
-        let enclave_priv_key = fs::read("./enclave_private.key").unwrap();
-        let secp_priv_key = fs::read("./secret.key").unwrap();
-        let secp_priv_key = secp256k1::SecretKey::from_slice(&secp_priv_key).unwrap();
-        let secp = secp256k1::Secp256k1::new();
-        let secp_pub_key = secp_priv_key.public_key(&secp).serialize_uncompressed();
-        let msg_to_sign = ethers::abi::encode_packed(&[
-            ethers::abi::Token::String("attestation-verification-".to_string()),
-            ethers::abi::Token::Bytes(secp_pub_key.to_vec()),
-        ])
-        .unwrap();
-        let mut sig = [0u8; 64];
-        unsafe {
-            let is_signed = crypto_sign_detached(
-                sig.as_mut_ptr(),
-                std::ptr::null_mut(),
-                msg_to_sign.as_ptr(),
-                msg_to_sign.len() as u64,
-                enclave_priv_key.as_ptr(),
-            );
-            if is_signed != 0 {
-                panic!("not signed");
-            }
-        }
-
-        unsafe {
-            let is_verified = crypto_sign_verify_detached(
-                sig.clone().as_mut_ptr(),
-                msg_to_sign.as_ptr(),
-                msg_to_sign.len() as u64,
-                enclave_pub_key.as_ptr(),
-            );
-            if is_verified != 0 {
-                panic!("not verified");
-            }
-        }
+        assert_eq!(resp.signature, "26a910db11f7aeba592ac151ee4f81ea03026dd3d7f8ff261533a5d0b4818df663b34889688609b97add2eec8fb66296c2dfdf818eadc8bb8b503e6ad3ab0e241b");
+        assert_eq!(resp.secp256k1_public, "89b14cb02441b6850534580800bd0a33e6ca483a9ea8f0f55de0a99fbf4a4f02a525d6bb48a7a7a80928af68e0d4ad859d699b49538a425cd35403cd1fbdf956");
     }
 }
