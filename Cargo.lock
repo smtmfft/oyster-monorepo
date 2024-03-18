@@ -1093,6 +1093,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4030760ffd992bef45b0ae3f10ce1aba99e33464c90d14dd7c039884963ddc7a"
 
 [[package]]
+name = "oyster-aws-quotas-monitor"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aws-config",
+ "aws-sdk-ec2",
+ "aws-sdk-servicequotas",
+ "aws-types",
+ "chrono",
+ "clap",
+ "tokio",
+]
+
+[[package]]
 name = "parking_lot"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1373,20 +1387,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "service-quotas-monitor"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "aws-config",
- "aws-sdk-ec2",
- "aws-sdk-servicequotas",
- "aws-types",
- "chrono",
- "clap",
- "tokio",
 ]
 
 [[package]]
