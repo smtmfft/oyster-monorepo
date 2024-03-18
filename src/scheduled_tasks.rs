@@ -9,12 +9,12 @@ use chrono::Local;
 pub async fn get_id(config: &SdkConfig, quota_name: &str) -> Option<String> {
     let quota_code = utils::map_quota_to_code(quota_name);
     if quota_code.is_none() {
-        utils::log_data(format!(
+        println!(
             "[{}][{}] Invalid quota name during monitoring: {}\n\n",
             Local::now().format("%Y-%m-%d %H:%M:%S"),
             config.region().unwrap(),
             quota_name
-        ));
+        );
         return None;
     }
 
@@ -28,13 +28,13 @@ pub async fn get_id(config: &SdkConfig, quota_name: &str) -> Option<String> {
         Ok(request_id) => request_id,
         Err(err) => {
             // Can retry here
-            utils::log_data(format!(
+            println!(
                 "[{}][{}] Failed to get latest {} request ID during monitoring: {:?}\n\n",
                 Local::now().format("%Y-%m-%d %H:%M:%S"),
                 config.region().unwrap(),
                 quota_name,
                 err
-            ));
+            );
             None
         }
     }
@@ -51,14 +51,14 @@ pub async fn request_monitor(
             match request_check(config, request_id.as_str(), no_update_threshold).await {
                 Ok(request_option) => request_option,
                 Err(err) => {
-                    utils::log_data(format!(
+                    println!(
                         "[{}][{}] Error occurred while monitoring {} request ID {}: {:?}\n\n",
                         Local::now().format("%Y-%m-%d %H:%M:%S"),
                         config.region().unwrap(),
                         quota_name,
                         request_id,
                         err
-                    ));
+                    );
                     Some(request_id)
                 }
             }
@@ -85,13 +85,13 @@ pub async fn usage_monitor(
     {
         Ok(request_option) => request_option,
         Err(err) => {
-            utils::log_data(format!(
+            println!(
                 "[{}][{}] Error occurred while monitoring {} usage against quota: {:?}\n\n",
                 Local::now().format("%Y-%m-%d %H:%M:%S"),
                 config.region().unwrap(),
                 quota_name,
                 err
-            ));
+            );
             request
         }
     }
@@ -121,19 +121,21 @@ async fn request_check(
                 .num_days()
                 > no_update_threshold
             {
-                utils::log_data(format!("[{}][{}] Quota change request with ID {} has been found to be pending for a long time during monitoring, Please look into it!\n\n", 
+                println!("[{}][{}] Quota change request with ID {} has been found to be pending for a long time during monitoring, Please look into it!\n\n", 
                     Local::now().format("%Y-%m-%d %H:%M:%S"), 
                     config.region().unwrap(),
-                    request_id));
+                    request_id
+                );
             }
             Ok(Some(request_id.to_string()))
         }
         _ => {
-            utils::log_data(format!("[{}][{}] Quota change request with ID {} has been found to be closed during monitoring with the status {}, Please contact AWS support center for further info!\n\n", 
+            println!("[{}][{}] Quota change request with ID {} has been found to be closed during monitoring with the status {}, Please contact AWS support center for further info!\n\n", 
                 Local::now().format("%Y-%m-%d %H:%M:%S"), 
                 config.region().unwrap(),
                 request_id,
-                status));
+                status
+            );
             Ok(None)
         }
     }
@@ -179,12 +181,13 @@ async fn usage_check(
             }
         })?;
 
-        utils::log_data(format!("[{}][{}] Service quota increase requested while monitoring for {} with ID: {}\nDesired quota: {}\n\n", 
+        println!("[{}][{}] Service quota increase requested while monitoring for {} with ID: {}\nDesired quota: {}\n\n", 
             Local::now().format("%Y-%m-%d %H:%M:%S"), 
             config.region().unwrap(),
             quota_name,
             request_id,
-            new_quota));
+            new_quota
+        );
         Ok(Some(request_id))
     } else {
         Ok(request)

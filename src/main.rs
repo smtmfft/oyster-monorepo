@@ -114,13 +114,13 @@ async fn limit_increase(quota_name: &str, quota_value: f64, config: &SdkConfig) 
     .await
     {
         Ok(id) => {
-            utils::log_data(format!(
+            println!(
                 "Request ID: {}\nQuota Name: {}\nQuota Value: {}\nTime: {}\n\n",
                 id,
                 quota_name,
                 quota_value,
                 Local::now().format("%Y-%m-%d %H:%M:%S")
-            ));
+            );
 
             println!("Service quota increase requested!");
             println!("Request ID: {}", id);
@@ -220,11 +220,11 @@ async fn main() {
 
     for handle in handles {
         if let Err(err) = handle.await {
-            utils::log_data(format!(
+            println!(
                 "[{}] Error occurred while running a scheduled monitor: {:?}",
                 Local::now().format("%Y-%m-%d %H:%M:%S"),
                 err
-            ));
+            );
         }
     }
 }
