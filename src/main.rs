@@ -48,7 +48,7 @@ struct Cli {
     #[clap(long, value_parser, default_value = "50.0")]
     elastic_ip_quota_increment_percent: f64,
 
-    #[clap(long, value_parser)]
+    #[clap(long, value_parser = clap::builder::NonEmptyStringValueParser::new())]
     aws_profile: String,
 
     #[clap(
@@ -204,11 +204,6 @@ async fn main() {
         limit_increase(cli.quota_name.as_str(), cli.quota_value, &config).await;
     } else if cli.request_status {
         request_status(cli.request_id.as_str(), &config).await;
-    }
-
-    if cli.aws_profile.is_empty() {
-        eprintln!("Valid AWS profile must be provided for quota monitoring");
-        return;
     }
 
     let regions: Vec<String> = cli.aws_regions.split(',').map(|r| r.into()).collect();
