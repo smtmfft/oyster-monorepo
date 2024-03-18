@@ -1,6 +1,6 @@
 use crate::utils;
 
-use anyhow::{Result, Context, anyhow};
+use anyhow::{anyhow, Context, Result};
 use aws_config::SdkConfig;
 use aws_sdk_ec2;
 use aws_sdk_ec2::types::Filter;
@@ -9,7 +9,9 @@ pub async fn get_current_usage(quota_name: &str, config: &SdkConfig) -> Result<i
     match quota_name {
         utils::VCPU_QUOTA_NAME => get_no_of_vcpus(config).await,
         utils::ELASTIC_IP_QUOTA_NAME => get_no_of_elastic_ips(config).await,
-        _ => Err(anyhow!("Invalid quota name, must be one of 'vcpu' or 'elastic_ip'")),
+        _ => Err(anyhow!(
+            "Invalid quota name, must be one of 'vcpu' or 'elastic_ip'"
+        )),
     }
 }
 
@@ -45,10 +47,12 @@ async fn get_no_of_vcpus(config: &SdkConfig) -> Result<i32> {
 
             no_of_vcpus += (cpu_options
                 .core_count()
-                .ok_or(anyhow!("Could not parse core count from cpu options"))?) as i32
+                .ok_or(anyhow!("Could not parse core count from cpu options"))?)
+                as i32
                 * (cpu_options
                     .threads_per_core()
-                    .ok_or(anyhow!("Could not parse threads per core from cpu options"))?) as i32;
+                    .ok_or(anyhow!("Could not parse threads per core from cpu options"))?)
+                    as i32;
         }
     }
 
@@ -65,6 +69,5 @@ async fn get_no_of_elastic_ips(config: &SdkConfig) -> Result<i32> {
         .context("Error occurred while describing addresses from AWS client")?
         .addresses()
         .ok_or(anyhow!("Could not parse addresses from AWS response"))?
-        .len() as i32
-    )
+        .len() as i32)
 }

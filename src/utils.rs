@@ -18,7 +18,8 @@ pub fn log_data(log_data: String) {
         .create(true)
         .write(true)
         .append(true)
-        .open("requests.log") {
+        .open("requests.log")
+    {
         Ok(mut file) => {
             if let Err(err) = file.write_all(log_data.as_bytes()) {
                 eprintln!("Error writing to the log file requests.log: {}", err);
