@@ -48,7 +48,7 @@ struct Cli {
     #[clap(long, value_parser, default_value = "50.0")]
     elastic_ip_quota_increment_percent: f64,
 
-    #[clap(long, value_parser = clap::builder::NonEmptyStringValueParser::new())]
+    #[clap(long, value_parser)]
     aws_profile: String,
 
     #[clap(
