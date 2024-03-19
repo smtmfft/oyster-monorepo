@@ -148,7 +148,8 @@ async fn usage_check(
     threshold_percent: f64,
     increment_percent: f64,
 ) -> Result<Option<String>> {
-    let current_usage = current_usage::get_current_usage(quota_name, config)
+    let client = aws_sdk_ec2::Client::new(&config);
+    let current_usage = current_usage::get_current_usage(quota_name, &client)
         .await
         .context("Error fetching current usage")? as f64;
 
