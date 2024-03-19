@@ -35,40 +35,6 @@ enum Commands {
     },
 }
 
-// async fn limit_status(quota_name: &str, config: &SdkConfig) {
-//     let current_usage = current_usage::get_current_usage(quota_name, config).await;
-//     if current_usage.is_err() {
-//         eprintln!(
-//             "Failed to get current usage of {}: {}",
-//             quota_name,
-//             current_usage.unwrap_err()
-//         );
-//         return;
-//     }
-//
-//     let quota_limit = service_quotas::get_service_quota_limit(
-//         config,
-//         utils::EC2_SERVICE_CODE.to_string(),
-//         utils::map_quota_to_code(quota_name).unwrap(),
-//     )
-//     .await;
-//     if quota_limit.is_err() {
-//         eprintln!(
-//             "Failed to get {} quota limit/value: {}",
-//             quota_name,
-//             quota_limit.unwrap_err()
-//         );
-//         return;
-//     }
-//
-//     println!(
-//         "{}: {}/{}",
-//         quota_name,
-//         current_usage.unwrap(),
-//         quota_limit.unwrap()
-//     );
-// }
-//
 // async fn limit_increase(quota_name: &str, quota_value: f64, config: &SdkConfig) {
 //     let quota_code = utils::map_quota_to_code(quota_name);
 //     if quota_code.is_none() {
