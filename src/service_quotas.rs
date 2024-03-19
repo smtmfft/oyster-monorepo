@@ -1,3 +1,5 @@
+use crate::utils;
+
 use anyhow::{anyhow, Context, Result};
 use aws_config::SdkConfig;
 use aws_sdk_servicequotas;
@@ -5,13 +7,12 @@ use chrono::{DateTime, Local, TimeZone};
 
 pub async fn get_service_quota_limit(
     client: &aws_sdk_servicequotas::Client,
-    service: String,
-    quota_code: String,
+    quota: &utils::Quota,
 ) -> Result<usize> {
     Ok(client
         .get_service_quota()
-        .quota_code(quota_code)
-        .service_code(service)
+        .quota_code(quota.to_code())
+        .service_code("ec2")
         .send()
         .await
         .context("Error getting service quota from AWS client")?
