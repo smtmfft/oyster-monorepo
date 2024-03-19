@@ -67,6 +67,9 @@ struct Cli {
 enum Commands {
     // get status of a specific quota in a specific region
     Status {
+        #[clap(long, value_parser = utils::Quota::from_name, num_args = 1.., value_delimiter = ',', default_value = "vcpus,eips")]
+        quotas: Vec<utils::Quota>,
+
         #[clap(long, value_parser)]
         region: String,
 
@@ -208,10 +211,10 @@ enum Commands {
 //     }
 // }
 
-async fn quota_status(quota: &str, region: String, aws_profile: &str) -> Result<()> {
+async fn quota_status(quota: &utils::Quota, region: &str, aws_profile: &str) -> Result<()> {
     let config = aws_config::from_env()
         .profile_name(aws_profile)
-        .region(Region::new(region))
+        .region(Region::new(region.to_owned()))
         .load()
         .await;
 
@@ -222,15 +225,11 @@ async fn quota_status(quota: &str, region: String, aws_profile: &str) -> Result<
 
     let sq_client = aws_sdk_servicequotas::Client::new(&config);
 
-    let quota_limit = service_quotas::get_service_quota_limit(
-        &sq_client,
-        utils::EC2_SERVICE_CODE.to_string(),
-        utils::map_quota_to_code(quota).unwrap(),
-    )
-    .await
-    .with_context(|| format!("failed to get quota limit of {quota}"))?;
+    let quota_limit = service_quotas::get_service_quota_limit(&sq_client, quota)
+        .await
+        .with_context(|| format!("failed to get quota limit of {quota}"))?;
 
-    println!("{quota}: {current_usage}/{quota_limit}");
+    println!("{region}: {quota}: {current_usage}/{quota_limit}");
 
     Ok(())
 }
@@ -240,9 +239,14 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.cmd {
-        Commands::Status { region, profile } => {
-            quota_status("vcpu", region.clone(), &profile).await?;
-            quota_status("eip", region, &profile).await?;
+        Commands::Status {
+            quotas,
+            region,
+            profile,
+        } => {
+            for quota in quotas {
+                quota_status(&quota, &region, &profile).await?;
+            }
         }
     };
 
