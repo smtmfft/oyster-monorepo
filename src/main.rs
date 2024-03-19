@@ -68,9 +68,6 @@ enum Commands {
     // get status of a specific quota in a specific region
     Status {
         #[clap(long, value_parser)]
-        quota: String,
-
-        #[clap(long, value_parser)]
         region: String,
 
         #[clap(long, value_parser)]
@@ -217,12 +214,13 @@ async fn quota_status(quota: &str, region: String, aws_profile: &str) -> Result<
         .region(Region::new(region))
         .load()
         .await;
-    let ec2_client = aws_sdk_ec2::Client::new(&config);
-    let sq_client = aws_sdk_servicequotas::Client::new(&config);
 
+    let ec2_client = aws_sdk_ec2::Client::new(&config);
     let current_usage = current_usage::get_current_usage(&ec2_client, quota)
         .await
         .with_context(|| format!("failed to get current usage of {quota}"))?;
+
+    let sq_client = aws_sdk_servicequotas::Client::new(&config);
 
     let quota_limit = service_quotas::get_service_quota_limit(
         &sq_client,
@@ -242,11 +240,10 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.cmd {
-        Commands::Status {
-            quota,
-            region,
-            profile,
-        } => quota_status(&quota, region, &profile).await?,
+        Commands::Status { region, profile } => {
+            quota_status("vcpu", region.clone(), &profile).await?;
+            quota_status("eip", region, &profile).await?;
+        }
     };
 
     Ok(())
