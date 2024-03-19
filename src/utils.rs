@@ -1,4 +1,5 @@
-pub const EC2_SERVICE_CODE: &str = "ec2";
+use std::fmt::Display;
+
 pub const VCPU_QUOTA_NAME: &str = "vcpu";
 pub const ELASTIC_IP_QUOTA_NAME: &str = "eip";
 
@@ -18,9 +19,20 @@ impl Quota {
     }
 
     pub fn to_code(&self) -> String {
+        use Quota::*;
         match self {
             Vcpu => "L-1216C47A".to_owned(),
             Eip => "L-0263D0A3".to_owned(),
+        }
+    }
+}
+
+impl Display for Quota {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Quota::*;
+        match self {
+            Vcpu => write!(f, "vcpus"),
+            Eip => write!(f, "eips"),
         }
     }
 }
