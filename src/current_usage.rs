@@ -3,7 +3,7 @@ use crate::utils;
 use anyhow::{anyhow, Context, Result};
 use aws_sdk_ec2::types::Filter;
 
-pub async fn get_current_usage(quota: &str, client: &aws_sdk_ec2::Client) -> Result<usize> {
+pub async fn get_current_usage(client: &aws_sdk_ec2::Client, quota: &str) -> Result<usize> {
     match quota {
         utils::VCPU_QUOTA_NAME => get_no_of_vcpus(client).await,
         utils::ELASTIC_IP_QUOTA_NAME => get_no_of_elastic_ips(client).await,
