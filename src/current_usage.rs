@@ -1,23 +1,19 @@
 use crate::utils;
 
 use anyhow::{anyhow, Context, Result};
-use aws_config::SdkConfig;
-use aws_sdk_ec2;
 use aws_sdk_ec2::types::Filter;
 
-pub async fn get_current_usage(quota_name: &str, config: &SdkConfig) -> Result<i32> {
-    match quota_name {
-        utils::VCPU_QUOTA_NAME => get_no_of_vcpus(config).await,
-        utils::ELASTIC_IP_QUOTA_NAME => get_no_of_elastic_ips(config).await,
+pub async fn get_current_usage(quota: &str, client: &aws_sdk_ec2::Client) -> Result<i32> {
+    match quota {
+        utils::VCPU_QUOTA_NAME => get_no_of_vcpus(client).await,
+        utils::ELASTIC_IP_QUOTA_NAME => get_no_of_elastic_ips(client).await,
         _ => Err(anyhow!(
             "Invalid quota name, must be one of 'vcpu' or 'elastic_ip'"
         )),
     }
 }
 
-async fn get_no_of_vcpus(config: &SdkConfig) -> Result<i32> {
-    let client = aws_sdk_ec2::Client::new(config);
-
+async fn get_no_of_vcpus(client: &aws_sdk_ec2::Client) -> Result<i32> {
     let res = client
         .describe_instances()
         .filters(
@@ -59,9 +55,7 @@ async fn get_no_of_vcpus(config: &SdkConfig) -> Result<i32> {
     Ok(no_of_vcpus)
 }
 
-async fn get_no_of_elastic_ips(config: &SdkConfig) -> Result<i32> {
-    let client = aws_sdk_ec2::Client::new(config);
-
+async fn get_no_of_elastic_ips(client: &aws_sdk_ec2::Client) -> Result<i32> {
     Ok(client
         .describe_addresses()
         .send()
