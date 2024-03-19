@@ -2,6 +2,7 @@ pub const EC2_SERVICE_CODE: &str = "ec2";
 pub const VCPU_QUOTA_NAME: &str = "vcpu";
 pub const ELASTIC_IP_QUOTA_NAME: &str = "eip";
 
+#[derive(Clone, Debug)]
 pub enum Quota {
     Vcpu,
     Eip,
@@ -13,6 +14,13 @@ impl Quota {
             "vcpus" => Ok(Quota::Vcpu),
             "eips" => Ok(Quota::Eip),
             _ => Err(anyhow::anyhow!("invalid quota, should be vcpus or eips")),
+        }
+    }
+
+    pub fn to_code(&self) -> String {
+        match self {
+            Vcpu => "L-1216C47A".to_owned(),
+            Eip => "L-0263D0A3".to_owned(),
         }
     }
 }
