@@ -1,7 +1,6 @@
 use crate::utils;
 
 use anyhow::{anyhow, Context, Result};
-use aws_sdk_servicequotas;
 
 pub async fn get_service_quota_limit(
     client: &aws_sdk_servicequotas::Client,

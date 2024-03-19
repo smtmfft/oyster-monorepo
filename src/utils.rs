@@ -15,11 +15,11 @@ impl Quota {
         }
     }
 
-    pub fn to_code(&self) -> String {
+    pub fn to_code(&self) -> &str {
         use Quota::*;
         match self {
-            Vcpu => "L-1216C47A".to_owned(),
-            Eip => "L-0263D0A3".to_owned(),
+            Vcpu => "L-1216C47A",
+            Eip => "L-0263D0A3",
         }
     }
 }
