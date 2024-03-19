@@ -4,12 +4,10 @@ use aws_sdk_servicequotas;
 use chrono::{DateTime, Local, TimeZone};
 
 pub async fn get_service_quota_limit(
-    config: &SdkConfig,
+    client: &aws_sdk_servicequotas::Client,
     service: String,
     quota_code: String,
-) -> Result<f64> {
-    let client = aws_sdk_servicequotas::Client::new(config);
-
+) -> Result<usize> {
     Ok(client
         .get_service_quota()
         .quota_code(quota_code)
@@ -20,7 +18,7 @@ pub async fn get_service_quota_limit(
         .quota()
         .ok_or(anyhow!("Could not parse service quota from AWS response"))?
         .value()
-        .ok_or(anyhow!("Could not parse service quota value"))?)
+        .ok_or(anyhow!("Could not parse service quota value"))? as usize)
 }
 
 // pub async fn request_service_quota_increase(
