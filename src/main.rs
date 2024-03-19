@@ -178,13 +178,13 @@ async fn quota_status(quota: &utils::Quota, region: &str, aws_profile: &str) -> 
     let ec2_client = aws_sdk_ec2::Client::new(&config);
     let current_usage = current_usage::get_current_usage(&ec2_client, quota)
         .await
-        .with_context(|| format!("failed to get current usage of {quota}"))?;
+        .with_context(|| format!("failed to get current usage of {quota} in {region}"))?;
 
     let sq_client = aws_sdk_servicequotas::Client::new(&config);
 
     let quota_limit = service_quotas::get_service_quota_limit(&sq_client, quota)
         .await
-        .with_context(|| format!("failed to get quota limit of {quota}"))?;
+        .with_context(|| format!("failed to get quota limit of {quota} in {region}"))?;
 
     println!("{region}:\t{quota}:\t{current_usage}/{quota_limit}");
 
