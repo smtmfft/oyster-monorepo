@@ -3,6 +3,7 @@ mod scheduled_tasks;
 mod service_quotas;
 mod utils;
 
+use anyhow::{Context, Result};
 use aws_config::SdkConfig;
 use aws_types::region::Region;
 use chrono::Local;
@@ -210,9 +211,46 @@ enum Commands {
 //     }
 // }
 
+async fn quota_status(quota: &str, region: String, aws_profile: &str) -> Result<()> {
+    let config = aws_config::from_env()
+        .profile_name(aws_profile)
+        .region(Region::new(region))
+        .load()
+        .await;
+    let ec2_client = aws_sdk_ec2::Client::new(&config);
+    let sq_client = aws_sdk_servicequotas::Client::new(&config);
+
+    let current_usage = current_usage::get_current_usage(&ec2_client, quota)
+        .await
+        .with_context(|| format!("failed to get current usage of {quota}"))?;
+
+    let quota_limit = service_quotas::get_service_quota_limit(
+        &sq_client,
+        utils::EC2_SERVICE_CODE.to_string(),
+        utils::map_quota_to_code(quota).unwrap(),
+    )
+    .await
+    .with_context(|| format!("failed to get quota limit of {quota}"))?;
+
+    println!("{quota}: {current_usage}/{quota_limit}");
+
+    Ok(())
+}
+
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    match cli.cmd {
+        Commands::Status {
+            quota,
+            region,
+            profile,
+        } => quota_status(&quota, region, &profile).await?,
+    };
+
+    Ok(())
+
     // let config = aws_config::load_from_env().await;
     //
     // if cli.limit_status {
