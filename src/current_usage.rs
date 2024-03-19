@@ -3,7 +3,7 @@ use crate::utils;
 use anyhow::{anyhow, Context, Result};
 use aws_sdk_ec2::types::Filter;
 
-pub async fn get_current_usage(quota: &str, client: &aws_sdk_ec2::Client) -> Result<i32> {
+pub async fn get_current_usage(quota: &str, client: &aws_sdk_ec2::Client) -> Result<usize> {
     match quota {
         utils::VCPU_QUOTA_NAME => get_no_of_vcpus(client).await,
         utils::ELASTIC_IP_QUOTA_NAME => get_no_of_elastic_ips(client).await,
@@ -13,7 +13,7 @@ pub async fn get_current_usage(quota: &str, client: &aws_sdk_ec2::Client) -> Res
     }
 }
 
-async fn get_no_of_vcpus(client: &aws_sdk_ec2::Client) -> Result<i32> {
+async fn get_no_of_vcpus(client: &aws_sdk_ec2::Client) -> Result<usize> {
     let res = client
         .describe_instances()
         .filters(
@@ -44,18 +44,18 @@ async fn get_no_of_vcpus(client: &aws_sdk_ec2::Client) -> Result<i32> {
             no_of_vcpus += (cpu_options
                 .core_count()
                 .ok_or(anyhow!("Could not parse core count from cpu options"))?)
-                as i32
+                as usize
                 * (cpu_options
                     .threads_per_core()
                     .ok_or(anyhow!("Could not parse threads per core from cpu options"))?)
-                    as i32;
+                    as usize;
         }
     }
 
     Ok(no_of_vcpus)
 }
 
-async fn get_no_of_elastic_ips(client: &aws_sdk_ec2::Client) -> Result<i32> {
+async fn get_no_of_elastic_ips(client: &aws_sdk_ec2::Client) -> Result<usize> {
     Ok(client
         .describe_addresses()
         .send()
@@ -63,5 +63,5 @@ async fn get_no_of_elastic_ips(client: &aws_sdk_ec2::Client) -> Result<i32> {
         .context("Error occurred while describing addresses from AWS client")?
         .addresses()
         .ok_or(anyhow!("Could not parse addresses from AWS response"))?
-        .len() as i32)
+        .len() as usize)
 }
