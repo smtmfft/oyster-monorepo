@@ -1,9 +1,7 @@
 use crate::utils;
 
 use anyhow::{anyhow, Context, Result};
-use aws_config::SdkConfig;
 use aws_sdk_servicequotas;
-use chrono::{DateTime, Local, TimeZone};
 
 pub async fn get_service_quota_limit(
     client: &aws_sdk_servicequotas::Client,
