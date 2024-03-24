@@ -216,7 +216,7 @@ mod tests {
     use actix_web::{test, web, App};
 
     #[actix_web::test]
-    async fn test_handler() {
+    async fn test_raw_attestation() {
         let secp256k1_secret = std::fs::read("./src/test/secp256k1.sec").unwrap();
         let secp256k1_public = std::fs::read("./src/test/secp256k1.pub").unwrap();
 
@@ -253,5 +253,47 @@ mod tests {
             resp.verifier_secp256k1_public,
             hex::encode(secp256k1_public)
         );
+        assert_eq!(resp.timestamp, 1711293215627);
+    }
+
+    #[actix_web::test]
+    async fn test_hex_attestation() {
+        let secp256k1_secret = std::fs::read("./src/test/secp256k1.sec").unwrap();
+        let secp256k1_public = std::fs::read("./src/test/secp256k1.pub").unwrap();
+
+        let secp256k1_secret = secp256k1::SecretKey::from_slice(&secp256k1_secret).unwrap();
+        let secp256k1_public: [u8; 64] = secp256k1_public.try_into().unwrap();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(AppState {
+                    secp256k1_secret,
+                    secp256k1_public,
+                }))
+                .service(verify_hex),
+        )
+        .await;
+
+        let attestation = std::fs::read_to_string("./src/test/attestation.hex").unwrap();
+
+        let req = test::TestRequest::post()
+            .uri("/verify/hex")
+            .insert_header(("Content-Type", "text/plain"))
+            .set_payload(attestation)
+            .to_request();
+
+        let resp: VerifyAttestationResponse =
+            test::try_call_and_read_body_json(&app, req).await.unwrap();
+
+        assert_eq!(resp.signature, "61da9eef0a4597b674056e79c4e61f30cfb8f145d3355801a9def0d93a65b7295b8f64255cc7fac7b590a950a979fae3a274d91739f2d2c9284d518a2b9434511b");
+        assert_eq!(resp.secp256k1_public, "89b14cb02441b6850534580800bd0a33e6ca483a9ea8f0f55de0a99fbf4a4f02a525d6bb48a7a7a80928af68e0d4ad859d699b49538a425cd35403cd1fbdf956");
+        assert_eq!(resp.pcr0, "e32fe88a2ba4e70e2dd61decfc2063671eb4f26c0f68c00e6764bf47ecfd68ae98de726d1f814c9ff05cb3b17f3f0627");
+        assert_eq!(resp.pcr1, "bcdf05fefccaa8e55bf2c8d6dee9e79bbff31e34bf28a99aa19e6b29c37ee80b214a414b7607236edf26fcb78654e63f");
+        assert_eq!(resp.pcr2, "17ccf517a89089dd9fbfe48d1c5fc0db83008ac3008f41ecd4ea39f2a1df329ba122d892c00efb063846ba197ba7a1cc");
+        assert_eq!(
+            resp.verifier_secp256k1_public,
+            hex::encode(secp256k1_public)
+        );
+        assert_eq!(resp.timestamp, 1711293221224);
     }
 }
