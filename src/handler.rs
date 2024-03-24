@@ -89,28 +89,6 @@ impl std::fmt::Debug for UserError {
     }
 }
 
-fn abi_encode(
-    prefix: String,
-    enclave_pubkey: Vec<u8>,
-    pcr_0: Vec<u8>,
-    pcr_1: Vec<u8>,
-    pcr_2: Vec<u8>,
-    enclave_cpu: usize,
-    enclave_mem: usize,
-    timestamp: usize,
-) -> Vec<u8> {
-    ethers::abi::encode(&[
-        ethers::abi::Token::String(prefix),
-        ethers::abi::Token::Bytes(enclave_pubkey),
-        ethers::abi::Token::Bytes(pcr_0),
-        ethers::abi::Token::Bytes(pcr_1),
-        ethers::abi::Token::Bytes(pcr_2),
-        ethers::abi::Token::Uint(enclave_cpu.into()),
-        ethers::abi::Token::Uint(enclave_mem.into()),
-        ethers::abi::Token::Uint(timestamp.into()),
-    ])
-}
-
 // keccak256(
 //     abi.encode(
 //         keccak256("EIP712Domain(string name,string version)"),
