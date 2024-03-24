@@ -11,7 +11,7 @@ ethers = "2.0.10"
 hex = "0.4.3"
 hex-literal = "0.4.1"
 libsodium-sys-stable = "1.19.30"
-oyster-sdk = "0.7.1"
+oyster-sdk = "0.8.0"
 secp256k1 = { version = "0.28.0", features = ["recovery"] }
 serde = { version = "1.0.152", features = ["derive"] }
 thiserror = "1.0.56"
