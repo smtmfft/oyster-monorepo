@@ -39,22 +39,10 @@ pub enum UserError {
     AttestationDecode(#[source] hex::FromHexError),
     #[error("error while verifying attestation")]
     AttestationVerification(#[source] oyster::AttestationError),
-    #[error("error while decoding secp256k1 key from hex")]
-    Secp256k1Decode(#[source] hex::FromHexError),
     #[error("invalid secp256k1 length, expected 64")]
     InvalidSecp256k1Length(#[source] TryFromSliceError),
-    #[error("error while encoding signature")]
-    SignatureEncoding(#[source] ethers::abi::EncodePackedError),
-    #[error("invalid signature length, expected 64")]
-    InvalidSignatureLength(#[source] TryFromSliceError),
-    #[error("error while decoding signature")]
-    SignatureDecoding(#[source] hex::FromHexError),
-    #[error("Signature verification failed")]
-    SignatureVerification,
     #[error("Message generation failed")]
     MessageGeneration(#[source] secp256k1::Error),
-    #[error("error while decoding pcrs")]
-    PCRDecode(#[source] hex::FromHexError),
     #[error("invalid recovery id")]
     InvalidRecovery(#[source] TryFromIntError),
 }
@@ -141,7 +129,7 @@ fn verify(
 ) -> actix_web::Result<impl Responder, UserError> {
     let parsed = oyster::decode_attestation(attestation.clone())
         .map_err(UserError::AttestationVerification)?;
-    oyster::verify_with_timestamp(attestation, parsed.pcrs.clone(), parsed.timestamp)
+    oyster::verify_with_timestamp(attestation, parsed.pcrs, parsed.timestamp)
         .map_err(UserError::AttestationVerification)?;
 
     let requester_secp256k1_public: [u8; 64] = parsed
