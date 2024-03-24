@@ -221,22 +221,25 @@ mod tests {
         )
         .await;
 
-        let attestation = std::fs::read_to_string("./src/test/attestation.json").unwrap();
-        println!("{}", attestation);
+        let attestation = std::fs::read("./src/test/attestation.bin").unwrap();
 
         let req = test::TestRequest::post()
-            .uri("/verify")
-            .insert_header(("Content-Type", "application/json"))
+            .uri("/verify/raw")
+            .insert_header(("Content-Type", "application/octet-stream"))
             .set_payload(attestation)
             .to_request();
 
-        println!(
-            "{}",
-            String::from_utf8_lossy(&test::call_and_read_body(&app, req).await)
-        );
-        // let resp: VerifyAttestationResponse = test::call_and_read_body(&app, req).await.unwrap();
+        let resp: VerifyAttestationResponse =
+            test::try_call_and_read_body_json(&app, req).await.unwrap();
 
-        // assert_eq!(resp.signature, "26a910db11f7aeba592ac151ee4f81ea03026dd3d7f8ff261533a5d0b4818df663b34889688609b97add2eec8fb66296c2dfdf818eadc8bb8b503e6ad3ab0e241b");
-        // assert_eq!(resp.secp256k1_public, "89b14cb02441b6850534580800bd0a33e6ca483a9ea8f0f55de0a99fbf4a4f02a525d6bb48a7a7a80928af68e0d4ad859d699b49538a425cd35403cd1fbdf956");
+        assert_eq!(resp.signature, "8769e5ebda359cb5067fc8cd1f4fd3512a6b0becdd44d73556dcef13687a968e2a508dd182fce3ae50b51c13a0a51fb0ab7a56342e2f244924dc6c136f30cef11c");
+        assert_eq!(resp.secp256k1_public, "89b14cb02441b6850534580800bd0a33e6ca483a9ea8f0f55de0a99fbf4a4f02a525d6bb48a7a7a80928af68e0d4ad859d699b49538a425cd35403cd1fbdf956");
+        assert_eq!(resp.pcr0, "e32fe88a2ba4e70e2dd61decfc2063671eb4f26c0f68c00e6764bf47ecfd68ae98de726d1f814c9ff05cb3b17f3f0627");
+        assert_eq!(resp.pcr1, "bcdf05fefccaa8e55bf2c8d6dee9e79bbff31e34bf28a99aa19e6b29c37ee80b214a414b7607236edf26fcb78654e63f");
+        assert_eq!(resp.pcr2, "17ccf517a89089dd9fbfe48d1c5fc0db83008ac3008f41ecd4ea39f2a1df329ba122d892c00efb063846ba197ba7a1cc");
+        assert_eq!(
+            resp.verifier_secp256k1_public,
+            hex::encode(secp256k1_public)
+        );
     }
 }
