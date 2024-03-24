@@ -59,6 +59,7 @@ async fn main() -> Result<()> {
                 secp256k1_public,
             }))
             .service(handler::verify_raw)
+            .service(handler::verify_hex)
     })
     .bind((cli.ip.clone(), cli.port))
     .context("unable to start the server")?

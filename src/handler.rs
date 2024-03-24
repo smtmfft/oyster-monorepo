@@ -189,10 +189,22 @@ async fn verify_raw(
     req: web::Bytes,
     state: web::Data<AppState>,
 ) -> actix_web::Result<impl Responder, UserError> {
-    // let attestation = hex::decode(&req.attestation).map_err(UserError::AttestationDecode)?;
-
     verify(
         req.to_vec(),
+        &state.secp256k1_secret,
+        &state.secp256k1_public,
+    )
+}
+
+#[post("/verify/hex")]
+async fn verify_hex(
+    req: web::Bytes,
+    state: web::Data<AppState>,
+) -> actix_web::Result<impl Responder, UserError> {
+    let attestation = hex::decode(&req).map_err(UserError::AttestationDecode)?;
+
+    verify(
+        attestation,
         &state.secp256k1_secret,
         &state.secp256k1_public,
     )
