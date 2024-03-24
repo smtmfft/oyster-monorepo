@@ -41,7 +41,7 @@ pub enum UserError {
     AttestationVerification(#[source] oyster::AttestationError),
     #[error("error while decoding secp256k1 key from hex")]
     Secp256k1Decode(#[source] hex::FromHexError),
-    #[error("invalid secp256k1 length, expected 65")]
+    #[error("invalid secp256k1 length, expected 64")]
     InvalidSecp256k1Length(#[source] TryFromSliceError),
     #[error("error while encoding signature")]
     SignatureEncoding(#[source] ethers::abi::EncodePackedError),
@@ -120,6 +120,7 @@ fn compute_digest(
     encoded_struct.extend_from_slice(&ethers::utils::keccak256(pcr0));
     encoded_struct.extend_from_slice(&ethers::utils::keccak256(pcr1));
     encoded_struct.extend_from_slice(&ethers::utils::keccak256(pcr2));
+    encoded_struct.resize(32 * 6, 0);
     U256::from(timestamp).to_big_endian(&mut encoded_struct[32 * 5..32 * 6]);
 
     let hash_struct = ethers::utils::keccak256(encoded_struct);
