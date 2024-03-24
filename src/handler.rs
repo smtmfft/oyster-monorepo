@@ -3,6 +3,7 @@ use std::error::Error;
 use std::num::TryFromIntError;
 
 use actix_web::{error, http::StatusCode, post, web, Responder};
+use ethers::types::U256;
 use libsodium_sys::crypto_sign_verify_detached;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -110,6 +111,47 @@ fn abi_encode(
     ])
 }
 
+// keccak256(
+//     abi.encode(
+//         keccak256("EIP712Domain(string name,string version)"),
+//         keccak256("marlin.oyster.AttestationVerifier"),
+//         keccak256("1")
+//     )
+// )
+const DOMAIN_SEPARATOR: [u8; 32] =
+    hex_literal::hex!("0de834feb03c214f785e75b2828ffeceb322312d4487e2fb9640ca5fc32542c7");
+
+// keccak256("Attestation(bytes enclavePubKey,bytes PCR0,bytes PCR1,bytes PCR2,uint256 timestampInMilliseconds)")
+const ATTESTATION_TYPEHASH: [u8; 32] =
+    hex_literal::hex!("6889df476ca38f3f4b417c17eb496682eb401b4f41a2259741a78acc481ea805");
+
+fn compute_digest(
+    enclave_pubkey: &[u8],
+    pcr0: &[u8],
+    pcr1: &[u8],
+    pcr2: &[u8],
+    timestamp: usize,
+) -> [u8; 32] {
+    let mut encoded_struct = Vec::new();
+    encoded_struct.reserve_exact(32 * 6);
+    encoded_struct.extend_from_slice(&ATTESTATION_TYPEHASH);
+    encoded_struct.extend_from_slice(&ethers::utils::keccak256(enclave_pubkey));
+    encoded_struct.extend_from_slice(&ethers::utils::keccak256(pcr0));
+    encoded_struct.extend_from_slice(&ethers::utils::keccak256(pcr1));
+    encoded_struct.extend_from_slice(&ethers::utils::keccak256(pcr2));
+    U256::from(timestamp).to_big_endian(&mut encoded_struct[32 * 5..32 * 6]);
+
+    let hash_struct = ethers::utils::keccak256(encoded_struct);
+
+    let mut encoded_message = Vec::new();
+    encoded_message.reserve_exact(2 + 32 * 2);
+    encoded_message.extend_from_slice(&[0x19, 0x01]);
+    encoded_message.extend_from_slice(&DOMAIN_SEPARATOR);
+    encoded_message.extend_from_slice(&hash_struct);
+
+    ethers::utils::keccak256(encoded_message)
+}
+
 #[post("/verify")]
 async fn verify(
     req: web::Json<VerifyAttestation>,
@@ -154,20 +196,16 @@ async fn verify(
         .try_into()
         .map_err(UserError::InvalidSecp256k1Length)?;
 
-    let abi_encoded = abi_encode(
-        "Enclave Attestation Verified".to_string(),
-        requester_secp256k1_public.into(),
-        hex::decode(&req.pcrs[0]).map_err(UserError::PCRDecode)?,
-        hex::decode(&req.pcrs[1]).map_err(UserError::PCRDecode)?,
-        hex::decode(&req.pcrs[2]).map_err(UserError::PCRDecode)?,
-        req.min_cpus,
-        req.min_mem,
+    let digest = compute_digest(
+        &requester_secp256k1_public,
+        &hex::decode(&req.pcrs[0]).map_err(UserError::PCRDecode)?,
+        &hex::decode(&req.pcrs[1]).map_err(UserError::PCRDecode)?,
+        &hex::decode(&req.pcrs[2]).map_err(UserError::PCRDecode)?,
         req.timestamp,
     );
 
-    let response_msg = ethers::utils::keccak256(abi_encoded);
-    let response_msg = secp256k1::Message::from_digest_slice(&response_msg)
-        .map_err(UserError::MessageGeneration)?;
+    let response_msg =
+        secp256k1::Message::from_digest_slice(&digest).map_err(UserError::MessageGeneration)?;
 
     let secp = secp256k1::Secp256k1::new();
     let (recid, sig) = secp
