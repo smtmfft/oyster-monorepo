@@ -24,7 +24,7 @@ RUN wget -O keygen-ed25519 http://public.artifacts.marlin.pro/projects/enclaves/
 RUN chmod +x keygen-ed25519
 
 # attestation server inside the enclave that generates attestations
-RUN wget -O attestation-server http://public.artifacts.marlin.pro/projects/enclaves/attestation-server_v1.0.0_linux_$TARGETARCH
+RUN wget -O attestation-server http://public.artifacts.marlin.pro/projects/enclaves/attestation-server_v2.0.0_linux_$TARGETARCH
 RUN chmod +x attestation-server
 
 # proxy to expose attestation server outside the enclave
