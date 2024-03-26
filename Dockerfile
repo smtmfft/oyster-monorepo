@@ -49,7 +49,7 @@ RUN wget -O keygen-secp256k1 http://public.artifacts.marlin.pro/projects/enclave
 RUN chmod +x keygen-secp256k1
 
 # attestation verifier
-RUN wget -O attestation-verifier http://public.artifacts.marlin.pro/projects/enclaves/attestation-verifier_v1.0.0_linux_$TARGETARCH
+RUN wget -O attestation-verifier http://public.artifacts.marlin.pro/projects/enclaves/attestation-verifier_v2.0.1_linux_$TARGETARCH
 RUN chmod +x attestation-verifier
 
 # entry point
