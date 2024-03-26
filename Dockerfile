@@ -48,10 +48,6 @@ RUN chmod +x setup.sh
 RUN wget -O keygen-secp256k1 http://public.artifacts.marlin.pro/projects/enclaves/keygen-secp256k1_v1.0.0_linux_$TARGETARCH
 RUN chmod +x keygen-secp256k1
 
-# secp256k1 attestation server
-RUN wget -O attestation-server-secp256k1 http://public.artifacts.marlin.pro/projects/enclaves/attestation-server-secp256k1_v1.0.0_linux_$TARGETARCH
-RUN chmod +x attestation-server-secp256k1
-
 # attestation verifier
 RUN wget -O attestation-verifier http://public.artifacts.marlin.pro/projects/enclaves/attestation-verifier_v1.0.0_linux_$TARGETARCH
 RUN chmod +x attestation-verifier
