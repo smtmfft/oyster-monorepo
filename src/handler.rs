@@ -163,7 +163,7 @@ fn verify(
 
     Ok(web::Json(VerifyAttestationResponse {
         signature: sig + &recid,
-        secp256k1_public: hex::encode(public),
+        secp256k1_public: hex::encode(requester_secp256k1_public),
         pcr0: hex::encode(parsed.pcrs[0]),
         pcr1: hex::encode(parsed.pcrs[1]),
         pcr2: hex::encode(parsed.pcrs[2]),
