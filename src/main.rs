@@ -17,34 +17,39 @@ struct Args {
     #[clap(long, value_parser, default_value = "6001")]
     port: u16,
 
+    #[clap(long, value_parser, default_value = "./runtime/")]
+    workerd_runtime_path: String,
+
     #[clap(long, value_parser, default_value = "1")]
     common_chain_id: u64,
 
-    #[clap(
-        long,
-        value_parser,
-        default_value = "https://sepolia-rollup.arbitrum.io/rpc"
-    )]
+    #[clap(long, value_parser, default_value = "")]
     http_rpc_url: String,
+
+    #[clap(long, value_parser, default_value = "")]
+    web_socket_url: String,
 
     #[clap(long, value_parser, default_value = "")]
     job_management_contract: String,
 
+    #[clap(long, value_parser, default_value = "")]
+    user_code_contract: String,
+
     #[clap(long, value_parser, default_value = "/app/id.sec")]
-    signer: String,
+    enclave_signer_file: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Args::parse();
 
-    let cgroups = Cgroups::new().context("Failed to construct cgroups")?;
+    let cgroups = Cgroups::new().context("Failed to retrieve cgroups")?;
     if cgroups.free.is_empty() {
-        return Err(anyhow!("no cgroups found, make sure you have generated cgroups on your system using instructions in the readme"));
+        return Err(anyhow!("No cgroups found, make sure you have generated cgroups on your system using the instructions in the readme"));
     }
 
-    let signer = SigningKey::from_slice(
-        fs::read(cli.signer)
+    let enclave_signer_key = SigningKey::from_slice(
+        fs::read(cli.enclave_signer_file)
             .await
             .context("Failed to read the enclave signer key")?
             .as_slice(),
@@ -53,15 +58,18 @@ async fn main() -> Result<()> {
 
     let app_data = Data::new(AppState {
         job_capacity: cgroups.free.len(),
+        cgroups: cgroups.into(),
         common_chain_id: cli.common_chain_id,
-        http_rpc_url: cli.http_rpc_url,
+        web_socket_url: cli.web_socket_url,
         job_management_contract: cli
             .job_management_contract
             .parse::<Address>()
             .context("Invalid job management contract address")?,
         contract_object: None.into(),
-        enclave_signer: signer,
+        user_code_contract: cli.user_code_contract,
+        enclave_signer_key: enclave_signer_key,
         enclave_pub_key: String::new().into(),
+        workerd_runtime_path: cli.workerd_runtime_path,
     });
 
     let server = HttpServer::new(move || {

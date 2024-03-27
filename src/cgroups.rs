@@ -2,32 +2,22 @@ use std::ffi::OsStr;
 use std::fs;
 use std::process::{Child, Command, Stdio};
 
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum CgroupsError {
-    #[error("failed to retrieve cgroups")]
-    Fetch(#[source] std::io::Error),
-    #[error("no free cgroups left")]
-    NoFree,
-    #[error("failed to execute cgroups")]
-    Execute(#[source] std::io::Error),
-}
+use anyhow::{anyhow, Context, Result};
 
 pub struct Cgroups {
     pub free: Vec<String>,
 }
 
 impl Cgroups {
-    pub fn new() -> Result<Cgroups, CgroupsError> {
+    pub fn new() -> Result<Cgroups> {
         Ok(Cgroups {
-            free: get_cgroups().map_err(CgroupsError::Fetch)?,
+            free: get_cgroups()?,
         })
     }
 
-    pub fn reserve(&mut self) -> Result<String, CgroupsError> {
+    pub fn reserve(&mut self) -> Result<String> {
         if self.free.len() == 0 {
-            return Err(CgroupsError::NoFree);
+            return Err(anyhow!(""));
         }
 
         Ok(self.free.swap_remove(0))
@@ -40,21 +30,21 @@ impl Cgroups {
     pub fn execute(
         cgroup: &str,
         args: impl IntoIterator<Item = impl AsRef<OsStr>>,
-    ) -> Result<Child, CgroupsError> {
+    ) -> Result<Child> {
         let child = Command::new("cgexec")
             .arg("-g")
             .arg("memory,cpu:".to_string() + cgroup)
             .args(args)
             .stderr(Stdio::piped())
-            .spawn()
-            .map_err(CgroupsError::Execute)?;
+            .spawn()?;
 
         Ok(child)
     }
 }
 
-fn get_cgroups() -> Result<Vec<String>, std::io::Error> {
-    Ok(fs::read_dir("/sys/fs/cgroup")?
+fn get_cgroups() -> Result<Vec<String>> {
+    Ok(fs::read_dir("/sys/fs/cgroup")
+        .context("Failed to read the directory /sys/fs/cgroup")?
         .filter_map(|dir| {
             dir.ok().and_then(|dir| {
                 dir.path().file_name().and_then(|name| {

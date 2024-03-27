@@ -2,11 +2,13 @@ use std::sync::Mutex;
 
 use ethers::contract::abigen;
 use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
-use ethers::providers::{Http, Provider};
+use ethers::providers::{Provider, Ws};
 use ethers::signers::LocalWallet;
 use ethers::types::Address;
 use k256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
+
+use crate::cgroups::Cgroups;
 
 abigen!(
     JobManagementContract,
@@ -14,16 +16,19 @@ abigen!(
     derives(serde::Serialize, serde::Deserialize)
 );
 
-type HttpSignerProvider = NonceManagerMiddleware<SignerMiddleware<Provider<Http>, LocalWallet>>;
+pub type WsSignerProvider = NonceManagerMiddleware<SignerMiddleware<Provider<Ws>, LocalWallet>>;
 
 pub struct AppState {
     pub job_capacity: usize,
+    pub cgroups: Mutex<Cgroups>,
     pub common_chain_id: u64,
-    pub http_rpc_url: String,
+    pub web_socket_url: String,
     pub job_management_contract: Address,
-    pub contract_object: Mutex<Option<JobManagementContract<HttpSignerProvider>>>,
-    pub enclave_signer: SigningKey,
+    pub contract_object: Mutex<Option<JobManagementContract<WsSignerProvider>>>,
+    pub user_code_contract: String,
+    pub enclave_signer_key: SigningKey,
     pub enclave_pub_key: Mutex<String>,
+    pub workerd_runtime_path: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
