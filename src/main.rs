@@ -1,7 +1,11 @@
-use actix_web::web::Data;
+use std::collections::HashSet;
+use std::sync::atomic::AtomicBool;
+
+use actix_web::web::{Bytes, Data};
 use actix_web::{App, HttpServer};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
+use ethers::providers::{Provider, Ws};
 use ethers::types::Address;
 use k256::ecdsa::SigningKey;
 use tokio::fs;
@@ -37,6 +41,9 @@ struct Args {
 
     #[clap(long, value_parser, default_value = "/app/id.sec")]
     enclave_signer_file: String,
+
+    #[clap(long, value_parser, default_value = "60")]
+    execution_buffer_time: u64,
 }
 
 #[tokio::main]
@@ -56,20 +63,28 @@ async fn main() -> Result<()> {
     )
     .context("Invalid enclave signer key")?;
 
+    let web_socket_client = Provider::<Ws>::connect_with_reconnects(cli.web_socket_url, 5)
+        .await
+        .context("Failed to connect to the common chain websocket provider")?;
+
     let app_data = Data::new(AppState {
         job_capacity: cgroups.free.len(),
         cgroups: cgroups.into(),
+        registered: AtomicBool::new(false),
         common_chain_id: cli.common_chain_id,
-        web_socket_url: cli.web_socket_url,
+        http_rpc_url: cli.http_rpc_url,
         job_management_contract: cli
             .job_management_contract
             .parse::<Address>()
             .context("Invalid job management contract address")?,
         contract_object: None.into(),
         user_code_contract: cli.user_code_contract,
+        web_socket_client: web_socket_client,
         enclave_signer_key: enclave_signer_key,
-        enclave_pub_key: String::new().into(),
+        enclave_pub_key: Bytes::new().into(),
         workerd_runtime_path: cli.workerd_runtime_path,
+        job_requests_running: HashSet::new().into(),
+        execution_buffer_time: cli.execution_buffer_time,
     });
 
     let server = HttpServer::new(move || {

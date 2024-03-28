@@ -1,10 +1,15 @@
+use std::collections::HashSet;
+use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 
+use actix_web::web::Bytes;
+use anyhow::{anyhow, Result};
 use ethers::contract::abigen;
 use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
-use ethers::providers::{Provider, Ws};
+use ethers::providers::{Http, Provider, Ws};
 use ethers::signers::LocalWallet;
-use ethers::types::Address;
+use ethers::types::{Address, U256};
+use ethers::utils::keccak256;
 use k256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
 
@@ -16,19 +21,23 @@ abigen!(
     derives(serde::Serialize, serde::Deserialize)
 );
 
-pub type WsSignerProvider = NonceManagerMiddleware<SignerMiddleware<Provider<Ws>, LocalWallet>>;
+pub type HttpSignerProvider = NonceManagerMiddleware<SignerMiddleware<Provider<Http>, LocalWallet>>;
 
 pub struct AppState {
     pub job_capacity: usize,
     pub cgroups: Mutex<Cgroups>,
+    pub registered: AtomicBool,
     pub common_chain_id: u64,
-    pub web_socket_url: String,
+    pub http_rpc_url: String,
     pub job_management_contract: Address,
-    pub contract_object: Mutex<Option<JobManagementContract<WsSignerProvider>>>,
+    pub contract_object: Mutex<Option<JobManagementContract<HttpSignerProvider>>>,
     pub user_code_contract: String,
+    pub web_socket_client: Provider<Ws>,
     pub enclave_signer_key: SigningKey,
-    pub enclave_pub_key: Mutex<String>,
+    pub enclave_pub_key: Mutex<Bytes>,
     pub workerd_runtime_path: String,
+    pub job_requests_running: Mutex<HashSet<U256>>,
+    pub execution_buffer_time: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,13 +47,36 @@ pub struct InjectKeyInfo {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RegisterEnclaveInfo {
-    pub attestation: String,
-    pub enclave_pub_key: String,
-    pub pcr_0: String,
-    pub pcr_1: String,
-    pub pcr_2: String,
+    pub attestation: Bytes,
+    pub enclave_pub_key: Bytes,
+    pub pcr_0: Bytes,
+    pub pcr_1: Bytes,
+    pub pcr_2: Bytes,
     pub enclave_cpus: usize,
     pub enclave_memory: usize,
     pub timestamp: usize,
     pub stake_amount: usize,
+}
+
+pub struct JobResponse {
+    pub execution_response: Option<ExecutionResponse>,
+    pub timeout_response: Option<U256>,
+}
+
+pub struct ExecutionResponse {
+    pub id: U256,
+    pub output: Bytes,
+    pub error_code: u8,
+    pub total_time: u128,
+    pub signature: Bytes,
+}
+
+pub fn pub_key_to_address(pub_key: &[u8]) -> Result<Address> {
+    if pub_key.len() != 64 {
+        return Err(anyhow!("Invalid public key length"));
+    }
+
+    let hash = keccak256(pub_key);
+    let addr_bytes: [u8; 20] = hash[12..].try_into()?;
+    Ok(Address::from_slice(&addr_bytes))
 }

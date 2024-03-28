@@ -4,22 +4,23 @@ use std::time::{Duration, Instant};
 use actix_web::web::{Bytes, Data};
 use anyhow::Context;
 use ethers::types::U256;
-use hex::FromHex;
 use k256::ecdsa::SigningKey;
 use k256::elliptic_curve::generic_array::sequence::Lengthen;
 use tiny_keccak::{Hasher, Keccak};
+use tokio::sync::mpsc::Sender;
 use tokio::time::timeout;
 
-use crate::utils::{AppState, JobManagementContract, WsSignerProvider};
+use crate::utils::{AppState, ExecutionResponse, JobResponse};
 use crate::workerd;
 use crate::workerd::ServerlessError::*;
 
 pub async fn execute_job(
     job_id: U256,
-    code_hash: &str,
+    code_hash: String,
     code_inputs: Bytes,
     user_deadline: u64,
     app_state: Data<AppState>,
+    tx: Sender<JobResponse>,
 ) {
     let execution_timer_start = Instant::now();
 
@@ -27,10 +28,10 @@ pub async fn execute_job(
     let workerd_runtime_path = &app_state.workerd_runtime_path;
 
     if let Err(err) = workerd::create_code_file(
-        code_hash,
+        &code_hash,
         slug,
         workerd_runtime_path,
-        &app_state.web_socket_url,
+        &app_state.http_rpc_url,
         &app_state.user_code_contract,
     )
     .await
@@ -48,15 +49,25 @@ pub async fn execute_job(
                 ) else {
                     return;
                 };
-                send_execution_output(
-                    app_state.contract_object.lock().unwrap().clone().unwrap(),
-                    signature,
-                    job_id,
-                    Bytes::new(),
-                    execution_total_time,
-                    1,
-                )
-                .await;
+                if let Err(err) = tx
+                    .send(JobResponse {
+                        execution_response: Some(ExecutionResponse {
+                            id: job_id,
+                            output: Bytes::new(),
+                            error_code: 1,
+                            total_time: execution_total_time,
+                            signature: signature.into(),
+                        }),
+                        timeout_response: None,
+                    })
+                    .await
+                {
+                    eprintln!(
+                        "Failed to send execution response to transaction sender: {}",
+                        err
+                    );
+                }
+
                 ()
             }
             InvalidTxCalldataType | BadCalldata(_) => {
@@ -69,15 +80,25 @@ pub async fn execute_job(
                 ) else {
                     return;
                 };
-                send_execution_output(
-                    app_state.contract_object.lock().unwrap().clone().unwrap(),
-                    signature,
-                    job_id,
-                    Bytes::new(),
-                    execution_total_time,
-                    2,
-                )
-                .await;
+                if let Err(err) = tx
+                    .send(JobResponse {
+                        execution_response: Some(ExecutionResponse {
+                            id: job_id,
+                            output: Bytes::new(),
+                            error_code: 2,
+                            total_time: execution_total_time,
+                            signature: signature.into(),
+                        }),
+                        timeout_response: None,
+                    })
+                    .await
+                {
+                    eprintln!(
+                        "Failed to send execution response to transaction sender: {}",
+                        err
+                    );
+                }
+
                 ()
             }
             _ => (),
@@ -88,7 +109,7 @@ pub async fn execute_job(
     let cgroup = app_state.cgroups.lock().unwrap().reserve();
     let Ok(cgroup) = cgroup else {
         // cleanup
-        let _ = workerd::cleanup_code_file(code_hash, slug, workerd_runtime_path).await;
+        let _ = workerd::cleanup_code_file(&code_hash, slug, workerd_runtime_path).await;
 
         eprintln!("No free cgroup available to execute the job");
         return;
@@ -98,28 +119,29 @@ pub async fn execute_job(
     let Ok(port) = workerd::get_port(&cgroup) else {
         // cleanup
         app_state.cgroups.lock().unwrap().release(cgroup);
-        let _ = workerd::cleanup_code_file(code_hash, slug, workerd_runtime_path).await;
+        let _ = workerd::cleanup_code_file(&code_hash, slug, workerd_runtime_path).await;
 
         return;
     };
 
     // create config file
-    if let Err(_) = workerd::create_config_file(code_hash, slug, workerd_runtime_path, port).await {
+    if let Err(_) = workerd::create_config_file(&code_hash, slug, workerd_runtime_path, port).await
+    {
         // cleanup
         app_state.cgroups.lock().unwrap().release(cgroup);
-        let _ = workerd::cleanup_code_file(code_hash, slug, workerd_runtime_path).await;
+        let _ = workerd::cleanup_code_file(&code_hash, slug, workerd_runtime_path).await;
 
         return;
     }
 
     // start worker
-    let child = workerd::execute(code_hash, slug, workerd_runtime_path, &cgroup).await;
+    let child = workerd::execute(&code_hash, slug, workerd_runtime_path, &cgroup).await;
     let Ok(mut child) = child else {
         // cleanup
-        let _ = workerd::cleanup_config_file(code_hash, slug, workerd_runtime_path).await;
+        let _ = workerd::cleanup_config_file(&code_hash, slug, workerd_runtime_path).await;
 
         app_state.cgroups.lock().unwrap().release(cgroup);
-        let _ = workerd::cleanup_code_file(code_hash, slug, workerd_runtime_path).await;
+        let _ = workerd::cleanup_code_file(&code_hash, slug, workerd_runtime_path).await;
 
         return;
     };
@@ -134,9 +156,9 @@ pub async fn execute_job(
             .context("CRITICAL: Failed to kill worker {cgroup}")
             .unwrap_or_else(|err| println!("{err:?}"));
 
-        let _ = workerd::cleanup_config_file(code_hash, slug, workerd_runtime_path).await;
+        let _ = workerd::cleanup_config_file(&code_hash, slug, workerd_runtime_path).await;
         app_state.cgroups.lock().unwrap().release(cgroup);
-        let _ = workerd::cleanup_code_file(code_hash, slug, workerd_runtime_path).await;
+        let _ = workerd::cleanup_code_file(&code_hash, slug, workerd_runtime_path).await;
 
         let execution_total_time = total_time_passed(execution_timer_start);
         let stderr = child.stderr.take().unwrap();
@@ -154,15 +176,25 @@ pub async fn execute_job(
             ) else {
                 return;
             };
-            send_execution_output(
-                app_state.contract_object.lock().unwrap().clone().unwrap(),
-                signature,
-                job_id,
-                Bytes::new(),
-                execution_total_time,
-                3,
-            )
-            .await;
+            if let Err(err) = tx
+                .send(JobResponse {
+                    execution_response: Some(ExecutionResponse {
+                        id: job_id,
+                        output: Bytes::new(),
+                        error_code: 3,
+                        total_time: execution_total_time,
+                        signature: signature.into(),
+                    }),
+                    timeout_response: None,
+                })
+                .await
+            {
+                eprintln!(
+                    "Failed to send execution response to transaction sender: {}",
+                    err
+                );
+            }
+
             return;
         }
 
@@ -182,9 +214,9 @@ pub async fn execute_job(
         .kill()
         .context("CRITICAL: Failed to kill worker {cgroup}")
         .unwrap_or_else(|err| println!("{err:?}"));
-    let _ = workerd::cleanup_config_file(code_hash, slug, workerd_runtime_path).await;
+    let _ = workerd::cleanup_config_file(&code_hash, slug, workerd_runtime_path).await;
     app_state.cgroups.lock().unwrap().release(cgroup);
-    let _ = workerd::cleanup_code_file(code_hash, slug, workerd_runtime_path).await;
+    let _ = workerd::cleanup_code_file(&code_hash, slug, workerd_runtime_path).await;
 
     let execution_total_time = total_time_passed(execution_timer_start);
     let Ok(response) = response else {
@@ -197,15 +229,25 @@ pub async fn execute_job(
         ) else {
             return;
         };
-        send_execution_output(
-            app_state.contract_object.lock().unwrap().clone().unwrap(),
-            signature,
-            job_id,
-            Bytes::new(),
-            execution_total_time,
-            4,
-        )
-        .await;
+        if let Err(err) = tx
+            .send(JobResponse {
+                execution_response: Some(ExecutionResponse {
+                    id: job_id,
+                    output: Bytes::new(),
+                    error_code: 4,
+                    total_time: execution_total_time,
+                    signature: signature.into(),
+                }),
+                timeout_response: None,
+            })
+            .await
+        {
+            eprintln!(
+                "Failed to send execution response to transaction sender: {}",
+                err
+            );
+        }
+
         return;
     };
 
@@ -222,15 +264,24 @@ pub async fn execute_job(
     ) else {
         return;
     };
-    send_execution_output(
-        app_state.contract_object.lock().unwrap().clone().unwrap(),
-        signature,
-        job_id,
-        response,
-        execution_total_time,
-        0,
-    )
-    .await;
+    if let Err(err) = tx
+        .send(JobResponse {
+            execution_response: Some(ExecutionResponse {
+                id: job_id,
+                output: response,
+                error_code: 0,
+                total_time: execution_total_time,
+                signature: signature.into(),
+            }),
+            timeout_response: None,
+        })
+        .await
+    {
+        eprintln!(
+            "Failed to send execution response to transaction sender: {}",
+            err
+        );
+    }
 
     ()
 }
@@ -266,47 +317,6 @@ fn sign_response(
     };
 
     Some(hex::encode(rs.to_bytes().append(27 + v.to_byte())))
-}
-
-async fn send_execution_output(
-    contract_object: JobManagementContract<WsSignerProvider>,
-    signature: String,
-    job_id: U256,
-    output: Bytes,
-    total_time: u128,
-    error_code: u8,
-) {
-    let Ok(signature) = ethers::types::Bytes::from_hex(&signature) else {
-        eprintln!("Failed to parse the signature {} into eth bytes", signature);
-        return;
-    };
-
-    let txn = contract_object.submit_output(
-        signature,
-        job_id,
-        output.into(),
-        total_time.into(),
-        error_code.into(),
-    );
-
-    let pending_txn = txn.send().await;
-    let Ok(pending_txn) = pending_txn else {
-        eprintln!(
-            "Failed to send the execution output transaction: {}",
-            pending_txn.unwrap_err()
-        );
-        return;
-    };
-
-    let txn_hash = pending_txn.tx_hash();
-    let Ok(Some(_)) = pending_txn.confirmations(1).await else {
-        // TODO: FIX CONFIRMATIONS REQUIRED
-        eprintln!(
-            "Failed to confirm transaction {} for submitting execution output",
-            txn_hash
-        );
-        return;
-    };
 }
 
 fn total_time_passed(start_time: Instant) -> u128 {
