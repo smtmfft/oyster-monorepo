@@ -129,7 +129,8 @@ async fn register_enclave(
     *app_state.enclave_pub_key.lock().unwrap() = enclave_info.enclave_pub_key;
     app_state.registered.store(true, Ordering::Relaxed);
 
-    run_job_listener_channel(app_state.clone()).await;
+    let app_state_clone = app_state.clone();
+    tokio::spawn(async move { run_job_listener_channel(app_state_clone).await });
 
     HttpResponse::Ok().body(format!(
         "Enclave Node successfully registered on the common chain block {}, hash {}",
