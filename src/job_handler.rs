@@ -32,7 +32,7 @@ pub async fn execute_job(
         slug,
         workerd_runtime_path,
         &app_state.http_rpc_url,
-        &app_state.user_code_contract,
+        &app_state.code_contract_addr,
     )
     .await
     {

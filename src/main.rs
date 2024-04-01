@@ -34,15 +34,18 @@ struct Args {
     web_socket_url: String,
 
     #[clap(long, value_parser, default_value = "")]
-    job_management_contract: String,
+    executors_contract_addr: String,
 
     #[clap(long, value_parser, default_value = "")]
-    user_code_contract: String,
+    jobs_contract_addr: String,
+
+    #[clap(long, value_parser, default_value = "")]
+    code_contract_addr: String,
 
     #[clap(long, value_parser, default_value = "/app/id.sec")]
     enclave_signer_file: String,
 
-    #[clap(long, value_parser, default_value = "60")]
+    #[clap(long, value_parser, default_value = "10")]
     execution_buffer_time: u64,
 }
 
@@ -73,12 +76,17 @@ async fn main() -> Result<()> {
         registered: AtomicBool::new(false),
         common_chain_id: cli.common_chain_id,
         http_rpc_url: cli.http_rpc_url,
-        job_management_contract: cli
-            .job_management_contract
+        executors_contract_addr: cli
+            .executors_contract_addr
             .parse::<Address>()
-            .context("Invalid job management contract address")?,
-        contract_object: None.into(),
-        user_code_contract: cli.user_code_contract,
+            .context("Invalid common chain executors contract address")?,
+        executors_contract_object: None.into(),
+        jobs_contract_addr: cli
+            .jobs_contract_addr
+            .parse::<Address>()
+            .context("Invalid common chain jobs contract address")?,
+        jobs_contract_object: None.into(),
+        code_contract_addr: cli.code_contract_addr,
         web_socket_client: web_socket_client,
         enclave_signer_key: enclave_signer_key,
         enclave_pub_key: Bytes::new().into(),

@@ -16,8 +16,14 @@ use serde::{Deserialize, Serialize};
 use crate::cgroups::Cgroups;
 
 abigen!(
-    JobManagementContract,
-    "common_chain_contract.json",
+    CommonChainExecutors,
+    "CommonChainExecutors.json",
+    derives(serde::Serialize, serde::Deserialize)
+);
+
+abigen!(
+    CommonChainJobs,
+    "CommonChainJobs.json",
     derives(serde::Serialize, serde::Deserialize)
 );
 
@@ -29,9 +35,11 @@ pub struct AppState {
     pub registered: AtomicBool,
     pub common_chain_id: u64,
     pub http_rpc_url: String,
-    pub job_management_contract: Address,
-    pub contract_object: Mutex<Option<JobManagementContract<HttpSignerProvider>>>,
-    pub user_code_contract: String,
+    pub executors_contract_addr: Address,
+    pub executors_contract_object: Mutex<Option<CommonChainExecutors<HttpSignerProvider>>>,
+    pub jobs_contract_addr: Address,
+    pub jobs_contract_object: Mutex<Option<CommonChainJobs<HttpSignerProvider>>>,
+    pub code_contract_addr: String,
     pub web_socket_client: Provider<Ws>,
     pub enclave_signer_key: SigningKey,
     pub enclave_pub_key: Mutex<Bytes>,

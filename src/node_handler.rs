@@ -9,7 +9,9 @@ use k256::elliptic_curve::generic_array::sequence::Lengthen;
 use tiny_keccak::{Hasher, Keccak};
 
 use crate::event_handler::run_job_listener_channel;
-use crate::utils::{AppState, InjectKeyInfo, JobManagementContract, RegisterEnclaveInfo};
+use crate::utils::{
+    AppState, CommonChainExecutors, CommonChainJobs, InjectKeyInfo, RegisterEnclaveInfo,
+};
 
 #[get("/")]
 async fn index() -> impl Responder {
@@ -18,12 +20,18 @@ async fn index() -> impl Responder {
 
 #[post("/inject-key")]
 async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -> impl Responder {
-    if app_state.contract_object.lock().unwrap().is_some() {
+    if app_state
+        .executors_contract_object
+        .lock()
+        .unwrap()
+        .is_some()
+        && app_state.jobs_contract_object.lock().unwrap().is_some()
+    {
         return HttpResponse::BadRequest().body("Secret key has already been injected");
     }
 
     let mut bytes32_key = [0u8; 32];
-    if let Err(err) = hex::decode_to_slice(&key.operator_secret, &mut bytes32_key) {
+    if let Err(err) = hex::decode_to_slice(&key.operator_secret[2..], &mut bytes32_key) {
         return HttpResponse::BadRequest().body(format!(
             "Failed to hex decode the key into 32 bytes: {}",
             err
@@ -48,13 +56,19 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
             http_rpc_client.unwrap_err()
         ));
     };
-    let http_rpc_client = http_rpc_client
-        .with_signer(signer_wallet)
-        .nonce_manager(signer_address);
+    let http_rpc_client = Arc::new(
+        http_rpc_client
+            .with_signer(signer_wallet)
+            .nonce_manager(signer_address),
+    );
 
-    *app_state.contract_object.lock().unwrap() = Some(JobManagementContract::new(
-        app_state.job_management_contract,
-        Arc::new(http_rpc_client),
+    *app_state.executors_contract_object.lock().unwrap() = Some(CommonChainExecutors::new(
+        app_state.executors_contract_addr,
+        http_rpc_client.clone(),
+    ));
+    *app_state.jobs_contract_object.lock().unwrap() = Some(CommonChainJobs::new(
+        app_state.jobs_contract_addr,
+        http_rpc_client,
     ));
 
     HttpResponse::Ok().body("Secret key injected successfully")
@@ -65,7 +79,13 @@ async fn register_enclave(
     Json(enclave_info): Json<RegisterEnclaveInfo>,
     app_state: Data<AppState>,
 ) -> impl Responder {
-    if app_state.contract_object.lock().unwrap().is_none() {
+    if app_state
+        .executors_contract_object
+        .lock()
+        .unwrap()
+        .is_none()
+        || app_state.jobs_contract_object.lock().unwrap().is_none()
+    {
         return HttpResponse::BadRequest().body("Operator secret key not injected yet!");
     }
 
@@ -90,7 +110,7 @@ async fn register_enclave(
     };
 
     let txn = app_state
-        .contract_object
+        .executors_contract_object
         .lock()
         .unwrap()
         .clone()
@@ -141,7 +161,13 @@ async fn register_enclave(
 
 #[delete("/deregister")]
 async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
-    if app_state.contract_object.lock().unwrap().is_none() {
+    if app_state
+        .executors_contract_object
+        .lock()
+        .unwrap()
+        .is_none()
+        || app_state.jobs_contract_object.lock().unwrap().is_none()
+    {
         return HttpResponse::BadRequest().body("Operator secret key not injected yet!");
     }
 
@@ -150,7 +176,7 @@ async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
     }
 
     let txn = app_state
-        .contract_object
+        .executors_contract_object
         .lock()
         .unwrap()
         .clone()
