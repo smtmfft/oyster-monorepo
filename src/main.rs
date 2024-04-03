@@ -215,6 +215,22 @@ async fn get_request_status(
     })
 }
 
+async fn request_status(quota: &utils::Quota, region: &str, aws_profile: &str) -> Result<()> {
+    let config = aws_config::from_env()
+        .profile_name(aws_profile)
+        .region(Region::new(region.to_owned()))
+        .load()
+        .await;
+
+    let sq_client = aws_sdk_servicequotas::Client::new(&config);
+
+    let status = get_request_status(&sq_client, quota, region).await?;
+
+    println!("{region}:\t{quota}:\t{status:?}");
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
