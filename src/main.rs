@@ -191,6 +191,7 @@ enum RequestStatus {
     None,
     Unnecessary,
     Open,
+    Stuck,
     Approved,
     Rejected,
 }
@@ -211,6 +212,15 @@ async fn get_request_status(
         .await
         .with_context(|| format!("failed to get quota limit of {quota} in {region}"))?;
 
+    let too_old = last_request
+        .created
+        .ok_or(anyhow!(
+            "failed to get creation time of request {} while processing {quota} in {region}",
+            last_request.id.clone().unwrap_or("unknown id".to_owned())
+        ))?
+        .secs()
+        < chrono::Local::now().timestamp() - 86400;
+
     let is_needed = (last_request.desired_value.ok_or(anyhow!(
         "failed to get desired value of request {} while processing {quota} in {region}",
         last_request.id.clone().unwrap_or("unknown id".to_owned())
@@ -225,7 +235,13 @@ async fn get_request_status(
         || status == aws_sdk_servicequotas::types::RequestStatus::Pending;
 
     Ok(match (is_needed, is_open) {
-        (true, true) => RequestStatus::Open,
+        (true, true) => {
+            if too_old {
+                RequestStatus::Stuck
+            } else {
+                RequestStatus::Open
+            }
+        }
         (true, false) => RequestStatus::Rejected,
         (false, true) => RequestStatus::Unnecessary,
         (false, false) => RequestStatus::Approved,
