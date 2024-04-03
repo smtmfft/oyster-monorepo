@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::sync::atomic::AtomicBool;
 
 use actix_web::web::{Bytes, Data};
 use actix_web::{App, HttpServer};
@@ -73,7 +72,7 @@ async fn main() -> Result<()> {
     let app_data = Data::new(AppState {
         job_capacity: cgroups.free.len(),
         cgroups: cgroups.into(),
-        registered: AtomicBool::new(false),
+        registered: false.into(),
         common_chain_id: cli.common_chain_id,
         http_rpc_url: cli.http_rpc_url,
         executors_contract_addr: cli

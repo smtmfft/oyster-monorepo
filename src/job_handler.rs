@@ -3,10 +3,11 @@ use std::time::{Duration, Instant};
 
 use actix_web::web::{Bytes, Data};
 use anyhow::Context;
+use ethers::abi::{encode, Token};
 use ethers::types::U256;
+use ethers::utils::keccak256;
 use k256::ecdsa::SigningKey;
 use k256::elliptic_curve::generic_array::sequence::Lengthen;
-use tiny_keccak::{Hasher, Keccak};
 use tokio::sync::mpsc::Sender;
 use tokio::time::timeout;
 
@@ -43,7 +44,7 @@ pub async fn execute_job(
                 let Some(signature) = sign_response(
                     &app_state.enclave_signer_key,
                     job_id,
-                    &Bytes::new(),
+                    Bytes::new(),
                     execution_total_time,
                     1,
                 ) else {
@@ -74,7 +75,7 @@ pub async fn execute_job(
                 let Some(signature) = sign_response(
                     &app_state.enclave_signer_key,
                     job_id,
-                    &Bytes::new(),
+                    Bytes::new(),
                     execution_total_time,
                     2,
                 ) else {
@@ -170,7 +171,7 @@ pub async fn execute_job(
             let Some(signature) = sign_response(
                 &app_state.enclave_signer_key,
                 job_id,
-                &Bytes::new(),
+                Bytes::new(),
                 execution_total_time,
                 3,
             ) else {
@@ -223,7 +224,7 @@ pub async fn execute_job(
         let Some(signature) = sign_response(
             &app_state.enclave_signer_key,
             job_id,
-            &Bytes::new(),
+            Bytes::new(),
             execution_total_time,
             4,
         ) else {
@@ -258,7 +259,7 @@ pub async fn execute_job(
     let Some(signature) = sign_response(
         &app_state.enclave_signer_key,
         job_id,
-        &response,
+        response.clone(),
         execution_total_time,
         0,
     ) else {
@@ -289,26 +290,16 @@ pub async fn execute_job(
 fn sign_response(
     signer_key: &SigningKey,
     job_id: U256,
-    output: &Bytes,
+    output: Bytes,
     total_time: u128,
     error_code: u8,
 ) -> Option<String> {
-    let mut job_id_bytes = [0u8; 32];
-    job_id.to_big_endian(&mut job_id_bytes);
-
-    let mut hasher = Keccak::v256();
-    hasher.update(b"|jobId|");
-    hasher.update(&job_id_bytes);
-    hasher.update(b"|output|");
-    hasher.update(output);
-    hasher.update(b"|totalTime|");
-    hasher.update(&total_time.to_be_bytes());
-    hasher.update(b"|errorCode|");
-    hasher.update(&error_code.to_be_bytes());
-
-    let mut hash = [0u8; 32];
-    hasher.finalize(&mut hash);
-
+    let hash = keccak256(encode(&[
+        Token::Uint(job_id),
+        Token::Bytes(output.into()),
+        Token::Uint(total_time.into()),
+        Token::Uint(error_code.into()),
+    ]));
     let Ok((rs, v)) = signer_key.sign_prehash_recoverable(&hash).map_err(|err| {
         eprintln!("Failed to sign the response: {}", err);
         err

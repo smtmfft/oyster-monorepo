@@ -1,5 +1,3 @@
-use std::sync::atomic::Ordering;
-
 use actix_web::web::Data;
 use ethers::abi::{decode, ParamType};
 use ethers::providers::{Middleware, StreamExt};
@@ -95,8 +93,11 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
     let event_filter = Filter::new()
         .address(app_state.jobs_contract_addr)
         .topic0(vec![
-            keccak256("JobRelayed(uint256,uint256,bytes32,bytes,uint256,address[])"),
+            keccak256(
+                "JobRelayed(uint256,uint256,bytes32,bytes,uint256,address,address,address[])",
+            ),
             keccak256("JobResponded(uint256,bytes,uint256,uint256,uint8)"),
+            keccak256("ExecutorDeregistered(bytes)"),
         ]);
 
     let stream = app_state
@@ -115,7 +116,10 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
         }
 
         if event.topics[0]
-            == keccak256("JobRelayed(uint256,uint256,bytes32,bytes,uint256,address[])").into()
+            == keccak256(
+                "JobRelayed(uint256,uint256,bytes32,bytes,uint256,address,address,address[])",
+            )
+            .into()
         {
             let event_tokens = decode(
                 &vec![
@@ -123,6 +127,8 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
                     ParamType::FixedBytes(32),
                     ParamType::Bytes,
                     ParamType::Uint(256),
+                    ParamType::Address,
+                    ParamType::Address,
                     ParamType::Array(Box::new(ParamType::Address)),
                 ],
                 &event.data.to_vec(),
@@ -159,7 +165,7 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
                 );
                 continue;
             };
-            let Some(selected_nodes) = event_tokens[4].clone().into_array() else {
+            let Some(selected_nodes) = event_tokens[6].clone().into_array() else {
                 eprintln!(
                     "Failed to decode selectedNodes token from the job relayed event data: {}",
                     event_tokens[5]
@@ -223,9 +229,31 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
                 .lock()
                 .unwrap()
                 .remove(&job_id);
+        } else if event.topics[0] == keccak256("ExecutorDeregistered(bytes)").into() {
+            let event_tokens = decode(&vec![ParamType::Bytes], &event.data.to_vec());
+            let Ok(event_tokens) = event_tokens else {
+                eprintln!(
+                    "Failed to decode executor deregistered event data {}: {}",
+                    event.data,
+                    event_tokens.unwrap_err()
+                );
+                continue;
+            };
+
+            let Some(enclave_pub_key) = event_tokens[0].clone().into_bytes() else {
+                eprintln!(
+                    "Failed to decode enclavePubKey token from the executor deregistered event data: {}",
+                    event_tokens[0]
+                );
+                continue;
+            };
+
+            if *app_state.enclave_pub_key.lock().unwrap() == enclave_pub_key {
+                *app_state.registered.lock().unwrap() = false;
+            }
         }
 
-        if !app_state.registered.load(Ordering::Relaxed) {
+        if *app_state.registered.lock().unwrap() == false {
             eprintln!("Enclave deregistered!");
             return;
         }

@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 
 use actix_web::web::Bytes;
@@ -32,7 +31,7 @@ pub type HttpSignerProvider = NonceManagerMiddleware<SignerMiddleware<Provider<H
 pub struct AppState {
     pub job_capacity: usize,
     pub cgroups: Mutex<Cgroups>,
-    pub registered: AtomicBool,
+    pub registered: Mutex<bool>,
     pub common_chain_id: u64,
     pub http_rpc_url: String,
     pub executors_contract_addr: Address,
@@ -55,11 +54,11 @@ pub struct InjectKeyInfo {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RegisterEnclaveInfo {
-    pub attestation: Bytes,
-    pub enclave_pub_key: Bytes,
-    pub pcr_0: Bytes,
-    pub pcr_1: Bytes,
-    pub pcr_2: Bytes,
+    pub attestation: String,
+    pub enclave_pub_key: String,
+    pub pcr_0: String,
+    pub pcr_1: String,
+    pub pcr_2: String,
     pub enclave_cpus: usize,
     pub enclave_memory: usize,
     pub timestamp: usize,

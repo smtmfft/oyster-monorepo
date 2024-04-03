@@ -1,12 +1,11 @@
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 use actix_web::web::{Data, Json};
 use actix_web::{delete, get, post, HttpResponse, Responder};
+use ethers::abi::{encode, Token};
 use ethers::prelude::*;
-use hex::FromHex;
+use ethers::utils::keccak256;
 use k256::elliptic_curve::generic_array::sequence::Lengthen;
-use tiny_keccak::{Hasher, Keccak};
 
 use crate::event_handler::run_job_listener_channel;
 use crate::utils::{
@@ -20,13 +19,9 @@ async fn index() -> impl Responder {
 
 #[post("/inject-key")]
 async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -> impl Responder {
-    if app_state
-        .executors_contract_object
-        .lock()
-        .unwrap()
-        .is_some()
-        && app_state.jobs_contract_object.lock().unwrap().is_some()
-    {
+    let mut executors_contract_guard = app_state.executors_contract_object.lock().unwrap();
+    let mut jobs_contract_guard = app_state.jobs_contract_object.lock().unwrap();
+    if executors_contract_guard.is_some() && jobs_contract_guard.is_some() {
         return HttpResponse::BadRequest().body("Secret key has already been injected");
     }
 
@@ -62,11 +57,11 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
             .nonce_manager(signer_address),
     );
 
-    *app_state.executors_contract_object.lock().unwrap() = Some(CommonChainExecutors::new(
+    *executors_contract_guard = Some(CommonChainExecutors::new(
         app_state.executors_contract_addr,
         http_rpc_client.clone(),
     ));
-    *app_state.jobs_contract_object.lock().unwrap() = Some(CommonChainJobs::new(
+    *jobs_contract_guard = Some(CommonChainJobs::new(
         app_state.jobs_contract_addr,
         http_rpc_client,
     ));
@@ -89,12 +84,12 @@ async fn register_enclave(
         return HttpResponse::BadRequest().body("Operator secret key not injected yet!");
     }
 
-    let mut hasher = Keccak::v256();
-    hasher.update(b"|jobCapacity|");
-    hasher.update(&app_state.job_capacity.to_be_bytes());
-    let mut hash = [0u8; 32];
-    hasher.finalize(&mut hash);
+    let mut registered_guard = app_state.registered.lock().unwrap();
+    if *registered_guard {
+        return HttpResponse::BadRequest().body("Enclave node is already registered!");
+    }
 
+    let hash = keccak256(encode(&[Token::Uint(app_state.job_capacity.into())]));
     let sig = app_state.enclave_signer_key.sign_prehash_recoverable(&hash);
     let Ok((rs, v)) = sig else {
         return HttpResponse::InternalServerError().body(format!(
@@ -103,10 +98,29 @@ async fn register_enclave(
             sig.unwrap_err()
         ));
     };
+    let signature = rs.to_bytes().append(27 + v.to_byte()).to_vec();
 
-    let Ok(signature) = Bytes::from_hex(hex::encode(rs.to_bytes().append(27 + v.to_byte()))) else {
-        return HttpResponse::InternalServerError()
-            .body("Failed to parse the signature into eth bytes");
+    let mut enclave_pub_key_bytes = [0u8; 64];
+    if let Err(err) = hex::decode_to_slice(
+        &enclave_info.enclave_pub_key[2..],
+        &mut enclave_pub_key_bytes,
+    ) {
+        return HttpResponse::BadRequest().body(format!(
+            "Failed to hex decode the enclave public key into 64 bytes: {}",
+            err
+        ));
+    }
+    let Ok(attestation_bytes) = hex::decode(&enclave_info.attestation[2..]) else {
+        return HttpResponse::BadRequest().body("Invalid attestation hex string");
+    };
+    let Ok(pcr_0_bytes) = hex::decode(&enclave_info.pcr_0[2..]) else {
+        return HttpResponse::BadRequest().body("Invalid pcr0 hex string");
+    };
+    let Ok(pcr_1_bytes) = hex::decode(&enclave_info.pcr_1[2..]) else {
+        return HttpResponse::BadRequest().body("Invalid pcr1 hex string");
+    };
+    let Ok(pcr_2_bytes) = hex::decode(&enclave_info.pcr_2[2..]) else {
+        return HttpResponse::BadRequest().body("Invalid pcr2 hex string");
     };
 
     let txn = app_state
@@ -116,16 +130,16 @@ async fn register_enclave(
         .clone()
         .unwrap()
         .register_executor(
-            enclave_info.attestation.into(),
-            enclave_info.enclave_pub_key.clone().into(),
-            enclave_info.pcr_0.into(),
-            enclave_info.pcr_1.into(),
-            enclave_info.pcr_2.into(),
+            attestation_bytes.into(),
+            enclave_pub_key_bytes.into(),
+            pcr_0_bytes.into(),
+            pcr_1_bytes.into(),
+            pcr_2_bytes.into(),
             enclave_info.enclave_cpus.into(),
             enclave_info.enclave_memory.into(),
             enclave_info.timestamp.into(),
             app_state.job_capacity.into(),
-            signature,
+            signature.into(),
             enclave_info.stake_amount.into(),
         );
 
@@ -146,8 +160,8 @@ async fn register_enclave(
         ));
     };
 
-    *app_state.enclave_pub_key.lock().unwrap() = enclave_info.enclave_pub_key;
-    app_state.registered.store(true, Ordering::Relaxed);
+    *app_state.enclave_pub_key.lock().unwrap() = enclave_pub_key_bytes.to_vec().into();
+    *registered_guard = true;
 
     let app_state_clone = app_state.clone();
     tokio::spawn(async move { run_job_listener_channel(app_state_clone).await });
@@ -171,7 +185,8 @@ async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
         return HttpResponse::BadRequest().body("Operator secret key not injected yet!");
     }
 
-    if !app_state.registered.load(Ordering::Relaxed) {
+    let mut registered_guard = app_state.registered.lock().unwrap();
+    if *registered_guard == false {
         return HttpResponse::BadRequest().body("Enclave not registered yet!");
     }
 
@@ -199,7 +214,7 @@ async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
         ));
     };
 
-    app_state.registered.store(false, Ordering::Relaxed);
+    *registered_guard = false;
     HttpResponse::Ok().body(format!(
         "Enclave Node successfully deregistered from the common chain block {}, hash {}",
         txn_receipt.block_number.unwrap_or(0.into()),

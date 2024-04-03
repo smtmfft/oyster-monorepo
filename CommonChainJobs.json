@@ -109,6 +109,18 @@
       },
       {
         "indexed": false,
+        "internalType": "address",
+        "name": "jobOwner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "gatewayOperator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "address[]",
         "name": "selectedNodes",
         "type": "address[]"
