@@ -17,7 +17,7 @@ struct Cli {
 #[derive(Subcommand, Debug, Clone)]
 enum Commands {
     // get usage and limit of specific quotas in specific regions
-    Status {
+    Usage {
         #[clap(long, value_parser = utils::Quota::from_name, num_args = 1.., value_delimiter = ',', default_value = "vcpus,eips")]
         quotas: Vec<utils::Quota>,
 
@@ -253,7 +253,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.cmd {
-        Commands::Status {
+        Commands::Usage {
             quotas,
             regions,
             profile,
