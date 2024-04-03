@@ -169,6 +169,52 @@ async fn quota_status(quota: &utils::Quota, region: &str, aws_profile: &str) -> 
     Ok(())
 }
 
+#[derive(Debug)]
+enum RequestStatus {
+    None,
+    Unnecessary,
+    Open,
+    Approved,
+    Rejected,
+}
+
+async fn get_request_status(
+    sq_client: &aws_sdk_servicequotas::Client,
+    quota: &utils::Quota,
+    region: &str,
+) -> Result<RequestStatus> {
+    let Some(last_request) = service_quotas::last_request(sq_client, quota)
+        .await
+        .with_context(|| format!("failed to get last request of {quota} in {region}"))?
+    else {
+        return Ok(RequestStatus::None);
+    };
+
+    let quota_limit = service_quotas::get_service_quota_limit(&sq_client, quota)
+        .await
+        .with_context(|| format!("failed to get quota limit of {quota} in {region}"))?;
+
+    let is_needed = (last_request.desired_value.ok_or(anyhow!(
+        "failed to get desired value of request {} while processing {quota} in {region}",
+        last_request.id.clone().unwrap_or("unknown id".to_owned())
+    ))? as usize)
+        > quota_limit;
+
+    let status = last_request.status.ok_or(anyhow!(
+        "failed to get status of request {} while processing {quota} in {region}",
+        last_request.id.unwrap_or("unknown id".to_owned())
+    ))?;
+    let is_open = status == aws_sdk_servicequotas::types::RequestStatus::CaseOpened
+        || status == aws_sdk_servicequotas::types::RequestStatus::Pending;
+
+    Ok(match (is_needed, is_open) {
+        (true, true) => RequestStatus::Open,
+        (true, false) => RequestStatus::Rejected,
+        (false, true) => RequestStatus::Unnecessary,
+        (false, false) => RequestStatus::Approved,
+    })
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
