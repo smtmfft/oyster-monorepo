@@ -19,6 +19,25 @@ pub async fn get_service_quota_limit(
         .ok_or(anyhow!("Could not parse service quota value"))? as usize)
 }
 
+pub async fn last_request(
+    client: &aws_sdk_servicequotas::Client,
+    quota: &utils::Quota,
+) -> Result<Option<aws_sdk_servicequotas::types::RequestedServiceQuotaChange>> {
+    Ok(client
+        .list_requested_service_quota_change_history_by_quota()
+        .quota_code(quota.to_code())
+        .service_code("ec2")
+        .send()
+        .await
+        .context("Error getting service quota from AWS client")?
+        .requested_quotas
+        .ok_or(anyhow!(
+            "Could not parse requested quotas from AWS response"
+        ))?
+        .into_iter()
+        .min_by_key(|x| x.created))
+}
+
 // pub async fn request_service_quota_increase(
 //     config: &SdkConfig,
 //     service: String,
