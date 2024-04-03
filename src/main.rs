@@ -134,6 +134,23 @@ enum Commands {
 //     }
 // }
 
+async fn get_quota_status(
+    ec2_client: &aws_sdk_ec2::Client,
+    sq_client: &aws_sdk_servicequotas::Client,
+    quota: &utils::Quota,
+    region: &str,
+) -> Result<(usize, usize)> {
+    let current_usage = current_usage::get_current_usage(&ec2_client, quota)
+        .await
+        .with_context(|| format!("failed to get current usage of {quota} in {region}"))?;
+
+    let quota_limit = service_quotas::get_service_quota_limit(&sq_client, quota)
+        .await
+        .with_context(|| format!("failed to get quota limit of {quota} in {region}"))?;
+
+    Ok((current_usage, quota_limit))
+}
+
 async fn quota_status(quota: &utils::Quota, region: &str, aws_profile: &str) -> Result<()> {
     let config = aws_config::from_env()
         .profile_name(aws_profile)
@@ -142,15 +159,10 @@ async fn quota_status(quota: &utils::Quota, region: &str, aws_profile: &str) -> 
         .await;
 
     let ec2_client = aws_sdk_ec2::Client::new(&config);
-    let current_usage = current_usage::get_current_usage(&ec2_client, quota)
-        .await
-        .with_context(|| format!("failed to get current usage of {quota} in {region}"))?;
-
     let sq_client = aws_sdk_servicequotas::Client::new(&config);
 
-    let quota_limit = service_quotas::get_service_quota_limit(&sq_client, quota)
-        .await
-        .with_context(|| format!("failed to get quota limit of {quota} in {region}"))?;
+    let (current_usage, quota_limit) =
+        get_quota_status(&ec2_client, &sq_client, quota, region).await?;
 
     println!("{region}:\t{quota}:\t{current_usage}/{quota_limit}");
 
