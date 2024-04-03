@@ -157,11 +157,11 @@ async fn get_quota_status(
     quota: &utils::Quota,
     region: &str,
 ) -> Result<(usize, usize)> {
-    let current_usage = current_usage::get_current_usage(&ec2_client, quota)
+    let current_usage = current_usage::get_current_usage(ec2_client, quota)
         .await
         .with_context(|| format!("failed to get current usage of {quota} in {region}"))?;
 
-    let quota_limit = service_quotas::get_service_quota_limit(&sq_client, quota)
+    let quota_limit = service_quotas::get_service_quota_limit(sq_client, quota)
         .await
         .with_context(|| format!("failed to get quota limit of {quota} in {region}"))?;
 
@@ -207,7 +207,7 @@ async fn get_request_status(
         return Ok(RequestStatus::None);
     };
 
-    let quota_limit = service_quotas::get_service_quota_limit(&sq_client, quota)
+    let quota_limit = service_quotas::get_service_quota_limit(sq_client, quota)
         .await
         .with_context(|| format!("failed to get quota limit of {quota} in {region}"))?;
 
