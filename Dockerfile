@@ -1,8 +1,8 @@
-FROM ubuntu:22.04
+FROM alpine:3.17
 
-RUN apt-get update -y
-RUN apt-get install apt-utils -y
-RUN apt-get install python3 python3-pip net-tools iptables curl cgroup-tools iproute2 wget clang libc++-dev libc++abi-dev -y
+# RUN apt-get update -y
+# RUN apt-get install apt-utils -y
+RUN apk add --no-cache iptables cgroyp-tools iproute2 wget 
 
 WORKDIR /app
 
@@ -42,7 +42,7 @@ COPY setup.sh ./
 RUN chmod +x setup.sh
 
 # oyster serverless executor inside the enclave that executes web3 jobs
-COPY . ./oyster-serverless-executor 
+COPY ./target/release/oyster-serverless-executor ./
 RUN chmod +x oyster-serverless-executor
 
 # Entry point
