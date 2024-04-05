@@ -135,8 +135,6 @@ async fn register_enclave(
             pcr_0_bytes.into(),
             pcr_1_bytes.into(),
             pcr_2_bytes.into(),
-            enclave_info.enclave_cpus.into(),
-            enclave_info.enclave_memory.into(),
             enclave_info.timestamp.into(),
             app_state.job_capacity.into(),
             signature.into(),

@@ -787,16 +787,6 @@
       },
       {
         "internalType": "uint256",
-        "name": "_enclaveCPUs",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_enclaveMemory",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
         "name": "_timestampInMilliseconds",
         "type": "uint256"
       },

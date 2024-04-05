@@ -1,8 +1,12 @@
-FROM alpine:3.17
+FROM ubuntu:22.04
 
-# RUN apt-get update -y
-# RUN apt-get install apt-utils -y
-RUN apk add --no-cache iptables cgroyp-tools iproute2 wget 
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -y
+RUN apt-get install apt-utils -y 
+RUN apt-get install net-tools iptables cgroup-tools iproute2 wget -y 
+RUN apt-get autoclean && apt-get autoremove
+RUN rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -14,11 +18,11 @@ RUN chmod +x supervisord
 RUN wget -O ip-to-vsock-transparent http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-transparent_v1.0.0_linux_amd64
 RUN chmod +x ip-to-vsock-transparent
 
-# Key generator to generate static ed25519 keys
-RUN wget -O keygen-ed25519 http://public.artifacts.marlin.pro/projects/enclaves/keygen-ed25519_v1.0.0_linux_amd64
-RUN chmod +x keygen-ed25519
+# Key generator to generate static keys
+RUN wget -O keygen http://public.artifacts.marlin.pro/projects/enclaves/keygen_v1.0.0_linux_amd64
+RUN chmod +x keygen
 
-# Key generator to generate static secp256k1 keys
+# Key generator to generate ecdsa keys
 RUN wget -O keygen-secp256k1 http://public.artifacts.marlin.pro/projects/enclaves/keygen-secp256k1_v1.0.0_linux_amd64
 RUN chmod +x keygen-secp256k1
 
@@ -26,23 +30,35 @@ RUN chmod +x keygen-secp256k1
 RUN wget -O attestation-server http://public.artifacts.marlin.pro/projects/enclaves/attestation-server_v1.0.0_linux_amd64
 RUN chmod +x attestation-server
 
+# Attestation utility for oyster enclaves
+RUN wget -O oyster-attestation-utility http://public.artifacts.marlin.pro/projects/enclaves/oyster-attestation-utility_v1.0.0_linux_amd64
+RUN chmod +x oyster-attestation-utility
+
 # Proxy to expose attestation server outside the enclave
 RUN wget -O vsock-to-ip http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip_v1.0.0_linux_amd64
 RUN chmod +x vsock-to-ip
 
-# DNSproxy to provide DNS services inside the enclave
+# DNS proxy to provide DNS services inside the enclave
 RUN wget -O dnsproxy http://public.artifacts.marlin.pro/projects/enclaves/dnsproxy_v0.46.5_linux_amd64
 RUN chmod +x dnsproxy
 
-# Supervisord config
-COPY supervisord.conf /etc/supervisord.conf
+# cgroups setup script
+RUN wget -O cgroupv2_setup.sh https://raw.githubusercontent.com/marlinprotocol/oyster-serverless-executor/master/cgroupv2_setup.sh
+RUN chmod +x cgroupv2_setup.sh
+
+# workerd runtime binary
+RUN wget -O workerd http://public.artifacts.marlin.pro/projects/enclaves/workerd_v1.20240312.0_linux_amd64
+RUN chmod +x workerd
 
 # setup.sh script that will act as entrypoint
 COPY setup.sh ./
 RUN chmod +x setup.sh
 
+# supervisord config
+COPY supervisord.conf /etc/supervisord.conf
+
 # oyster serverless executor inside the enclave that executes web3 jobs
-COPY ./target/release/oyster-serverless-executor ./
+COPY target/x86_64-unknown-linux-musl/release/oyster-serverless-executor ./
 RUN chmod +x oyster-serverless-executor
 
 # Entry point

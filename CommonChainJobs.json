@@ -122,7 +122,7 @@
       {
         "indexed": false,
         "internalType": "address[]",
-        "name": "selectedNodes",
+        "name": "selectedExecutors",
         "type": "address[]"
       }
     ],
