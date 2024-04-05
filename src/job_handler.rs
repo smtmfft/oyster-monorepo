@@ -293,7 +293,7 @@ fn sign_response(
     output: Bytes,
     total_time: u128,
     error_code: u8,
-) -> Option<String> {
+) -> Option<Vec<u8>> {
     let hash = keccak256(encode(&[
         Token::Uint(job_id),
         Token::Bytes(output.into()),
@@ -307,7 +307,7 @@ fn sign_response(
         return None;
     };
 
-    Some(hex::encode(rs.to_bytes().append(27 + v.to_byte())))
+    Some(rs.to_bytes().append(27 + v.to_byte()).to_vec())
 }
 
 fn total_time_passed(start_time: Instant) -> u128 {

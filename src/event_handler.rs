@@ -111,6 +111,11 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
     };
 
     while let Some(event) = stream.next().await {
+        if *app_state.registered.lock().unwrap() == false {
+            eprintln!("Enclave deregistered!");
+            return;
+        }
+
         if event.removed.unwrap_or(false) {
             continue;
         }
@@ -251,11 +256,6 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
             if *app_state.enclave_pub_key.lock().unwrap() == enclave_pub_key {
                 *app_state.registered.lock().unwrap() = false;
             }
-        }
-
-        if *app_state.registered.lock().unwrap() == false {
-            eprintln!("Enclave deregistered!");
-            return;
         }
     }
 
