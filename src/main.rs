@@ -88,18 +88,6 @@ enum Commands {
 //     }
 // }
 //
-// async fn request_status(request_id: &str, config: &SdkConfig) {
-//     if request_id.is_empty() {
-//         eprintln!("Valid request ID must be provided");
-//         return;
-//     }
-//
-//     match service_quotas::get_requested_service_quota_status(config, request_id.to_string()).await {
-//         Ok(stat) => println!("Status: {}", stat),
-//         Err(err) => eprintln!("Failed to get the status of provided request ID: {}", err),
-//     }
-// }
-//
 // async fn schedule_monitoring(cli: Cli, region: String) {
 //     let config = aws_config::from_env()
 //         .profile_name(cli.aws_profile.as_str())
@@ -294,32 +282,4 @@ async fn main() -> Result<()> {
     };
 
     Ok(())
-
-    // let config = aws_config::load_from_env().await;
-    //
-    // if cli.limit_status {
-    //     limit_status(utils::VCPU_QUOTA_NAME, &config).await;
-    //     limit_status(utils::ELASTIC_IP_QUOTA_NAME, &config).await;
-    // } else if cli.limit_increase {
-    //     limit_increase(cli.quota_name.as_str(), cli.quota_value, &config).await;
-    // } else if cli.request_status {
-    //     request_status(cli.request_id.as_str(), &config).await;
-    // }
-    //
-    // let regions: Vec<String> = cli.aws_regions.split(',').map(|r| r.into()).collect();
-    //
-    // let mut handles = vec![];
-    // for region in regions {
-    //     handles.push(tokio::spawn(schedule_monitoring(cli.clone(), region)));
-    // }
-    //
-    // for handle in handles {
-    //     if let Err(err) = handle.await {
-    //         println!(
-    //             "[{}] Error occurred while running a scheduled monitor: {:?}",
-    //             Local::now().format("%Y-%m-%d %H:%M:%S"),
-    //             err
-    //         );
-    //     }
-    // }
 }
