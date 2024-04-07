@@ -11,19 +11,19 @@ use handler::AppState;
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    /// path to secp256k1 private key file
-    #[arg(short, long)]
+    /// path to secp256k1 private key file (e.g. /app/secp256k1.sec)
+    #[arg(long)]
     secp256k1_secret: String,
 
-    /// path to secp256k1 public key file
-    #[arg(short, long)]
+    /// path to secp256k1 public key file (e.g. /app/secp256k1.pub)
+    #[arg(long)]
     secp256k1_public: String,
 
-    /// server ip
+    /// server ip (e.g. 127.0.0.1)
     #[arg(short, long)]
     ip: String,
 
-    /// server port
+    /// server port (e.g. 1400)
     #[arg(short, long)]
     port: u16,
 }
