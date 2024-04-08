@@ -15,6 +15,11 @@ use crate::utils::{AppState, ExecutionResponse, JobResponse};
 use crate::workerd;
 use crate::workerd::ServerlessError::*;
 
+/* Error code semantics:- 
+   1 => Provided txn hash doesn't belong to the expected rpc chain or code contract
+   2 => Calldata corresponding to the txn hash is invalid 
+   3 => Syntax error in the code extracted from the calldata 
+   4 => User timeout exceeded */
 pub async fn execute_job(
     job_id: U256,
     code_hash: String,

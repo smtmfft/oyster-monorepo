@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use actix_web::web::{Bytes, Data};
+use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
@@ -46,6 +46,9 @@ struct Args {
 
     #[clap(long, value_parser, default_value = "10")]
     execution_buffer_time: u64,
+
+    #[clap(long, value_parser, default_value = "/app/id.pub")]
+    enclave_pub_key_file: String,
 }
 
 #[tokio::main]
@@ -64,6 +67,14 @@ async fn main() -> Result<()> {
             .as_slice(),
     )
     .context("Invalid enclave signer key")?;
+
+    let enclave_pub_key = fs::read(cli.enclave_pub_key_file)
+        .await
+        .context("Failed to read the enclave public key")?;
+
+    if enclave_pub_key.len() != 64 {
+        return Err(anyhow!("Enclave public key is not 64 bytes"));
+    }   
 
     let web_socket_client = Provider::<Ws>::connect_with_reconnects(cli.web_socket_url, 5)
         .await
@@ -88,7 +99,7 @@ async fn main() -> Result<()> {
         code_contract_addr: cli.code_contract_addr,
         web_socket_client: web_socket_client,
         enclave_signer_key: enclave_signer_key,
-        enclave_pub_key: Bytes::new().into(),
+        enclave_pub_key: enclave_pub_key.into(),
         workerd_runtime_path: cli.workerd_runtime_path,
         job_requests_running: HashSet::new().into(),
         execution_buffer_time: cli.execution_buffer_time,

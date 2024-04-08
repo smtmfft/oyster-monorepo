@@ -41,7 +41,7 @@ pub struct AppState {
     pub code_contract_addr: String,
     pub web_socket_client: Provider<Ws>,
     pub enclave_signer_key: SigningKey,
-    pub enclave_pub_key: Mutex<Bytes>,
+    pub enclave_pub_key: Bytes,
     pub workerd_runtime_path: String,
     pub job_requests_running: Mutex<HashSet<U256>>,
     pub execution_buffer_time: u64,
@@ -55,7 +55,6 @@ pub struct InjectKeyInfo {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RegisterEnclaveInfo {
     pub attestation: String,
-    pub enclave_pub_key: String,
     pub pcr_0: String,
     pub pcr_1: String,
     pub pcr_2: String,

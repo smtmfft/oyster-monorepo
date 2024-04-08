@@ -100,16 +100,6 @@ async fn register_enclave(
     };
     let signature = rs.to_bytes().append(27 + v.to_byte()).to_vec();
 
-    let mut enclave_pub_key_bytes = [0u8; 64];
-    if let Err(err) = hex::decode_to_slice(
-        &enclave_info.enclave_pub_key[2..],
-        &mut enclave_pub_key_bytes,
-    ) {
-        return HttpResponse::BadRequest().body(format!(
-            "Failed to hex decode the enclave public key into 64 bytes: {}",
-            err
-        ));
-    }
     let Ok(attestation_bytes) = hex::decode(&enclave_info.attestation[2..]) else {
         return HttpResponse::BadRequest().body("Invalid attestation hex string");
     };
@@ -131,7 +121,7 @@ async fn register_enclave(
         .unwrap()
         .register_executor(
             attestation_bytes.into(),
-            enclave_pub_key_bytes.into(),
+            app_state.enclave_pub_key.clone().into(),
             pcr_0_bytes.into(),
             pcr_1_bytes.into(),
             pcr_2_bytes.into(),
@@ -158,7 +148,6 @@ async fn register_enclave(
         ));
     };
 
-    *app_state.enclave_pub_key.lock().unwrap() = enclave_pub_key_bytes.to_vec().into();
     *registered_guard = true;
 
     let app_state_clone = app_state.clone();
@@ -194,7 +183,7 @@ async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
         .unwrap()
         .clone()
         .unwrap()
-        .deregister_executor(app_state.enclave_pub_key.lock().unwrap().clone().into());
+        .deregister_executor(app_state.enclave_pub_key.clone().into());
     let pending_txn = txn.send().await;
     let Ok(pending_txn) = pending_txn else {
         return HttpResponse::InternalServerError().body(format!(

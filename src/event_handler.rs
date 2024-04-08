@@ -179,7 +179,7 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
             };
 
             let current_node =
-                pub_key_to_address(app_state.enclave_pub_key.lock().unwrap().as_ref());
+                pub_key_to_address(app_state.enclave_pub_key.as_ref());
             let Ok(current_node) = current_node else {
                 eprintln!(
                     "Failed to parse the enclave public key into eth address: {}",
@@ -253,7 +253,7 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
                 continue;
             };
 
-            if *app_state.enclave_pub_key.lock().unwrap() == enclave_pub_key {
+            if app_state.enclave_pub_key == enclave_pub_key {
                 *app_state.registered.lock().unwrap() = false;
             }
         }
