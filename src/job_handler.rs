@@ -15,13 +15,14 @@ use crate::utils::{AppState, ExecutionResponse, JobResponse};
 use crate::workerd;
 use crate::workerd::ServerlessError::*;
 
-/* Error code semantics:- 
-   1 => Provided txn hash doesn't belong to the expected rpc chain or code contract
-   2 => Calldata corresponding to the txn hash is invalid 
-   3 => Syntax error in the code extracted from the calldata 
-   4 => User timeout exceeded */
+/* Error code semantics:-
+1 => Provided txn hash doesn't belong to the expected rpc chain or code contract
+2 => Calldata corresponding to the txn hash is invalid
+3 => Syntax error in the code extracted from the calldata
+4 => User timeout exceeded */
 pub async fn execute_job(
     job_id: U256,
+    req_chain_id: U256,
     code_hash: String,
     code_inputs: Bytes,
     user_deadline: u64,
@@ -49,6 +50,7 @@ pub async fn execute_job(
                 let Some(signature) = sign_response(
                     &app_state.enclave_signer_key,
                     job_id,
+                    req_chain_id,
                     Bytes::new(),
                     execution_total_time,
                     1,
@@ -59,6 +61,7 @@ pub async fn execute_job(
                     .send(JobResponse {
                         execution_response: Some(ExecutionResponse {
                             id: job_id,
+                            req_chain_id: req_chain_id,
                             output: Bytes::new(),
                             error_code: 1,
                             total_time: execution_total_time,
@@ -80,6 +83,7 @@ pub async fn execute_job(
                 let Some(signature) = sign_response(
                     &app_state.enclave_signer_key,
                     job_id,
+                    req_chain_id,
                     Bytes::new(),
                     execution_total_time,
                     2,
@@ -90,6 +94,7 @@ pub async fn execute_job(
                     .send(JobResponse {
                         execution_response: Some(ExecutionResponse {
                             id: job_id,
+                            req_chain_id: req_chain_id,
                             output: Bytes::new(),
                             error_code: 2,
                             total_time: execution_total_time,
@@ -176,6 +181,7 @@ pub async fn execute_job(
             let Some(signature) = sign_response(
                 &app_state.enclave_signer_key,
                 job_id,
+                req_chain_id,
                 Bytes::new(),
                 execution_total_time,
                 3,
@@ -186,6 +192,7 @@ pub async fn execute_job(
                 .send(JobResponse {
                     execution_response: Some(ExecutionResponse {
                         id: job_id,
+                        req_chain_id: req_chain_id,
                         output: Bytes::new(),
                         error_code: 3,
                         total_time: execution_total_time,
@@ -229,6 +236,7 @@ pub async fn execute_job(
         let Some(signature) = sign_response(
             &app_state.enclave_signer_key,
             job_id,
+            req_chain_id,
             Bytes::new(),
             execution_total_time,
             4,
@@ -239,6 +247,7 @@ pub async fn execute_job(
             .send(JobResponse {
                 execution_response: Some(ExecutionResponse {
                     id: job_id,
+                    req_chain_id: req_chain_id,
                     output: Bytes::new(),
                     error_code: 4,
                     total_time: execution_total_time,
@@ -264,6 +273,7 @@ pub async fn execute_job(
     let Some(signature) = sign_response(
         &app_state.enclave_signer_key,
         job_id,
+        req_chain_id,
         response.clone(),
         execution_total_time,
         0,
@@ -274,6 +284,7 @@ pub async fn execute_job(
         .send(JobResponse {
             execution_response: Some(ExecutionResponse {
                 id: job_id,
+                req_chain_id: req_chain_id,
                 output: response,
                 error_code: 0,
                 total_time: execution_total_time,
@@ -295,12 +306,14 @@ pub async fn execute_job(
 fn sign_response(
     signer_key: &SigningKey,
     job_id: U256,
+    req_chain_id: U256,
     output: Bytes,
     total_time: u128,
     error_code: u8,
 ) -> Option<Vec<u8>> {
     let hash = keccak256(encode(&[
         Token::Uint(job_id),
+        Token::Uint(req_chain_id),
         Token::Bytes(output.into()),
         Token::Uint(total_time.into()),
         Token::Uint(error_code.into()),

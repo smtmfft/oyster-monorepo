@@ -270,13 +270,13 @@ pub async fn get_workerd_response(port: u16, inputs: Bytes) -> Result<Bytes, Ser
             eprintln!("Failed to send request to the workerd port: {}", err);
             ServerlessError::WorkerRequestError(err)
         })?;
-    
-    let mut response_bytes = format!("{}: ", response.status()).as_bytes().to_vec();    
+
+    let mut response_bytes = format!("{}: ", response.status()).as_bytes().to_vec();
     let response_body = response.bytes().await.map_err(|err| {
         eprintln!("Failed to parse response from the worker: {}", err);
         ServerlessError::WorkerRequestError(err)
     })?;
     response_bytes.extend(&response_body);
-    
+
     Ok(response_bytes.into())
 }

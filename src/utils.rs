@@ -3,6 +3,7 @@ use std::sync::Mutex;
 
 use actix_web::web::Bytes;
 use anyhow::{anyhow, Result};
+use ethers::abi::{encode_packed, Token};
 use ethers::contract::abigen;
 use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
 use ethers::providers::{Http, Provider, Ws};
@@ -64,11 +65,12 @@ pub struct RegisterEnclaveInfo {
 
 pub struct JobResponse {
     pub execution_response: Option<ExecutionResponse>,
-    pub timeout_response: Option<U256>,
+    pub timeout_response: Option<(U256, U256)>,
 }
 
 pub struct ExecutionResponse {
     pub id: U256,
+    pub req_chain_id: U256,
     pub output: Bytes,
     pub error_code: u8,
     pub total_time: u128,
@@ -83,4 +85,12 @@ pub fn pub_key_to_address(pub_key: &[u8]) -> Result<Address> {
     let hash = keccak256(pub_key);
     let addr_bytes: [u8; 20] = hash[12..].try_into()?;
     Ok(Address::from_slice(&addr_bytes))
+}
+
+pub fn get_job_key(job_id: U256, req_chain_id: U256) -> Result<U256> {
+    Ok(U256::from(keccak256(encode_packed(&[
+        Token::Uint(job_id),
+        Token::String("-".to_owned()),
+        Token::Uint(req_chain_id),
+    ])?)))
 }

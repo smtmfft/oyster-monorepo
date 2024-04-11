@@ -8,7 +8,7 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 use crate::job_handler::execute_job;
 use crate::timeout_handler::handle_timeout;
 use crate::utils::{
-    pub_key_to_address, AppState, CommonChainJobs, HttpSignerProvider, JobResponse,
+    get_job_key, pub_key_to_address, AppState, CommonChainJobs, HttpSignerProvider, JobResponse,
 };
 
 pub async fn run_job_listener_channel(app_state: Data<AppState>) {
@@ -35,8 +35,8 @@ async fn send_execution_output(
                 continue;
             }
 
-            let txn =
-                contract_object.slash_on_execution_timeout(job_response.timeout_response.unwrap());
+            let (job_id, req_chain_id) = job_response.timeout_response.unwrap();
+            let txn = contract_object.slash_on_execution_timeout(job_id, req_chain_id);
 
             let pending_txn = txn.send().await;
             let Ok(pending_txn) = pending_txn else {
@@ -63,6 +63,7 @@ async fn send_execution_output(
         let txn = contract_object.submit_output(
             execution_response.signature.into(),
             execution_response.id,
+            execution_response.req_chain_id,
             execution_response.output.into(),
             execution_response.total_time.into(),
             execution_response.error_code.into(),
@@ -96,7 +97,7 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
             keccak256(
                 "JobRelayed(uint256,uint256,bytes32,bytes,uint256,address,address,address[])",
             ),
-            keccak256("JobResponded(uint256,bytes,uint256,uint256,uint8)"),
+            keccak256("JobResponded(uint256,uint256,bytes,uint256,uint256,uint8)"),
             keccak256("ExecutorDeregistered(bytes)"),
         ]);
 
@@ -128,7 +129,6 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
         {
             let event_tokens = decode(
                 &vec![
-                    ParamType::Uint(256),
                     ParamType::FixedBytes(32),
                     ParamType::Bytes,
                     ParamType::Uint(256),
@@ -148,29 +148,30 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
             };
 
             let job_id = event.topics[1].into_uint();
+            let req_chain_id = event.topics[2].into_uint();
 
-            let Some(code_hash) = event_tokens[1].clone().into_fixed_bytes() else {
+            let Some(code_hash) = event_tokens[0].clone().into_fixed_bytes() else {
                 eprintln!(
                     "Failed to decode codeHash token from the job relayed event data: {}",
                     event_tokens[2]
                 );
                 continue;
             };
-            let Some(code_inputs) = event_tokens[2].clone().into_bytes() else {
+            let Some(code_inputs) = event_tokens[1].clone().into_bytes() else {
                 eprintln!(
                     "Failed to decode codeInputs token from the job relayed event data: {}",
                     event_tokens[3]
                 );
                 continue;
             };
-            let Some(user_deadline) = event_tokens[3].clone().into_uint() else {
+            let Some(user_deadline) = event_tokens[2].clone().into_uint() else {
                 eprintln!(
                     "Failed to decode deadline token from the job relayed event data: {}",
                     event_tokens[4]
                 );
                 continue;
             };
-            let Some(selected_nodes) = event_tokens[6].clone().into_array() else {
+            let Some(selected_nodes) = event_tokens[5].clone().into_array() else {
                 eprintln!(
                     "Failed to decode selectedNodes token from the job relayed event data: {}",
                     event_tokens[5]
@@ -178,8 +179,7 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
                 continue;
             };
 
-            let current_node =
-                pub_key_to_address(app_state.enclave_pub_key.as_ref());
+            let current_node = pub_key_to_address(app_state.enclave_pub_key.as_ref());
             let Ok(current_node) = current_node else {
                 eprintln!(
                     "Failed to parse the enclave public key into eth address: {}",
@@ -194,16 +194,33 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
                 .filter(|addr| addr.is_some())
                 .any(|addr| addr.unwrap() == current_node);
 
+            let job_key = get_job_key(job_id, req_chain_id);
+            let Ok(job_key) = job_key else {
+                eprintln!(
+                    "Failed to extract job key from job ID and req chain ID: {}",
+                    job_key.unwrap_err()
+                );
+                continue;
+            };
+
             app_state
                 .job_requests_running
                 .lock()
                 .unwrap()
-                .insert(job_id);
+                .insert(job_key);
 
             let app_state_1 = app_state.clone();
             let tx_1 = tx.clone();
             tokio::spawn(async move {
-                handle_timeout(job_id, user_deadline.as_u64(), app_state_1, tx_1).await;
+                handle_timeout(
+                    job_id,
+                    req_chain_id,
+                    job_key,
+                    user_deadline.as_u64(),
+                    app_state_1,
+                    tx_1,
+                )
+                .await;
             });
 
             if is_node_selected {
@@ -215,6 +232,7 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
                 tokio::spawn(async move {
                     execute_job(
                         job_id,
+                        req_chain_id,
                         code_hash,
                         code_inputs.into(),
                         user_deadline.as_u64(),
@@ -225,15 +243,25 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
                 });
             }
         } else if event.topics[0]
-            == keccak256("JobResponded(uint256,bytes,uint256,uint256,uint8)").into()
+            == keccak256("JobResponded(uint256,uint256,bytes,uint256,uint256,uint8)").into()
         {
             let job_id = event.topics[1].into_uint();
+            let req_chain_id = event.topics[2].into_uint();
+
+            let job_key = get_job_key(job_id, req_chain_id);
+            let Ok(job_key) = job_key else {
+                eprintln!(
+                    "Failed to extract job key from job ID and req chain ID: {}",
+                    job_key.unwrap_err()
+                );
+                continue;
+            };
 
             app_state
                 .job_requests_running
                 .lock()
                 .unwrap()
-                .remove(&job_id);
+                .remove(&job_key);
         } else if event.topics[0] == keccak256("ExecutorDeregistered(bytes)").into() {
             let event_tokens = decode(&vec![ParamType::Bytes], &event.data.to_vec());
             let Ok(event_tokens) = event_tokens else {

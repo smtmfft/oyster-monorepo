@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
 
     if enclave_pub_key.len() != 64 {
         return Err(anyhow!("Enclave public key is not 64 bytes"));
-    }   
+    }
 
     let web_socket_client = Provider::<Ws>::connect_with_reconnects(cli.web_socket_url, 5)
         .await

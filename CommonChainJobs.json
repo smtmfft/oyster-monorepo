@@ -84,7 +84,7 @@
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "reqChainId",
         "type": "uint256"
@@ -136,6 +136,12 @@
         "indexed": true,
         "internalType": "uint256",
         "name": "jobId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "reqChainId",
         "type": "uint256"
       },
       {
@@ -729,6 +735,11 @@
         "internalType": "uint256",
         "name": "_jobId",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_reqChainId",
+        "type": "uint256"
       }
     ],
     "name": "slashOnExecutionTimeout",
@@ -746,6 +757,11 @@
       {
         "internalType": "uint256",
         "name": "_jobId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_reqChainId",
         "type": "uint256"
       },
       {

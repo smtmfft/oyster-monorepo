@@ -7,6 +7,8 @@ use crate::utils::{AppState, JobResponse};
 
 pub async fn handle_timeout(
     job_id: U256,
+    req_chain_id: U256,
+    job_key: U256,
     timeout: u64,
     app_state: Data<AppState>,
     tx: Sender<JobResponse>,
@@ -20,7 +22,7 @@ pub async fn handle_timeout(
         .job_requests_running
         .lock()
         .unwrap()
-        .contains(&job_id)
+        .contains(&job_key)
     {
         return;
     }
@@ -28,7 +30,7 @@ pub async fn handle_timeout(
     if let Err(err) = tx
         .send(JobResponse {
             execution_response: None,
-            timeout_response: Some(job_id),
+            timeout_response: Some((job_id, req_chain_id)),
         })
         .await
     {
@@ -42,5 +44,5 @@ pub async fn handle_timeout(
         .job_requests_running
         .lock()
         .unwrap()
-        .remove(&job_id);
+        .remove(&job_key);
 }
