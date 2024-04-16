@@ -10,6 +10,8 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::time::sleep;
+use tokio_retry::strategy::{jitter, ExponentialBackoff};
+use tokio_retry::Retry;
 
 use crate::cgroups::Cgroups;
 
@@ -80,6 +82,19 @@ async fn get_transaction_data(tx_hash: &str, rpc: &str) -> Result<Value, reqwest
     Ok(json_response)
 }
 
+async fn create_and_populate_file(path: String, data: &[u8]) -> Result<(), tokio::io::Error> {
+    let mut file = File::create(&path).await.map_err(|err| {
+        eprintln!("Failed to create the file at path {}: {}", path, err);
+        err
+    })?;
+
+    file.write_all(data).await.map_err(|err| {
+        eprintln!("Failed to write to the file at path {}: {}", path, err);
+        err
+    })?;
+    Ok(())
+}
+
 pub async fn create_code_file(
     tx_hash: &str,
     slug: &str,
@@ -88,9 +103,12 @@ pub async fn create_code_file(
     contract: &str,
 ) -> Result<(), ServerlessError> {
     // get tx data
-    let mut tx_data = match get_transaction_data(tx_hash, rpc)
-        .await
-        .map_err(ServerlessError::TxDataRetrieve)?["result"]
+    let mut tx_data = match Retry::spawn(
+        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        || async { get_transaction_data(tx_hash, rpc).await },
+    )
+    .await
+    .map_err(ServerlessError::TxDataRetrieve)?["result"]
         .take()
     {
         Value::Null => Err(ServerlessError::TxNotFound),
@@ -125,17 +143,18 @@ pub async fn create_code_file(
     calldata.truncate(calldata.len() - idx);
 
     // write calldata to file
-    let mut file =
-        File::create(workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".js")
+    Retry::spawn(
+        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        || async {
+            create_and_populate_file(
+                workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".js",
+                calldata.as_slice(),
+            )
             .await
-            .map_err(|err| {
-                eprintln!("Failed to create the code file: {}", err);
-                ServerlessError::CodeFileCreate(err)
-            })?;
-    file.write_all(calldata.as_slice()).await.map_err(|err| {
-        eprintln!("Failed to write to the code file: {}", err);
-        ServerlessError::CodeFileCreate(err)
-    })?;
+        },
+    )
+    .await
+    .map_err(ServerlessError::CodeFileCreate)?;
 
     Ok(())
 }
@@ -163,17 +182,19 @@ const oysterWorker :Workerd.Worker = (
 );"
     );
 
-    let mut file =
-        File::create(workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".capnp")
+    Retry::spawn(
+        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        || async {
+            create_and_populate_file(
+                workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".capnp",
+                capnp_data.as_bytes(),
+            )
             .await
-            .map_err(|err| {
-                eprintln!("Failed to create the workerd config file: {}", err);
-                ServerlessError::ConfigFileCreate(err)
-            })?;
-    file.write_all(capnp_data.as_bytes()).await.map_err(|err| {
-        eprintln!("Failed to write to the workerd config file: {}", err);
-        ServerlessError::ConfigFileCreate(err)
-    })?;
+        },
+    )
+    .await
+    .map_err(ServerlessError::ConfigFileCreate)?;
+
     Ok(())
 }
 
@@ -226,12 +247,21 @@ pub async fn cleanup_code_file(
     slug: &str,
     workerd_runtime_path: &str,
 ) -> Result<(), ServerlessError> {
-    tokio::fs::remove_file(workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".js")
-        .await
-        .map_err(|err| {
-            eprintln!("Failed to clean up the code file: {}", err);
-            ServerlessError::CodeFileDelete(err)
-        })?;
+    Retry::spawn(
+        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        || async {
+            tokio::fs::remove_file(
+                workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".js",
+            )
+            .await
+        },
+    )
+    .await
+    .map_err(|err| {
+        eprintln!("Failed to clean up the code file: {}", err);
+        ServerlessError::CodeFileDelete(err)
+    })?;
+
     Ok(())
 }
 
@@ -240,12 +270,21 @@ pub async fn cleanup_config_file(
     slug: &str,
     workerd_runtime_path: &str,
 ) -> Result<(), ServerlessError> {
-    tokio::fs::remove_file(workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".capnp")
-        .await
-        .map_err(|err| {
-            eprintln!("Failed to clean up the config file: {}", err);
-            ServerlessError::ConfigFileDelete(err)
-        })?;
+    Retry::spawn(
+        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        || async {
+            tokio::fs::remove_file(
+                workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".capnp",
+            )
+            .await
+        },
+    )
+    .await
+    .map_err(|err| {
+        eprintln!("Failed to clean up the config file: {}", err);
+        ServerlessError::ConfigFileDelete(err)
+    })?;
+
     Ok(())
 }
 
@@ -261,22 +300,36 @@ pub async fn get_workerd_response(port: u16, inputs: Bytes) -> Result<Bytes, Ser
             ServerlessError::WorkerRequestError(err)
         })?;
 
+    Ok(Retry::spawn(
+        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        || async { client_call(&client, &req_url, &inputs).await },
+    )
+    .await
+    .map_err(ServerlessError::WorkerRequestError)?
+    .into())
+}
+
+async fn client_call(
+    client: &Client,
+    req_url: &str,
+    inputs: &Bytes,
+) -> Result<Vec<u8>, reqwest::Error> {
     let response = client
         .post(req_url)
-        .body(inputs)
+        .body(inputs.to_owned())
         .send()
         .await
         .map_err(|err| {
             eprintln!("Failed to send request to the workerd port: {}", err);
-            ServerlessError::WorkerRequestError(err)
+            err
         })?;
 
     let mut response_bytes = format!("{}: ", response.status()).as_bytes().to_vec();
     let response_body = response.bytes().await.map_err(|err| {
         eprintln!("Failed to parse response from the worker: {}", err);
-        ServerlessError::WorkerRequestError(err)
+        err
     })?;
     response_bytes.extend(&response_body);
 
-    Ok(response_bytes.into())
+    Ok(response_bytes)
 }

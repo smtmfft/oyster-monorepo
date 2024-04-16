@@ -8,21 +8,40 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 use crate::job_handler::execute_job;
 use crate::timeout_handler::handle_timeout;
 use crate::utils::{
-    get_job_key, pub_key_to_address, AppState, CommonChainJobs, HttpSignerProvider, JobResponse,
+    get_job_key, pub_key_to_address, send_txn, AppState, CommonChainJobs, HttpSignerProvider,
+    JobResponse,
 };
 
 pub async fn run_job_listener_channel(app_state: Data<AppState>) {
+    let jobs_event_filter = Filter::new()
+        .address(app_state.jobs_contract_addr)
+        .topic0(vec![
+            keccak256(
+                "JobRelayed(uint256,uint256,bytes32,bytes,uint256,address,address,address[])",
+            ),
+            keccak256("JobResponded(uint256,uint256,bytes,uint256,uint256,uint8)"),
+        ]);
+
+    let executors_event_filter = Filter::new()
+        .address(app_state.executors_contract_addr)
+        .topic0(vec![keccak256("ExecutorDeregistered(bytes)")]);
+
+    let Some(jobs_contract_object) = app_state.jobs_contract_object.lock().unwrap().clone() else {
+        eprintln!("CommonChainJobs contract object not found!");
+        return;
+    };
+
     let (tx, rx) = channel::<JobResponse>(100);
-    let contract_object = app_state
-        .jobs_contract_object
-        .lock()
-        .unwrap()
-        .clone()
-        .unwrap();
+    let app_state_clone = app_state.clone();
+    let tx_clone = tx.clone();
+
     tokio::spawn(async move {
-        send_execution_output(contract_object, rx).await;
+        send_execution_output(jobs_contract_object, rx).await;
     });
-    handle_job_relayed(app_state.clone(), tx).await;
+    tokio::spawn(async move {
+        handle_event_logs(executors_event_filter, app_state_clone, tx_clone).await;
+    });
+    handle_event_logs(jobs_event_filter, app_state, tx).await;
 }
 
 async fn send_execution_output(
@@ -31,33 +50,21 @@ async fn send_execution_output(
 ) {
     while let Some(job_response) = rx.recv().await {
         let Some(execution_response) = job_response.execution_response else {
-            if job_response.timeout_response.is_none() {
+            let Some((job_id, req_chain_id)) = job_response.timeout_response else {
                 continue;
-            }
-
-            let (job_id, req_chain_id) = job_response.timeout_response.unwrap();
+            };
             let txn = contract_object.slash_on_execution_timeout(job_id, req_chain_id);
 
-            let pending_txn = txn.send().await;
-            let Ok(pending_txn) = pending_txn else {
+            let txn_result = send_txn(txn).await;
+            let Ok(_) = txn_result else {
                 eprintln!(
-                    "Failed to send the execution timeout transaction: {}",
-                    pending_txn.unwrap_err()
+                    "Failed to submit the execution timeout transaction: {}",
+                    txn_result.unwrap_err()
                 );
-                return;
+                continue;
             };
 
-            let txn_hash = pending_txn.tx_hash();
-            let Ok(Some(_)) = pending_txn.confirmations(1).await else {
-                // TODO: FIX CONFIRMATIONS REQUIRED
-                eprintln!(
-                    "Failed to confirm transaction {} for submitting execution timeout",
-                    txn_hash
-                );
-                return;
-            };
-
-            return;
+            continue;
         };
 
         let txn = contract_object.submit_output(
@@ -69,45 +76,25 @@ async fn send_execution_output(
             execution_response.error_code.into(),
         );
 
-        let pending_txn = txn.send().await;
-        let Ok(pending_txn) = pending_txn else {
+        let txn_result = send_txn(txn).await;
+        let Ok(_) = txn_result else {
             eprintln!(
-                "Failed to send the execution output transaction: {}",
-                pending_txn.unwrap_err()
+                "Failed to submit the execution output transaction: {}",
+                txn_result.unwrap_err()
             );
-            return;
-        };
-
-        let txn_hash = pending_txn.tx_hash();
-        let Ok(Some(_)) = pending_txn.confirmations(1).await else {
-            // TODO: FIX CONFIRMATIONS REQUIRED
-            eprintln!(
-                "Failed to confirm transaction {} for submitting execution output",
-                txn_hash
-            );
-            return;
+            continue;
         };
     }
 }
 
-async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) {
-    let event_filter = Filter::new()
-        .address(app_state.jobs_contract_addr)
-        .topic0(vec![
-            keccak256(
-                "JobRelayed(uint256,uint256,bytes32,bytes,uint256,address,address,address[])",
-            ),
-            keccak256("JobResponded(uint256,uint256,bytes,uint256,uint256,uint8)"),
-            keccak256("ExecutorDeregistered(bytes)"),
-        ]);
-
-    let stream = app_state
-        .web_socket_client
-        .subscribe_logs(&event_filter)
-        .await;
+async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender<JobResponse>) {
+    let stream = app_state.web_socket_client.subscribe_logs(&filter).await;
 
     let Ok(mut stream) = stream else {
-        eprint!("Failed to subscribe to common chain contract event logs");
+        eprintln!(
+            "Failed to subscribe to contract {:?} event logs",
+            filter.address
+        );
         return;
     };
 
@@ -153,21 +140,21 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
             let Some(code_hash) = event_tokens[0].clone().into_fixed_bytes() else {
                 eprintln!(
                     "Failed to decode codeHash token from the job relayed event data: {}",
-                    event_tokens[2]
+                    event_tokens[0]
                 );
                 continue;
             };
             let Some(code_inputs) = event_tokens[1].clone().into_bytes() else {
                 eprintln!(
                     "Failed to decode codeInputs token from the job relayed event data: {}",
-                    event_tokens[3]
+                    event_tokens[1]
                 );
                 continue;
             };
             let Some(user_deadline) = event_tokens[2].clone().into_uint() else {
                 eprintln!(
                     "Failed to decode deadline token from the job relayed event data: {}",
-                    event_tokens[4]
+                    event_tokens[2]
                 );
                 continue;
             };
@@ -286,6 +273,4 @@ async fn handle_job_relayed(app_state: Data<AppState>, tx: Sender<JobResponse>) 
             }
         }
     }
-
-    return;
 }

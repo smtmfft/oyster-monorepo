@@ -51,7 +51,7 @@ pub async fn execute_job(
                     &app_state.enclave_signer_key,
                     job_id,
                     req_chain_id,
-                    Bytes::new(),
+                    &Bytes::new(),
                     execution_total_time,
                     1,
                 ) else {
@@ -84,7 +84,7 @@ pub async fn execute_job(
                     &app_state.enclave_signer_key,
                     job_id,
                     req_chain_id,
-                    Bytes::new(),
+                    &Bytes::new(),
                     execution_total_time,
                     2,
                 ) else {
@@ -182,7 +182,7 @@ pub async fn execute_job(
                 &app_state.enclave_signer_key,
                 job_id,
                 req_chain_id,
-                Bytes::new(),
+                &Bytes::new(),
                 execution_total_time,
                 3,
             ) else {
@@ -237,7 +237,7 @@ pub async fn execute_job(
             &app_state.enclave_signer_key,
             job_id,
             req_chain_id,
-            Bytes::new(),
+            &Bytes::new(),
             execution_total_time,
             4,
         ) else {
@@ -274,7 +274,7 @@ pub async fn execute_job(
         &app_state.enclave_signer_key,
         job_id,
         req_chain_id,
-        response.clone(),
+        &response,
         execution_total_time,
         0,
     ) else {
@@ -307,14 +307,14 @@ fn sign_response(
     signer_key: &SigningKey,
     job_id: U256,
     req_chain_id: U256,
-    output: Bytes,
+    output: &Bytes,
     total_time: u128,
     error_code: u8,
 ) -> Option<Vec<u8>> {
     let hash = keccak256(encode(&[
         Token::Uint(job_id),
         Token::Uint(req_chain_id),
-        Token::Bytes(output.into()),
+        Token::Bytes(output.to_owned().into()),
         Token::Uint(total_time.into()),
         Token::Uint(error_code.into()),
     ]));

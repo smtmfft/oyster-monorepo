@@ -9,7 +9,7 @@ use k256::elliptic_curve::generic_array::sequence::Lengthen;
 
 use crate::event_handler::run_job_listener_channel;
 use crate::utils::{
-    AppState, CommonChainExecutors, CommonChainJobs, InjectKeyInfo, RegisterEnclaveInfo,
+    send_txn, AppState, CommonChainExecutors, CommonChainJobs, InjectKeyInfo, RegisterEnclaveInfo,
 };
 
 #[get("/")]
@@ -131,20 +131,11 @@ async fn register_enclave(
             enclave_info.stake_amount.into(),
         );
 
-    let pending_txn = txn.send().await;
-    let Ok(pending_txn) = pending_txn else {
+    let txn_result = send_txn(txn).await;
+    let Ok(txn_receipt) = txn_result else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to send transaction for registering the enclave node: {}",
-            pending_txn.unwrap_err()
-        ));
-    };
-
-    let txn_hash = pending_txn.tx_hash();
-    let Ok(Some(txn_receipt)) = pending_txn.confirmations(1).await else {
-        // TODO: FIX CONFIRMATIONS REQUIRED
-        return HttpResponse::InternalServerError().body(format!(
-            "Failed to confirm transaction with hash {}",
-            txn_hash
+            "Failed to register the enclave: {}",
+            txn_result.unwrap_err()
         ));
     };
 
@@ -184,20 +175,12 @@ async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
         .clone()
         .unwrap()
         .deregister_executor(app_state.enclave_pub_key.clone().into());
-    let pending_txn = txn.send().await;
-    let Ok(pending_txn) = pending_txn else {
-        return HttpResponse::InternalServerError().body(format!(
-            "Failed to send transaction for deregistering the enclave node: {}",
-            pending_txn.unwrap_err()
-        ));
-    };
 
-    let txn_hash = pending_txn.tx_hash();
-    let Ok(Some(txn_receipt)) = pending_txn.confirmations(1).await else {
-        // TODO: FIX CONFIRMATIONS REQUIRED
+    let txn_result = send_txn(txn).await;
+    let Ok(txn_receipt) = txn_result else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to confirm transaction with hash {}",
-            txn_hash
+            "Failed to deregister the enclave: {}",
+            txn_result.unwrap_err()
         ));
     };
 

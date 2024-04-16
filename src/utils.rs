@@ -2,13 +2,13 @@ use std::collections::HashSet;
 use std::sync::Mutex;
 
 use actix_web::web::Bytes;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use ethers::abi::{encode_packed, Token};
-use ethers::contract::abigen;
+use ethers::contract::{abigen, ContractCall};
 use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
 use ethers::providers::{Http, Provider, Ws};
 use ethers::signers::LocalWallet;
-use ethers::types::{Address, U256};
+use ethers::types::{Address, TransactionReceipt, U256};
 use ethers::utils::keccak256;
 use k256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
@@ -93,4 +93,25 @@ pub fn get_job_key(job_id: U256, req_chain_id: U256) -> Result<U256> {
         Token::String("-".to_owned()),
         Token::Uint(req_chain_id),
     ])?)))
+}
+
+pub async fn send_txn(txn: ContractCall<HttpSignerProvider, ()>) -> Result<TransactionReceipt> {
+    let pending_txn = txn
+        .send()
+        .await
+        .context("Failed to send the transaction to the network")?;
+
+    let txn_hash = pending_txn.tx_hash();
+    let Some(txn_receipt) = pending_txn
+        .confirmations(1) // TODO: FIX CONFIRMATIONS REQUIRED
+        .await
+        .context("Failed to confirm the transaction")?
+    else {
+        return Err(anyhow!(
+            "Transaction with hash {} has been dropped from mempool!",
+            txn_hash
+        ));
+    };
+
+    Ok(txn_receipt)
 }

@@ -6,6 +6,7 @@ pub mod serverless_executor_test {
 
     use actix_web::body::MessageBody;
     use actix_web::dev::{ServiceFactory, ServiceRequest, ServiceResponse};
+    use actix_web::web::Bytes;
     use actix_web::{http, test, web, App, Error};
     use ethers::providers::{Provider, Ws};
     use ethers::types::Address;
@@ -19,8 +20,8 @@ pub mod serverless_executor_test {
 
     // Testnet or Local blockchain (Hardhat) configurations
     const CHAIN_ID: u64 = 31337;
-    const HTTP_RPC_URL: &str = "https://";
-    const WS_URL: &str = "wss://";
+    const HTTP_RPC_URL: &str = "http://";
+    const WS_URL: &str = "ws://";
     const EXECUTORS_CONTRACT_ADDR: &str = "0x";
     const JOBS_CONTRACT_ADDR: &str = "0x";
     const WALLET_PRIVATE_KEY: &str = "0x";
@@ -43,6 +44,10 @@ pub mod serverless_executor_test {
         >,
     > {
         let signer = SigningKey::random(&mut OsRng);
+        let signer_verifier_key: [u8; 64] =
+            signer.verifying_key().to_encoded_point(false).to_bytes()[1..]
+                .try_into()
+                .unwrap();
 
         App::new()
             .app_data(web::Data::new(AppState {
@@ -51,17 +56,15 @@ pub mod serverless_executor_test {
                 registered: false.into(),
                 common_chain_id: CHAIN_ID,
                 http_rpc_url: HTTP_RPC_URL.to_owned(),
-                executors_contract_addr: Address::from_slice(
-                    EXECUTORS_CONTRACT_ADDR.to_owned().as_bytes(),
-                ),
+                executors_contract_addr: EXECUTORS_CONTRACT_ADDR.parse::<Address>().unwrap(),
                 executors_contract_object: None.into(),
-                jobs_contract_addr: Address::from_slice(JOBS_CONTRACT_ADDR.to_owned().as_bytes()),
+                jobs_contract_addr: JOBS_CONTRACT_ADDR.parse::<Address>().unwrap(),
                 jobs_contract_object: None.into(),
                 // REPLACE RPC URL IN "workerd.rs" TO "https://sepolia-rollup.arbitrum.io/rpc"
                 code_contract_addr: "0x44fe06d2940b8782a0a9a9ffd09c65852c0156b1".to_owned(),
                 web_socket_client: ws_client,
-                enclave_signer_key: signer.clone(),
-                enclave_pub_key: signer.verifying_key().to_owned().to_sec1_bytes().into(),
+                enclave_signer_key: signer,
+                enclave_pub_key: Bytes::copy_from_slice(&signer_verifier_key),
                 workerd_runtime_path: "./runtime/".to_owned(),
                 job_requests_running: HashSet::new().into(),
                 execution_buffer_time: 10,
@@ -257,9 +260,7 @@ pub mod serverless_executor_test {
     async fn deregister_enclave_test() {
         let app = test::init_service(new_app(Provider::<Ws>::connect(WS_URL).await.unwrap())).await;
 
-        let req = test::TestRequest::delete()
-            .uri("/deregister")
-            .to_request();
+        let req = test::TestRequest::delete().uri("/deregister").to_request();
 
         let resp = test::call_service(&app, req).await;
 
@@ -267,7 +268,7 @@ pub mod serverless_executor_test {
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
             "Operator secret key not injected yet!"
-        );   
+        );
 
         let req = test::TestRequest::post()
             .uri("/inject-key")
@@ -284,9 +285,7 @@ pub mod serverless_executor_test {
             "Secret key injected successfully"
         );
 
-        let req = test::TestRequest::delete()
-            .uri("/deregister")
-            .to_request();
+        let req = test::TestRequest::delete().uri("/deregister").to_request();
 
         let resp = test::call_service(&app, req).await;
 
@@ -317,20 +316,16 @@ pub mod serverless_executor_test {
             .unwrap()
             .starts_with("Enclave Node successfully registered on the common chain".as_bytes()));
 
-        let req = test::TestRequest::delete()
-            .uri("/deregister")
-            .to_request();
+        let req = test::TestRequest::delete().uri("/deregister").to_request();
 
         let resp = test::call_service(&app, req).await;
 
         assert_eq!(resp.status(), http::StatusCode::OK);
-        assert!(
-            resp.into_body().try_into_bytes().unwrap().starts_with("Enclave Node successfully deregistered from the common chain".as_bytes())
-        );
+        assert!(resp.into_body().try_into_bytes().unwrap().starts_with(
+            "Enclave Node successfully deregistered from the common chain".as_bytes()
+        ));
 
-        let req = test::TestRequest::delete()
-            .uri("/deregister")
-            .to_request();
+        let req = test::TestRequest::delete().uri("/deregister").to_request();
 
         let resp = test::call_service(&app, req).await;
 
@@ -340,4 +335,4 @@ pub mod serverless_executor_test {
             "Enclave not registered yet!"
         );
     }
-}    
+}
