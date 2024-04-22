@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 
 use actix_web::web::{Bytes, Data};
 use anyhow::Context;
-use ethers::abi::{encode, Token};
+use ethers::abi::{encode_packed, Token};
 use ethers::types::U256;
 use ethers::utils::keccak256;
 use k256::ecdsa::SigningKey;
@@ -311,13 +311,16 @@ fn sign_response(
     total_time: u128,
     error_code: u8,
 ) -> Option<Vec<u8>> {
-    let hash = keccak256(encode(&[
-        Token::Uint(job_id),
-        Token::Uint(req_chain_id),
+    let token_list = [
+        Token::Array(vec![
+            Token::Uint(job_id),
+            Token::Uint(req_chain_id),
+        ]),
         Token::Bytes(output.to_owned().into()),
-        Token::Uint(total_time.into()),
+        Token::Array(vec![Token::Uint(total_time.into())]),
         Token::Uint(error_code.into()),
-    ]));
+    ];
+    let hash = keccak256(encode_packed(&token_list).unwrap());
     let Ok((rs, v)) = signer_key.sign_prehash_recoverable(&hash).map_err(|err| {
         eprintln!("Failed to sign the response: {}", err);
         err
