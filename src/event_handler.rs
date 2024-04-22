@@ -1,5 +1,5 @@
 use actix_web::web::Data;
-use ethers::abi::{decode, ParamType};
+use ethers::abi::{decode, ParamType, Tokenizable};
 use ethers::providers::{Middleware, StreamExt};
 use ethers::types::{BigEndianHash, Filter};
 use ethers::utils::keccak256;
@@ -19,12 +19,12 @@ pub async fn run_job_listener_channel(app_state: Data<AppState>) {
             keccak256(
                 "JobRelayed(uint256,uint256,bytes32,bytes,uint256,address,address,address[])",
             ),
-            keccak256("JobResponded(uint256,uint256,bytes,uint256,uint256,uint8)"),
+            keccak256("JobResponded(uint256,uint256,bytes,uint256,uint8,uint8)"),
         ]);
 
     let executors_event_filter = Filter::new()
         .address(app_state.executors_contract_addr)
-        .topic0(vec![keccak256("ExecutorDeregistered(bytes)")]);
+        .topic0(vec![keccak256("ExecutorDeregistered(address)")]);
 
     let Some(jobs_contract_object) = app_state.jobs_contract_object.lock().unwrap().clone() else {
         eprintln!("CommonChainJobs contract object not found!");
@@ -230,7 +230,7 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
                 });
             }
         } else if event.topics[0]
-            == keccak256("JobResponded(uint256,uint256,bytes,uint256,uint256,uint8)").into()
+            == keccak256("JobResponded(uint256,uint256,bytes,uint256,uint8,uint8)").into()
         {
             let job_id = event.topics[1].into_uint();
             let req_chain_id = event.topics[2].into_uint();
@@ -249,26 +249,22 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
                 .lock()
                 .unwrap()
                 .remove(&job_key);
-        } else if event.topics[0] == keccak256("ExecutorDeregistered(bytes)").into() {
-            let event_tokens = decode(&vec![ParamType::Bytes], &event.data.to_vec());
-            let Ok(event_tokens) = event_tokens else {
+        } else if event.topics[0] == keccak256("ExecutorDeregistered(address)").into() {
+            let Some(enclave_key) = event.topics[1].into_token().into_address() else {
+                eprintln!("Failed to extract the enclave key from the ExecutorDeregistered event data: {}", event.topics[1]);
+                continue;
+            };
+
+            let current_enclave = pub_key_to_address(app_state.enclave_pub_key.as_ref());
+            let Ok(current_enclave) = current_enclave else {
                 eprintln!(
-                    "Failed to decode executor deregistered event data {}: {}",
-                    event.data,
-                    event_tokens.unwrap_err()
+                    "Failed to parse the enclave public key into eth address: {}",
+                    current_enclave.unwrap_err()
                 );
                 continue;
             };
 
-            let Some(enclave_pub_key) = event_tokens[0].clone().into_bytes() else {
-                eprintln!(
-                    "Failed to decode enclavePubKey token from the executor deregistered event data: {}",
-                    event_tokens[0]
-                );
-                continue;
-            };
-
-            if app_state.enclave_pub_key == enclave_pub_key {
+            if current_enclave == enclave_key {
                 *app_state.registered.lock().unwrap() = false;
             }
         }

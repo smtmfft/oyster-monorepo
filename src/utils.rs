@@ -1,10 +1,10 @@
 use std::collections::HashSet;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use actix_web::web::Bytes;
 use anyhow::{anyhow, Context, Result};
 use ethers::abi::{encode_packed, Token};
-use ethers::contract::{abigen, ContractCall};
+use ethers::contract::{abigen, FunctionCall};
 use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
 use ethers::providers::{Http, Provider, Ws};
 use ethers::signers::LocalWallet;
@@ -95,7 +95,9 @@ pub fn get_job_key(job_id: U256, req_chain_id: U256) -> Result<U256> {
     ])?)))
 }
 
-pub async fn send_txn(txn: ContractCall<HttpSignerProvider, ()>) -> Result<TransactionReceipt> {
+pub async fn send_txn(
+    txn: FunctionCall<Arc<HttpSignerProvider>, HttpSignerProvider, ()>,
+) -> Result<TransactionReceipt> {
     let pending_txn = txn
         .send()
         .await
@@ -108,7 +110,7 @@ pub async fn send_txn(txn: ContractCall<HttpSignerProvider, ()>) -> Result<Trans
         .context("Failed to confirm the transaction")?
     else {
         return Err(anyhow!(
-            "Transaction with hash {} has been dropped from mempool!",
+            "Transaction with hash {:?} has been dropped from mempool!",
             txn_hash
         ));
     };

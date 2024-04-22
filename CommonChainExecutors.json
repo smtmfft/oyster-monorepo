@@ -146,10 +146,10 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "enclavePubKey",
-        "type": "bytes"
+        "indexed": true,
+        "internalType": "address",
+        "name": "enclaveKey",
+        "type": "address"
       }
     ],
     "name": "ExecutorDeregistered",
@@ -159,15 +159,9 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "enclavePubKey",
-        "type": "bytes"
-      },
-      {
         "indexed": true,
         "internalType": "address",
-        "name": "enclaveAddress",
+        "name": "enclaveKey",
         "type": "address"
       },
       {

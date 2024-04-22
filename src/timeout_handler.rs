@@ -14,7 +14,7 @@ pub async fn handle_timeout(
     tx: Sender<JobResponse>,
 ) {
     sleep(Duration::from_secs(
-        timeout + app_state.execution_buffer_time,
+        timeout + app_state.execution_buffer_time + 1,
     ))
     .await;
 

@@ -158,9 +158,9 @@
       },
       {
         "indexed": false,
-        "internalType": "uint256",
+        "internalType": "uint8",
         "name": "errorCode",
-        "type": "uint256"
+        "type": "uint8"
       },
       {
         "indexed": false,
@@ -631,6 +631,16 @@
         "internalType": "uint256",
         "name": "_deadline",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_jobRequestTimestamp",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_sequenceId",
+        "type": "uint8"
       },
       {
         "internalType": "address",

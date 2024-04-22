@@ -145,7 +145,7 @@ async fn register_enclave(
     tokio::spawn(async move { run_job_listener_channel(app_state_clone).await });
 
     HttpResponse::Ok().body(format!(
-        "Enclave Node successfully registered on the common chain block {}, hash {}",
+        "Enclave Node successfully registered on the common chain block {}, hash {:?}",
         txn_receipt.block_number.unwrap_or(0.into()),
         txn_receipt.transaction_hash
     ))
@@ -186,7 +186,7 @@ async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
 
     *registered_guard = false;
     HttpResponse::Ok().body(format!(
-        "Enclave Node successfully deregistered from the common chain block {}, hash {}",
+        "Enclave Node successfully deregistered from the common chain block {}, hash {:?}",
         txn_receipt.block_number.unwrap_or(0.into()),
         txn_receipt.transaction_hash
     ))
