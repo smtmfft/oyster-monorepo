@@ -15,6 +15,7 @@ use tokio_retry::Retry;
 
 use crate::cgroups::Cgroups;
 
+// Define errors that might arise during a job execution
 #[derive(Error, Debug)]
 pub enum ServerlessError {
     #[error("Failed to retrieve code transaction data")]
@@ -45,6 +46,7 @@ pub enum ServerlessError {
     BadPort(#[source] std::num::ParseIntError),
 }
 
+// Retrieve user code data transaction data from the http rpc url
 async fn get_transaction_data(tx_hash: &str, rpc: &str) -> Result<Value, reqwest::Error> {
     let client = Client::new();
     let method = "eth_getTransactionByHash";
@@ -82,6 +84,7 @@ async fn get_transaction_data(tx_hash: &str, rpc: &str) -> Result<Value, reqwest
     Ok(json_response)
 }
 
+// Create and write data to a file location asynchronously
 async fn create_and_populate_file(path: String, data: &[u8]) -> Result<(), tokio::io::Error> {
     let mut file = File::create(&path).await.map_err(|err| {
         eprintln!("Failed to create the file at path {}: {}", path, err);
@@ -102,7 +105,7 @@ pub async fn create_code_file(
     rpc: &str,
     contract: &str,
 ) -> Result<(), ServerlessError> {
-    // get tx data
+    // Get code transaction data from its hash
     let mut tx_data = match Retry::spawn(
         ExponentialBackoff::from_millis(10).map(jitter).take(3),
         || async { get_transaction_data(tx_hash, rpc).await },
@@ -115,13 +118,13 @@ pub async fn create_code_file(
         other => Ok(other),
     }?;
 
-    // get contract address
+    // Get contract address to which the transaction is send
     let contract_address = match tx_data["to"].take() {
         Value::String(value) => Ok(value),
         _ => Err(ServerlessError::InvalidTxToType),
     }?;
 
-    // check contract address matches expected
+    // Check if the contract address matches the expected user code contract
     if contract_address != contract {
         return Err(ServerlessError::InvalidTxToValue(
             contract_address,
@@ -129,20 +132,20 @@ pub async fn create_code_file(
         ));
     }
 
-    // get calldata
+    // Get the calldata of the transaction as string
     let calldata = match tx_data["input"].take() {
         Value::String(calldata) => Ok(calldata),
         _ => Err(ServerlessError::InvalidTxCalldataType),
     }?;
 
-    // hex decode calldata by skipping to the code bytes
+    // Hex decode the calldata by skipping to the code bytes
     let mut calldata = hex::decode(&calldata[138..])?;
 
-    // strip trailing zeros
+    // Strip trailing zeros in the calldata
     let idx = calldata.iter().rev().position(|x| *x != 0).unwrap_or(0);
     calldata.truncate(calldata.len() - idx);
 
-    // write calldata to file
+    // Write calldata to the desired file location
     Retry::spawn(
         ExponentialBackoff::from_millis(10).map(jitter).take(3),
         || async {
@@ -165,6 +168,7 @@ pub async fn create_config_file(
     workerd_runtime_path: &str,
     free_port: u16,
 ) -> Result<(), ServerlessError> {
+    // Initialize the config data for user code execution by workerd runtime
     let capnp_data = format!(
         "
 using Workerd = import \"/workerd/workerd.capnp\";
@@ -182,6 +186,7 @@ const oysterWorker :Workerd.Worker = (
 );"
     );
 
+    // Write config to the desired file location
     Retry::spawn(
         ExponentialBackoff::from_millis(10).map(jitter).take(3),
         || async {
@@ -198,6 +203,7 @@ const oysterWorker :Workerd.Worker = (
     Ok(())
 }
 
+// Get a free port number for the cgroup exposing the user code
 pub fn get_port(cgroup: &str) -> Result<u16, ServerlessError> {
     u16::from_str_radix(&cgroup[8..], 10)
         .map(|x| x + 11000)
@@ -210,13 +216,13 @@ pub fn get_port(cgroup: &str) -> Result<u16, ServerlessError> {
         })
 }
 
-// TODO: timeouts?
 pub async fn execute(
     tx_hash: &str,
     slug: &str,
     workerd_runtime_path: &str,
     cgroup: &str,
 ) -> Result<Child, ServerlessError> {
+    // Initialize the arguments instructing the workerd runtime to execute the code file using the config file
     let args = [
         &(workerd_runtime_path.to_owned() + "/workerd"),
         "serve",
@@ -230,6 +236,7 @@ pub async fn execute(
     })?)
 }
 
+// Wait until the cgroup port is exposed with the user code endpoint
 pub async fn wait_for_port(port: u16) -> bool {
     let start_time = Instant::now();
 
@@ -242,6 +249,7 @@ pub async fn wait_for_port(port: u16) -> bool {
     false
 }
 
+// Cleanup the user code file
 pub async fn cleanup_code_file(
     tx_hash: &str,
     slug: &str,
@@ -265,6 +273,7 @@ pub async fn cleanup_code_file(
     Ok(())
 }
 
+// Cleanup the config file
 pub async fn cleanup_config_file(
     tx_hash: &str,
     slug: &str,
@@ -288,6 +297,7 @@ pub async fn cleanup_config_file(
     Ok(())
 }
 
+// Get response from the user code server run by the workerd runtime
 pub async fn get_workerd_response(port: u16, inputs: Bytes) -> Result<Bytes, ServerlessError> {
     let port_str = port.to_string();
     let req_url = "http://127.0.0.1:".to_string() + &port_str + "/";
@@ -305,15 +315,15 @@ pub async fn get_workerd_response(port: u16, inputs: Bytes) -> Result<Bytes, Ser
         || async { client_call(&client, &req_url, &inputs).await },
     )
     .await
-    .map_err(ServerlessError::WorkerRequestError)?
-    .into())
+    .map_err(ServerlessError::WorkerRequestError)?)
 }
 
+// Make post request to an url using the inputs provided and the reqwest client and parse the response
 async fn client_call(
     client: &Client,
     req_url: &str,
     inputs: &Bytes,
-) -> Result<Vec<u8>, reqwest::Error> {
+) -> Result<Bytes, reqwest::Error> {
     let response = client
         .post(req_url)
         .body(inputs.to_owned())
@@ -324,12 +334,8 @@ async fn client_call(
             err
         })?;
 
-    let mut response_bytes = format!("{}: ", response.status()).as_bytes().to_vec();
-    let response_body = response.bytes().await.map_err(|err| {
+    Ok(response.bytes().await.map_err(|err| {
         eprintln!("Failed to parse response from the worker: {}", err);
         err
-    })?;
-    response_bytes.extend(&response_body);
-
-    Ok(response_bytes)
+    })?)
 }

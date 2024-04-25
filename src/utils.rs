@@ -15,12 +15,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::cgroups::Cgroups;
 
+// Generate type-safe ABI bindings for the Executors contract at compile time
 abigen!(
     CommonChainExecutors,
     "CommonChainExecutors.json",
     derives(serde::Serialize, serde::Deserialize)
 );
 
+// Generate type-safe ABI bindings for the Jobs contract at compile time
 abigen!(
     CommonChainJobs,
     "CommonChainJobs.json",
@@ -29,6 +31,7 @@ abigen!(
 
 pub type HttpSignerProvider = NonceManagerMiddleware<SignerMiddleware<Provider<Http>, LocalWallet>>;
 
+// App data struct containing the necessary fields to run the executor
 pub struct AppState {
     pub job_capacity: usize,
     pub cgroups: Mutex<Cgroups>,
@@ -77,6 +80,7 @@ pub struct ExecutionResponse {
     pub signature: Bytes,
 }
 
+// Convert the 64 bytes 'secp256k1' public key to 20 bytes unique address
 pub fn pub_key_to_address(pub_key: &[u8]) -> Result<Address> {
     if pub_key.len() != 64 {
         return Err(anyhow!("Invalid public key length"));
@@ -87,6 +91,7 @@ pub fn pub_key_to_address(pub_key: &[u8]) -> Result<Address> {
     Ok(Address::from_slice(&addr_bytes))
 }
 
+// Calculate the job key from job_id and req_chain_id using keccak256 encoding
 pub fn get_job_key(job_id: U256, req_chain_id: U256) -> Result<U256> {
     Ok(U256::from(keccak256(encode_packed(&[
         Token::Uint(job_id),
@@ -95,6 +100,7 @@ pub fn get_job_key(job_id: U256, req_chain_id: U256) -> Result<U256> {
     ])?)))
 }
 
+// Send a signed transaction to the rpc network and report its confirmation or rejection
 pub async fn send_txn(
     txn: FunctionCall<Arc<HttpSignerProvider>, HttpSignerProvider, ()>,
 ) -> Result<TransactionReceipt> {

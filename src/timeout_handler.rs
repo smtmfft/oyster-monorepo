@@ -5,6 +5,7 @@ use tokio::time::{sleep, Duration};
 
 use crate::utils::{AppState, JobResponse};
 
+// Start task to handle the execution timeout scenario for a job request
 pub async fn handle_timeout(
     job_id: U256,
     req_chain_id: U256,
@@ -18,6 +19,7 @@ pub async fn handle_timeout(
     ))
     .await;
 
+    // If the job request had been executed then don't send anything
     if !app_state
         .job_requests_running
         .lock()
@@ -27,6 +29,7 @@ pub async fn handle_timeout(
         return;
     }
 
+    // Send job response with timeout counterpart
     if let Err(err) = tx
         .send(JobResponse {
             execution_response: None,
@@ -40,6 +43,7 @@ pub async fn handle_timeout(
         );
     }
 
+    // Mark the job request as completed from executor side
     app_state
         .job_requests_running
         .lock()

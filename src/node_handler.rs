@@ -18,6 +18,7 @@ async fn index() -> impl Responder {
 }
 
 #[post("/inject-key")]
+// Endpoint exposed to inject operator wallet's private key
 async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -> impl Responder {
     let mut executors_contract_guard = app_state.executors_contract_object.lock().unwrap();
     let mut jobs_contract_guard = app_state.jobs_contract_object.lock().unwrap();
@@ -33,6 +34,7 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
         ));
     }
 
+    // Initialize local wallet with operator's key to send signed transactions to the common chain
     let signer_wallet = LocalWallet::from_bytes(&bytes32_key);
     let Ok(signer_wallet) = signer_wallet else {
         return HttpResponse::BadRequest().body(format!(
@@ -43,6 +45,7 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
     let signer_wallet = signer_wallet.with_chain_id(app_state.common_chain_id);
     let signer_address = signer_wallet.address();
 
+    // Connect the rpc http provider with the operator's wallet
     let http_rpc_client = Provider::<Http>::try_connect(&app_state.http_rpc_url).await;
     let Ok(http_rpc_client) = http_rpc_client else {
         return HttpResponse::InternalServerError().body(format!(
@@ -57,6 +60,7 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
             .nonce_manager(signer_address),
     );
 
+    // Initialize smart contract objects to interact with them using operator's wallet
     *executors_contract_guard = Some(CommonChainExecutors::new(
         app_state.executors_contract_addr,
         http_rpc_client.clone(),
@@ -70,6 +74,7 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
 }
 
 #[post("/register")]
+// Endpoint exposed to register the enclave on the common chain as a serverless executor
 async fn register_enclave(
     Json(enclave_info): Json<RegisterEnclaveInfo>,
     app_state: Data<AppState>,
@@ -89,6 +94,7 @@ async fn register_enclave(
         return HttpResponse::BadRequest().body("Enclave node is already registered!");
     }
 
+    // Encode and sign the job capacity of executor using its private key
     let hash = keccak256(encode(&[Token::Uint(app_state.job_capacity.into())]));
     let sig = app_state.enclave_signer_key.sign_prehash_recoverable(&hash);
     let Ok((rs, v)) = sig else {
@@ -113,6 +119,7 @@ async fn register_enclave(
         return HttpResponse::BadRequest().body("Invalid pcr2 hex string");
     };
 
+    // Prepare the transaction to be send to the common chain for registration
     let txn = app_state
         .executors_contract_object
         .lock()
@@ -142,6 +149,7 @@ async fn register_enclave(
     *registered_guard = true;
 
     let app_state_clone = app_state.clone();
+    // Start the listener to receive jobs emitted by the common chain contract
     tokio::spawn(async move { run_job_listener_channel(app_state_clone).await });
 
     HttpResponse::Ok().body(format!(
@@ -152,6 +160,7 @@ async fn register_enclave(
 }
 
 #[delete("/deregister")]
+// Endpoint exposed to deregister the enclave from the common chain as an executor (Can be done manually but preferred this way)
 async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
     if app_state
         .executors_contract_object
@@ -168,6 +177,7 @@ async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
         return HttpResponse::BadRequest().body("Enclave not registered yet!");
     }
 
+    // Prepare the transaction to be send to the common chain for deregistration
     let txn = app_state
         .executors_contract_object
         .lock()

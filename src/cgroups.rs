@@ -4,6 +4,7 @@ use std::process::{Child, Command, Stdio};
 
 use anyhow::{anyhow, Context, Result};
 
+// Struct to keep track of the free 'cgroups' available to execute code
 pub struct Cgroups {
     pub free: Vec<String>,
 }
@@ -15,6 +16,7 @@ impl Cgroups {
         })
     }
 
+    // Reserve a 'cgroup' and remove it from the free list
     pub fn reserve(&mut self) -> Result<String> {
         if self.free.len() == 0 {
             return Err(anyhow!(""));
@@ -23,10 +25,12 @@ impl Cgroups {
         Ok(self.free.swap_remove(0))
     }
 
+    // Release a 'cgroup' and add it back to the free list
     pub fn release(&mut self, cgroup: String) {
         self.free.push(cgroup);
     }
 
+    // Allot the user code to a 'cgroup' that'll provide memory and cpu for its execution
     pub fn execute(
         cgroup: &str,
         args: impl IntoIterator<Item = impl AsRef<OsStr>>,
@@ -42,6 +46,7 @@ impl Cgroups {
     }
 }
 
+// Retrieve the names of the 'cgroups' generated inside the enclave to host user code for execution by workerd runtime
 fn get_cgroups() -> Result<Vec<String>> {
     Ok(fs::read_dir("/sys/fs/cgroup")
         .context("Failed to read the directory /sys/fs/cgroup")?

@@ -12,7 +12,9 @@ use crate::utils::{
     JobResponse,
 };
 
+// Start listening to relevant events emitted by the common chain executors and jobs contract
 pub async fn run_job_listener_channel(app_state: Data<AppState>) {
+    // Create filter to listen to specific events emitted by the common chain jobs contract
     let jobs_event_filter = Filter::new()
         .address(app_state.jobs_contract_addr)
         .topic0(vec![
@@ -22,6 +24,7 @@ pub async fn run_job_listener_channel(app_state: Data<AppState>) {
             keccak256("JobResponded(uint256,uint256,bytes,uint256,uint8,uint8)"),
         ]);
 
+    // Create filter to listen to specific events emitted by the common chain executors contract
     let executors_event_filter = Filter::new()
         .address(app_state.executors_contract_addr)
         .topic0(vec![keccak256("ExecutorDeregistered(address)")]);
@@ -31,6 +34,7 @@ pub async fn run_job_listener_channel(app_state: Data<AppState>) {
         return;
     };
 
+    // Create tokio mpsc channel to receive contract events and send transactions to them
     let (tx, rx) = channel::<JobResponse>(100);
     let app_state_clone = app_state.clone();
     let tx_clone = tx.clone();
@@ -44,6 +48,7 @@ pub async fn run_job_listener_channel(app_state: Data<AppState>) {
     handle_event_logs(jobs_event_filter, app_state, tx).await;
 }
 
+// Receive job execution responses and send the resulting transactions to the common chain
 async fn send_execution_output(
     contract_object: CommonChainJobs<HttpSignerProvider>,
     mut rx: Receiver<JobResponse>,
@@ -53,6 +58,8 @@ async fn send_execution_output(
             let Some((job_id, req_chain_id)) = job_response.timeout_response else {
                 continue;
             };
+
+            // Prepare the execution timeout transaction to be send to the jobs contract
             let txn = contract_object.slash_on_execution_timeout(job_id, req_chain_id);
 
             let txn_result = send_txn(txn).await;
@@ -67,6 +74,7 @@ async fn send_execution_output(
             continue;
         };
 
+        // Prepare the execution output transaction to be send to the jobs contract
         let txn = contract_object.submit_output(
             execution_response.signature.into(),
             execution_response.id,
@@ -87,7 +95,9 @@ async fn send_execution_output(
     }
 }
 
+// Start listening to the provided event filter
 async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender<JobResponse>) {
+    // Subscribe to the filter through the rpc web socket client
     let stream = app_state.web_socket_client.subscribe_logs(&filter).await;
 
     let Ok(mut stream) = stream else {
@@ -99,6 +109,7 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
     };
 
     while let Some(event) = stream.next().await {
+        // Stop listening to the events if the executor has been deregistered
         if *app_state.registered.lock().unwrap() == false {
             eprintln!("Enclave deregistered!");
             return;
@@ -108,12 +119,14 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
             continue;
         }
 
+        // Capture the Job relayed event emitted by the jobs contract
         if event.topics[0]
             == keccak256(
                 "JobRelayed(uint256,uint256,bytes32,bytes,uint256,address,address,address[])",
             )
             .into()
         {
+            // Decode the event parameters using the ABI information
             let event_tokens = decode(
                 &vec![
                     ParamType::FixedBytes(32),
@@ -134,6 +147,7 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
                 continue;
             };
 
+            // Extract the indexed parameters of the event
             let job_id = event.topics[1].into_uint();
             let req_chain_id = event.topics[2].into_uint();
 
@@ -175,6 +189,7 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
                 continue;
             };
 
+            // Check if the executor has been selected for the job execution
             let is_node_selected = selected_nodes
                 .into_iter()
                 .map(|token| token.into_address())
@@ -190,6 +205,7 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
                 continue;
             };
 
+            // Mark the current job as under execution
             app_state
                 .job_requests_running
                 .lock()
@@ -229,7 +245,9 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
                     .await;
                 });
             }
-        } else if event.topics[0]
+        }
+        // Capture the Job responded event emitted by the jobs contract
+        else if event.topics[0]
             == keccak256("JobResponded(uint256,uint256,bytes,uint256,uint8,uint8)").into()
         {
             let job_id = event.topics[1].into_uint();
@@ -244,12 +262,15 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
                 continue;
             };
 
+            // Mark the job as completed
             app_state
                 .job_requests_running
                 .lock()
                 .unwrap()
                 .remove(&job_key);
-        } else if event.topics[0] == keccak256("ExecutorDeregistered(address)").into() {
+        }
+        // Capture the Executor deregistered event emitted by the executors contract
+        else if event.topics[0] == keccak256("ExecutorDeregistered(address)").into() {
             let Some(enclave_key) = event.topics[1].into_token().into_address() else {
                 eprintln!("Failed to extract the enclave key from the ExecutorDeregistered event data: {}", event.topics[1]);
                 continue;
@@ -264,6 +285,7 @@ async fn handle_event_logs(filter: Filter, app_state: Data<AppState>, tx: Sender
                 continue;
             };
 
+            // Check if the executor has been deregistered and mark it as deregistered accordingly
             if current_enclave == enclave_key {
                 *app_state.registered.lock().unwrap() = false;
             }

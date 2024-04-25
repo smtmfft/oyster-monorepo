@@ -34,7 +34,9 @@ pub mod serverless_executor_test {
     const REGISTER_TIMESTAMP: usize = 2160;
     const REGISTER_STAKE_AMOUNT: usize = 100;
 
+    // Generate test app state
     async fn generate_app_state(rpc: &str) -> Data<AppState> {
+        // Initialize random 'secp256k1' signing key for the enclave
         let signer = SigningKey::random(&mut OsRng);
         let signer_verifier_key: [u8; 64] =
             signer.verifying_key().to_encoded_point(false).to_bytes()[1..]
@@ -62,6 +64,7 @@ pub mod serverless_executor_test {
         })
     }
 
+    // Return the actix server with the provided app state
     fn new_app(
         app_state: Data<AppState>,
     ) -> App<
@@ -82,9 +85,11 @@ pub mod serverless_executor_test {
     }
 
     #[actix_web::test]
+    // Test the various response cases for the 'inject_key' endpoint
     async fn inject_key_test() {
         let app = test::init_service(new_app(generate_app_state(HTTP_RPC_URL).await)).await;
 
+        // Inject invalid hex private key string
         let req = test::TestRequest::post()
             .uri("/inject-key")
             .set_json(&json!({
@@ -100,6 +105,7 @@ pub mod serverless_executor_test {
             "Failed to hex decode the key into 32 bytes: Odd number of digits"
         );
 
+        // Inject invalid length private key
         let req = test::TestRequest::post()
             .uri("/inject-key")
             .set_json(&json!({
@@ -115,6 +121,7 @@ pub mod serverless_executor_test {
             "Failed to hex decode the key into 32 bytes: Invalid string length"
         );
 
+        // Inject invalid private(signing) key
         let req = test::TestRequest::post()
             .uri("/inject-key")
             .set_json(&json!({
@@ -130,6 +137,7 @@ pub mod serverless_executor_test {
             "Invalid secret key provided: signature error"
         );
 
+        // Inject a valid private key
         let req = test::TestRequest::post()
             .uri("/inject-key")
             .set_json(&json!({
@@ -145,6 +153,7 @@ pub mod serverless_executor_test {
             "Secret key injected successfully"
         );
 
+        // Inject the valid private key again
         let req = test::TestRequest::post()
             .uri("/inject-key")
             .set_json(&json!({
@@ -162,9 +171,11 @@ pub mod serverless_executor_test {
     }
 
     #[actix_web::test]
+    // Test the various response cases for the 'register_enclave' endpoint
     async fn register_enclave_test() {
         let app = test::init_service(new_app(generate_app_state(HTTP_RPC_URL).await)).await;
 
+        // Register the executor without injecting the operator's private key
         let req = test::TestRequest::post()
             .uri("/register")
             .set_json(&json!({
@@ -185,6 +196,7 @@ pub mod serverless_executor_test {
             "Operator secret key not injected yet!"
         );
 
+        // Inject a valid private key into the enclave
         let req = test::TestRequest::post()
             .uri("/inject-key")
             .set_json(&json!({
@@ -200,6 +212,7 @@ pub mod serverless_executor_test {
             "Secret key injected successfully"
         );
 
+        // Register the enclave with an invalid attestation hex string
         let req = test::TestRequest::post()
             .uri("/register")
             .set_json(&json!({
@@ -220,6 +233,7 @@ pub mod serverless_executor_test {
             "Invalid attestation hex string"
         );
 
+        // Register the enclave with valid data points
         let req = test::TestRequest::post()
             .uri("/register")
             .set_json(&json!({
@@ -241,6 +255,7 @@ pub mod serverless_executor_test {
             .unwrap()
             .starts_with("Enclave Node successfully registered on the common chain".as_bytes()));
 
+        // Register the enclave again before deregistering
         let req = test::TestRequest::post()
             .uri("/register")
             .set_json(&json!({
@@ -263,9 +278,11 @@ pub mod serverless_executor_test {
     }
 
     #[actix_web::test]
+    // Test the various response cases for the 'deregister_enclave' endpoint
     async fn test_deregister_enclave() {
         let app = test::init_service(new_app(generate_app_state(HTTP_RPC_URL).await)).await;
 
+        // Deregister the enclave without even injecting the private key
         let req = test::TestRequest::delete().uri("/deregister").to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -276,6 +293,7 @@ pub mod serverless_executor_test {
             "Operator secret key not injected yet!"
         );
 
+        // Inject a valid private key
         let req = test::TestRequest::post()
             .uri("/inject-key")
             .set_json(&json!({
@@ -291,6 +309,7 @@ pub mod serverless_executor_test {
             "Secret key injected successfully"
         );
 
+        // Deregister the enclave before even registering it
         let req = test::TestRequest::delete().uri("/deregister").to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -301,6 +320,7 @@ pub mod serverless_executor_test {
             "Enclave not registered yet!"
         );
 
+        // Register the enclave with valid data points
         let req = test::TestRequest::post()
             .uri("/register")
             .set_json(&json!({
@@ -322,6 +342,7 @@ pub mod serverless_executor_test {
             .unwrap()
             .starts_with("Enclave Node successfully registered on the common chain".as_bytes()));
 
+        // Deregister the enclave
         let req = test::TestRequest::delete().uri("/deregister").to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -331,6 +352,7 @@ pub mod serverless_executor_test {
             "Enclave Node successfully deregistered from the common chain".as_bytes()
         ));
 
+        // Deregister the enclave again before registering it
         let req = test::TestRequest::delete().uri("/deregister").to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -342,6 +364,7 @@ pub mod serverless_executor_test {
         );
     }
 
+    // Execute a job request using 'job_handler' and return the response
     async fn job_handler_unit_test(
         job_id: U256,
         req_chain_id: U256,
@@ -373,6 +396,7 @@ pub mod serverless_executor_test {
     }
 
     #[actix_web::test]
+    // Test a valid job request with different inputs and verify the response from the 'job_handler'
     async fn valid_job_test() {
         let code_input_bytes = serde_json::to_vec(&json!({
             "num": 10
@@ -395,7 +419,7 @@ pub mod serverless_executor_test {
         assert_eq!(execution_response.id, 1.into());
         assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 0);
-        assert_eq!(execution_response.output, "200 OK: 2,5");
+        assert_eq!(execution_response.output, "2,5");
 
         let code_input_bytes = serde_json::to_vec(&json!({
             "num": 20
@@ -418,7 +442,7 @@ pub mod serverless_executor_test {
         assert_eq!(execution_response.id, 1.into());
         assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 0);
-        assert_eq!(execution_response.output, "200 OK: 2,2,5");
+        assert_eq!(execution_response.output, "2,2,5");
 
         let code_input_bytes = serde_json::to_vec(&json!({
             "num": 600
@@ -441,10 +465,11 @@ pub mod serverless_executor_test {
         assert_eq!(execution_response.id, 1.into());
         assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 0);
-        assert_eq!(execution_response.output, "200 OK: 2,2,2,3,5,5");
+        assert_eq!(execution_response.output, "2,2,2,3,5,5");
     }
 
     #[actix_web::test]
+    // Test a valid job request with invalid input and verify the response from the 'job_handler'
     async fn invalid_input_job_test() {
         let code_input_bytes = serde_json::to_vec(&json!({})).unwrap();
 
@@ -466,22 +491,24 @@ pub mod serverless_executor_test {
         assert_eq!(execution_response.error_code, 0);
         assert_eq!(
             execution_response.output,
-            "200 OK: Please provide a valid integer as input in the format{'num':10}"
+            "Please provide a valid integer as input in the format{'num':10}"
         );
     }
 
     #[actix_web::test]
+    // Test '1' error code job requests and verify the response from the 'job_handler'
     async fn invalid_transaction_job_test() {
         let code_input_bytes = serde_json::to_vec(&json!({
             "num": 10
         }))
         .unwrap();
 
+        // Given transaction hash doesn't belong to the expected smart contract
         let job_response = job_handler_unit_test(
             1.into(),
             1.into(),
             "0xfed8ab36cc27831836f6dcb7291049158b4d8df31c0ffb05a3d36ba6555e29d7".to_owned(),
-            code_input_bytes.into(),
+            code_input_bytes.clone().into(),
             10,
         )
         .await;
@@ -495,11 +522,7 @@ pub mod serverless_executor_test {
         assert_eq!(execution_response.error_code, 1);
         assert_eq!(execution_response.output, "");
 
-        let code_input_bytes = serde_json::to_vec(&json!({
-            "num": 10
-        }))
-        .unwrap();
-
+        // Given transaction hash doesn't exist in the expected rpc network
         let job_response = job_handler_unit_test(
             1.into(),
             1.into(),
@@ -520,12 +543,14 @@ pub mod serverless_executor_test {
     }
 
     #[actix_web::test]
+    // Test '3' error code job requests and verify the response from the 'job_handler'
     async fn invalid_code_job_test() {
         let code_input_bytes = serde_json::to_vec(&json!({
             "num": 10
         }))
         .unwrap();
 
+        // Code corresponding to the provided transaction hash has a syntax error
         let job_response = job_handler_unit_test(
             1.into(),
             1.into(),
@@ -546,12 +571,14 @@ pub mod serverless_executor_test {
     }
 
     #[actix_web::test]
+    // Test '4' error code job requests and verify the response from the 'job_handler'
     async fn deadline_timeout_job_test() {
         let code_input_bytes = serde_json::to_vec(&json!({
             "num": 10
         }))
         .unwrap();
 
+        // User code didn't return a response in the expected period
         let job_response = job_handler_unit_test(
             1.into(),
             1.into(),
