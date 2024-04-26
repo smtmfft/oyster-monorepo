@@ -367,7 +367,6 @@ pub mod serverless_executor_test {
     // Execute a job request using 'job_handler' and return the response
     async fn job_handler_unit_test(
         job_id: U256,
-        req_chain_id: U256,
         code_hash: String,
         code_inputs: Bytes,
         user_deadline: u64,
@@ -376,16 +375,7 @@ pub mod serverless_executor_test {
         let (tx, mut rx) = channel::<JobResponse>(100);
 
         tokio::spawn(async move {
-            execute_job(
-                job_id,
-                req_chain_id,
-                code_hash,
-                code_inputs,
-                user_deadline,
-                app_state,
-                tx,
-            )
-            .await;
+            execute_job(job_id, code_hash, code_inputs, user_deadline, app_state, tx).await;
         });
 
         while let Some(job_response) = rx.recv().await {
@@ -405,7 +395,6 @@ pub mod serverless_executor_test {
 
         let job_response = job_handler_unit_test(
             1.into(),
-            1.into(),
             "0x9468bb6a8e85ed11e292c8cac0c1539df691c8d8ec62e7dbfa9f1bd7f504e46e".to_owned(),
             code_input_bytes.into(),
             10,
@@ -417,7 +406,6 @@ pub mod serverless_executor_test {
         assert!(job_response.execution_response.is_some());
         let execution_response = job_response.execution_response.unwrap();
         assert_eq!(execution_response.id, 1.into());
-        assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 0);
         assert_eq!(execution_response.output, "2,5");
 
@@ -428,7 +416,6 @@ pub mod serverless_executor_test {
 
         let job_response = job_handler_unit_test(
             1.into(),
-            1.into(),
             "0x9468bb6a8e85ed11e292c8cac0c1539df691c8d8ec62e7dbfa9f1bd7f504e46e".to_owned(),
             code_input_bytes.into(),
             10,
@@ -440,7 +427,6 @@ pub mod serverless_executor_test {
         assert!(job_response.execution_response.is_some());
         let execution_response = job_response.execution_response.unwrap();
         assert_eq!(execution_response.id, 1.into());
-        assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 0);
         assert_eq!(execution_response.output, "2,2,5");
 
@@ -451,7 +437,6 @@ pub mod serverless_executor_test {
 
         let job_response = job_handler_unit_test(
             1.into(),
-            1.into(),
             "0x9468bb6a8e85ed11e292c8cac0c1539df691c8d8ec62e7dbfa9f1bd7f504e46e".to_owned(),
             code_input_bytes.into(),
             10,
@@ -463,7 +448,6 @@ pub mod serverless_executor_test {
         assert!(job_response.execution_response.is_some());
         let execution_response = job_response.execution_response.unwrap();
         assert_eq!(execution_response.id, 1.into());
-        assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 0);
         assert_eq!(execution_response.output, "2,2,2,3,5,5");
     }
@@ -475,7 +459,6 @@ pub mod serverless_executor_test {
 
         let job_response = job_handler_unit_test(
             1.into(),
-            1.into(),
             "0x9468bb6a8e85ed11e292c8cac0c1539df691c8d8ec62e7dbfa9f1bd7f504e46e".to_owned(),
             code_input_bytes.into(),
             10,
@@ -487,7 +470,6 @@ pub mod serverless_executor_test {
         assert!(job_response.execution_response.is_some());
         let execution_response = job_response.execution_response.unwrap();
         assert_eq!(execution_response.id, 1.into());
-        assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 0);
         assert_eq!(
             execution_response.output,
@@ -506,7 +488,6 @@ pub mod serverless_executor_test {
         // Given transaction hash doesn't belong to the expected smart contract
         let job_response = job_handler_unit_test(
             1.into(),
-            1.into(),
             "0xfed8ab36cc27831836f6dcb7291049158b4d8df31c0ffb05a3d36ba6555e29d7".to_owned(),
             code_input_bytes.clone().into(),
             10,
@@ -518,13 +499,11 @@ pub mod serverless_executor_test {
         assert!(job_response.execution_response.is_some());
         let execution_response = job_response.execution_response.unwrap();
         assert_eq!(execution_response.id, 1.into());
-        assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 1);
         assert_eq!(execution_response.output, "");
 
         // Given transaction hash doesn't exist in the expected rpc network
         let job_response = job_handler_unit_test(
-            1.into(),
             1.into(),
             "0x37b0b2d9dd58d9130781fc914da456c16ec403010e8d4c27b0ea4657a24c8546".to_owned(),
             code_input_bytes.into(),
@@ -537,7 +516,6 @@ pub mod serverless_executor_test {
         assert!(job_response.execution_response.is_some());
         let execution_response = job_response.execution_response.unwrap();
         assert_eq!(execution_response.id, 1.into());
-        assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 1);
         assert_eq!(execution_response.output, "");
     }
@@ -553,7 +531,6 @@ pub mod serverless_executor_test {
         // Code corresponding to the provided transaction hash has a syntax error
         let job_response = job_handler_unit_test(
             1.into(),
-            1.into(),
             "0x96179f60fd7917c04ad9da6dd64690a1a960f39b50029d07919bf2628f5e7fe5".to_owned(),
             code_input_bytes.into(),
             10,
@@ -565,7 +542,6 @@ pub mod serverless_executor_test {
         assert!(job_response.execution_response.is_some());
         let execution_response = job_response.execution_response.unwrap();
         assert_eq!(execution_response.id, 1.into());
-        assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 3);
         assert_eq!(execution_response.output, "");
     }
@@ -581,7 +557,6 @@ pub mod serverless_executor_test {
         // User code didn't return a response in the expected period
         let job_response = job_handler_unit_test(
             1.into(),
-            1.into(),
             "0x9c641b535e5586200d0f2fd81f05a39436c0d9dd35530e9fb3ca18352c3ba111".to_owned(),
             code_input_bytes.into(),
             10,
@@ -593,7 +568,6 @@ pub mod serverless_executor_test {
         assert!(job_response.execution_response.is_some());
         let execution_response = job_response.execution_response.unwrap();
         assert_eq!(execution_response.id, 1.into());
-        assert_eq!(execution_response.req_chain_id, 1.into());
         assert_eq!(execution_response.error_code, 4);
         assert_eq!(execution_response.output, "");
     }

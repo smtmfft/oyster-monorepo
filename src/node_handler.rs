@@ -29,7 +29,7 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
     let mut bytes32_key = [0u8; 32];
     if let Err(err) = hex::decode_to_slice(&key.operator_secret[2..], &mut bytes32_key) {
         return HttpResponse::BadRequest().body(format!(
-            "Failed to hex decode the key into 32 bytes: {}",
+            "Failed to hex decode the key into 32 bytes: {:?}",
             err
         ));
     }
@@ -38,7 +38,7 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
     let signer_wallet = LocalWallet::from_bytes(&bytes32_key);
     let Ok(signer_wallet) = signer_wallet else {
         return HttpResponse::BadRequest().body(format!(
-            "Invalid secret key provided: {}",
+            "Invalid secret key provided: {:?}",
             signer_wallet.unwrap_err()
         ));
     };
@@ -49,7 +49,7 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
     let http_rpc_client = Provider::<Http>::try_connect(&app_state.http_rpc_url).await;
     let Ok(http_rpc_client) = http_rpc_client else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to connect to the http rpc server {}: {}",
+            "Failed to connect to the http rpc server {}: {:?}",
             app_state.http_rpc_url,
             http_rpc_client.unwrap_err()
         ));
@@ -99,7 +99,7 @@ async fn register_enclave(
     let sig = app_state.enclave_signer_key.sign_prehash_recoverable(&hash);
     let Ok((rs, v)) = sig else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to sign the job capacity {}: {}",
+            "Failed to sign the job capacity {}: {:?}",
             app_state.job_capacity,
             sig.unwrap_err()
         ));
@@ -141,7 +141,7 @@ async fn register_enclave(
     let txn_result = send_txn(txn).await;
     let Ok(txn_receipt) = txn_result else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to register the enclave: {}",
+            "Failed to register the enclave: {:?}",
             txn_result.unwrap_err()
         ));
     };
@@ -189,7 +189,7 @@ async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
     let txn_result = send_txn(txn).await;
     let Ok(txn_receipt) = txn_result else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to deregister the enclave: {}",
+            "Failed to deregister the enclave: {:?}",
             txn_result.unwrap_err()
         ));
     };

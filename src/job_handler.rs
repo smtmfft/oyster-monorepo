@@ -24,7 +24,6 @@ use crate::workerd::ServerlessError::*;
 // Execute the job request using workerd runtime and 'cgroup' environment
 pub async fn execute_job(
     job_id: U256,
-    req_chain_id: U256,
     code_hash: String,
     code_inputs: Bytes,
     user_deadline: u64,
@@ -52,7 +51,6 @@ pub async fn execute_job(
                 let Some(signature) = sign_response(
                     &app_state.enclave_signer_key,
                     job_id,
-                    req_chain_id,
                     Bytes::new(),
                     execution_total_time,
                     1,
@@ -63,7 +61,6 @@ pub async fn execute_job(
                     .send(JobResponse {
                         execution_response: Some(ExecutionResponse {
                             id: job_id,
-                            req_chain_id: req_chain_id,
                             output: Bytes::new(),
                             error_code: 1,
                             total_time: execution_total_time,
@@ -74,7 +71,7 @@ pub async fn execute_job(
                     .await
                 {
                     eprintln!(
-                        "Failed to send execution response to transaction sender: {}",
+                        "Failed to send execution response to transaction sender: {:?}",
                         err
                     );
                 }
@@ -85,7 +82,6 @@ pub async fn execute_job(
                 let Some(signature) = sign_response(
                     &app_state.enclave_signer_key,
                     job_id,
-                    req_chain_id,
                     Bytes::new(),
                     execution_total_time,
                     2,
@@ -96,7 +92,6 @@ pub async fn execute_job(
                     .send(JobResponse {
                         execution_response: Some(ExecutionResponse {
                             id: job_id,
-                            req_chain_id: req_chain_id,
                             output: Bytes::new(),
                             error_code: 2,
                             total_time: execution_total_time,
@@ -107,7 +102,7 @@ pub async fn execute_job(
                     .await
                 {
                     eprintln!(
-                        "Failed to send execution response to transaction sender: {}",
+                        "Failed to send execution response to transaction sender: {:?}",
                         err
                     );
                 }
@@ -183,7 +178,6 @@ pub async fn execute_job(
             let Some(signature) = sign_response(
                 &app_state.enclave_signer_key,
                 job_id,
-                req_chain_id,
                 Bytes::new(),
                 execution_total_time,
                 3,
@@ -194,7 +188,6 @@ pub async fn execute_job(
                 .send(JobResponse {
                     execution_response: Some(ExecutionResponse {
                         id: job_id,
-                        req_chain_id: req_chain_id,
                         output: Bytes::new(),
                         error_code: 3,
                         total_time: execution_total_time,
@@ -205,7 +198,7 @@ pub async fn execute_job(
                 .await
             {
                 eprintln!(
-                    "Failed to send execution response to transaction sender: {}",
+                    "Failed to send execution response to transaction sender: {:?}",
                     err
                 );
             }
@@ -238,7 +231,6 @@ pub async fn execute_job(
         let Some(signature) = sign_response(
             &app_state.enclave_signer_key,
             job_id,
-            req_chain_id,
             Bytes::new(),
             execution_total_time,
             4,
@@ -249,7 +241,6 @@ pub async fn execute_job(
             .send(JobResponse {
                 execution_response: Some(ExecutionResponse {
                     id: job_id,
-                    req_chain_id: req_chain_id,
                     output: Bytes::new(),
                     error_code: 4,
                     total_time: execution_total_time,
@@ -260,7 +251,7 @@ pub async fn execute_job(
             .await
         {
             eprintln!(
-                "Failed to send execution response to transaction sender: {}",
+                "Failed to send execution response to transaction sender: {:?}",
                 err
             );
         }
@@ -275,7 +266,6 @@ pub async fn execute_job(
     let Some(signature) = sign_response(
         &app_state.enclave_signer_key,
         job_id,
-        req_chain_id,
         response.clone(),
         execution_total_time,
         0,
@@ -286,7 +276,6 @@ pub async fn execute_job(
         .send(JobResponse {
             execution_response: Some(ExecutionResponse {
                 id: job_id,
-                req_chain_id: req_chain_id,
                 output: response,
                 error_code: 0,
                 total_time: execution_total_time,
@@ -297,7 +286,7 @@ pub async fn execute_job(
         .await
     {
         eprintln!(
-            "Failed to send execution response to transaction sender: {}",
+            "Failed to send execution response to transaction sender: {:?}",
             err
         );
     }
@@ -309,13 +298,12 @@ pub async fn execute_job(
 fn sign_response(
     signer_key: &SigningKey,
     job_id: U256,
-    req_chain_id: U256,
     output: Bytes,
     total_time: u128,
     error_code: u8,
 ) -> Option<Vec<u8>> {
     let token_list = [
-        Token::Array(vec![Token::Uint(job_id), Token::Uint(req_chain_id)]),
+        Token::Array(vec![Token::Uint(job_id)]),
         Token::Bytes(output.to_owned().into()),
         Token::Array(vec![Token::Uint(total_time.into())]),
         Token::FixedBytes(vec![error_code]),
@@ -323,7 +311,7 @@ fn sign_response(
     // Encode pack the response details to prepare prehash
     let hash = keccak256(encode_packed(&token_list).unwrap());
     let Ok((rs, v)) = signer_key.sign_prehash_recoverable(&hash).map_err(|err| {
-        eprintln!("Failed to sign the response: {}", err);
+        eprintln!("Failed to sign the response: {:?}", err);
         err
     }) else {
         return None;

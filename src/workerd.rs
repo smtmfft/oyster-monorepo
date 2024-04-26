@@ -67,7 +67,7 @@ async fn get_transaction_data(tx_hash: &str, rpc: &str) -> Result<Value, reqwest
         .await
         .map_err(|err| {
             eprintln!(
-                "Failed to send the request to retrieve code transaction data: {}",
+                "Failed to send the request to retrieve code transaction data: {:?}",
                 err
             );
             err
@@ -75,7 +75,7 @@ async fn get_transaction_data(tx_hash: &str, rpc: &str) -> Result<Value, reqwest
 
     let json_response = response.json::<Value>().await.map_err(|err| {
         eprintln!(
-            "Failed to parse the response for the code transaction data: {}",
+            "Failed to parse the response for the code transaction data: {:?}",
             err
         );
         err
@@ -87,12 +87,12 @@ async fn get_transaction_data(tx_hash: &str, rpc: &str) -> Result<Value, reqwest
 // Create and write data to a file location asynchronously
 async fn create_and_populate_file(path: String, data: &[u8]) -> Result<(), tokio::io::Error> {
     let mut file = File::create(&path).await.map_err(|err| {
-        eprintln!("Failed to create the file at path {}: {}", path, err);
+        eprintln!("Failed to create the file at path {}: {:?}", path, err);
         err
     })?;
 
     file.write_all(data).await.map_err(|err| {
-        eprintln!("Failed to write to the file at path {}: {}", path, err);
+        eprintln!("Failed to write to the file at path {}: {:?}", path, err);
         err
     })?;
     Ok(())
@@ -209,7 +209,7 @@ pub fn get_port(cgroup: &str) -> Result<u16, ServerlessError> {
         .map(|x| x + 11000)
         .map_err(|err| {
             eprintln!(
-                "Failed to get the port number for cgroup {}: {}",
+                "Failed to get the port number for cgroup {}: {:?}",
                 cgroup, err
             );
             ServerlessError::BadPort(err)
@@ -231,7 +231,7 @@ pub async fn execute(
     ];
 
     Ok(Cgroups::execute(cgroup, args).map_err(|err| {
-        eprintln!("Failed to execute cgroups or the workerd service: {}", err);
+        eprintln!("Failed to execute cgroups or the workerd service: {:?}", err);
         ServerlessError::Execute
     })?)
 }
@@ -266,7 +266,7 @@ pub async fn cleanup_code_file(
     )
     .await
     .map_err(|err| {
-        eprintln!("Failed to clean up the code file: {}", err);
+        eprintln!("Failed to clean up the code file: {:?}", err);
         ServerlessError::CodeFileDelete(err)
     })?;
 
@@ -290,7 +290,7 @@ pub async fn cleanup_config_file(
     )
     .await
     .map_err(|err| {
-        eprintln!("Failed to clean up the config file: {}", err);
+        eprintln!("Failed to clean up the config file: {:?}", err);
         ServerlessError::ConfigFileDelete(err)
     })?;
 
@@ -306,7 +306,7 @@ pub async fn get_workerd_response(port: u16, inputs: Bytes) -> Result<Bytes, Ser
         .redirect(Policy::none())
         .build()
         .map_err(|err| {
-            eprintln!("Failed to build the reqwest client: {}", err);
+            eprintln!("Failed to build the reqwest client: {:?}", err);
             ServerlessError::WorkerRequestError(err)
         })?;
 
@@ -330,12 +330,12 @@ async fn client_call(
         .send()
         .await
         .map_err(|err| {
-            eprintln!("Failed to send request to the workerd port: {}", err);
+            eprintln!("Failed to send request to the workerd port: {:?}", err);
             err
         })?;
 
     Ok(response.bytes().await.map_err(|err| {
-        eprintln!("Failed to parse response from the worker: {}", err);
+        eprintln!("Failed to parse response from the worker: {:?}", err);
         err
     })?)
 }

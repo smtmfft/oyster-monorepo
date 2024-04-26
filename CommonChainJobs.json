@@ -84,12 +84,6 @@
         "type": "uint256"
       },
       {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "reqChainId",
-        "type": "uint256"
-      },
-      {
         "indexed": false,
         "internalType": "bytes32",
         "name": "codehash",
@@ -136,12 +130,6 @@
         "indexed": true,
         "internalType": "uint256",
         "name": "jobId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "reqChainId",
         "type": "uint256"
       },
       {
@@ -258,9 +246,9 @@
       },
       {
         "indexed": false,
-        "internalType": "address[]",
-        "name": "executors",
-        "type": "address[]"
+        "internalType": "address",
+        "name": "executor",
+        "type": "address"
       }
     ],
     "name": "SlashedOnExecutionTimeout",
@@ -613,11 +601,6 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "_reqChainId",
-        "type": "uint256"
-      },
-      {
         "internalType": "bytes32",
         "name": "_codehash",
         "type": "bytes32"
@@ -745,11 +728,6 @@
         "internalType": "uint256",
         "name": "_jobId",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_reqChainId",
-        "type": "uint256"
       }
     ],
     "name": "slashOnExecutionTimeout",
@@ -767,11 +745,6 @@
       {
         "internalType": "uint256",
         "name": "_jobId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_reqChainId",
         "type": "uint256"
       },
       {

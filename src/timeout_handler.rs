@@ -8,8 +8,6 @@ use crate::utils::{AppState, JobResponse};
 // Start task to handle the execution timeout scenario for a job request
 pub async fn handle_timeout(
     job_id: U256,
-    req_chain_id: U256,
-    job_key: U256,
     timeout: u64,
     app_state: Data<AppState>,
     tx: Sender<JobResponse>,
@@ -24,7 +22,7 @@ pub async fn handle_timeout(
         .job_requests_running
         .lock()
         .unwrap()
-        .contains(&job_key)
+        .contains(&job_id)
     {
         return;
     }
@@ -33,12 +31,12 @@ pub async fn handle_timeout(
     if let Err(err) = tx
         .send(JobResponse {
             execution_response: None,
-            timeout_response: Some((job_id, req_chain_id)),
+            timeout_response: Some(job_id),
         })
         .await
     {
         eprintln!(
-            "Failed to send timeout response to transaction sender: {}",
+            "Failed to send timeout response to transaction sender: {:?}",
             err
         );
     }
@@ -48,5 +46,5 @@ pub async fn handle_timeout(
         .job_requests_running
         .lock()
         .unwrap()
-        .remove(&job_key);
+        .remove(&job_id);
 }
