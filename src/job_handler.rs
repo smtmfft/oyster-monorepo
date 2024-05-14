@@ -3,8 +3,8 @@ use std::time::{Duration, Instant};
 
 use actix_web::web::{Bytes, Data};
 use anyhow::Context;
-use ethers::abi::{encode_packed, Token};
-use ethers::types::U256;
+use ethers::abi::{encode, encode_packed, Token};
+use ethers::types::{H160, U256};
 use ethers::utils::keccak256;
 use k256::ecdsa::SigningKey;
 use k256::elliptic_curve::generic_array::sequence::Lengthen;
@@ -26,13 +26,18 @@ pub async fn execute_job(
     job_id: U256,
     code_hash: String,
     code_inputs: Bytes,
-    user_deadline: u64,
+    user_deadline: u64, // time in millis
     app_state: Data<AppState>,
     tx: Sender<JobResponse>,
 ) {
     let execution_timer_start = Instant::now();
 
     let slug = &hex::encode(rand::random::<u32>().to_ne_bytes());
+
+    let Some(executor_key) = app_state.executor_operator_key.lock().unwrap().clone() else {
+        eprintln!("Executor key not found");
+        return;
+    };
 
     // Create the code file in the desired location
     if let Err(err) = workerd::create_code_file(
@@ -50,8 +55,9 @@ pub async fn execute_job(
             TxNotFound | InvalidTxToType | InvalidTxToValue(_, _) => {
                 let Some(signature) = sign_response(
                     &app_state.enclave_signer_key,
+                    executor_key,
                     job_id,
-                    Bytes::new(),
+                    &Bytes::new(),
                     execution_total_time,
                     1,
                 ) else {
@@ -81,8 +87,9 @@ pub async fn execute_job(
             InvalidTxCalldataType | BadCalldata(_) => {
                 let Some(signature) = sign_response(
                     &app_state.enclave_signer_key,
+                    executor_key,
                     job_id,
-                    Bytes::new(),
+                    &Bytes::new(),
                     execution_total_time,
                     2,
                 ) else {
@@ -168,7 +175,10 @@ pub async fn execute_job(
         let _ = workerd::cleanup_code_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
 
         let execution_total_time = total_time_passed(execution_timer_start);
-        let stderr = child.stderr.take().unwrap();
+        let Some(stderr) = child.stderr.take() else {
+            eprintln!("Failed to retrieve cgroup execution error");
+            return;
+        };
         let reader = BufReader::new(stderr);
         let stderr_lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
         let stderr_output = stderr_lines.join("\n");
@@ -177,8 +187,9 @@ pub async fn execute_job(
         if stderr_output != "" && stderr_output.contains("SyntaxError") {
             let Some(signature) = sign_response(
                 &app_state.enclave_signer_key,
+                executor_key,
                 job_id,
-                Bytes::new(),
+                &Bytes::new(),
                 execution_total_time,
                 3,
             ) else {
@@ -212,7 +223,7 @@ pub async fn execute_job(
 
     // Worker is ready, Make the request with the expected user timeout
     let response = timeout(
-        Duration::from_secs(user_deadline),
+        Duration::from_millis(user_deadline),
         workerd::get_workerd_response(port, code_inputs),
     )
     .await;
@@ -230,8 +241,9 @@ pub async fn execute_job(
     let Ok(response) = response else {
         let Some(signature) = sign_response(
             &app_state.enclave_signer_key,
+            executor_key,
             job_id,
-            Bytes::new(),
+            &Bytes::new(),
             execution_total_time,
             4,
         ) else {
@@ -265,8 +277,9 @@ pub async fn execute_job(
 
     let Some(signature) = sign_response(
         &app_state.enclave_signer_key,
+        executor_key,
         job_id,
-        response.clone(),
+        &response,
         execution_total_time,
         0,
     ) else {
@@ -297,20 +310,46 @@ pub async fn execute_job(
 // Sign the execution response with the enclave key to be verified by the jobs contract
 fn sign_response(
     signer_key: &SigningKey,
+    executor_key: H160,
     job_id: U256,
-    output: Bytes,
+    output: &Bytes,
     total_time: u128,
     error_code: u8,
 ) -> Option<Vec<u8>> {
-    let token_list = [
-        Token::Array(vec![Token::Uint(job_id)]),
-        Token::Bytes(output.to_owned().into()),
-        Token::Array(vec![Token::Uint(total_time.into())]),
-        Token::FixedBytes(vec![error_code]),
-    ];
-    // Encode pack the response details to prepare prehash
-    let hash = keccak256(encode_packed(&token_list).unwrap());
-    let Ok((rs, v)) = signer_key.sign_prehash_recoverable(&hash).map_err(|err| {
+    // Encode and hash the job response details following EIP712 format
+    let domain_separator = keccak256(encode(&[
+        Token::FixedBytes(keccak256("EIP712Domain(string name,string version)").to_vec()),
+        Token::FixedBytes(keccak256("marlin.oyster.Jobs").to_vec()),
+        Token::FixedBytes(keccak256("1").to_vec()),
+    ]));
+    let submit_output_typehash = keccak256("SubmitOutput(address executor,uint256 jobId,bytes output,uint256 totalTime,uint8 errorCode)");
+
+    let hash_struct = keccak256(encode(&[
+        Token::FixedBytes(submit_output_typehash.to_vec()),
+        Token::Address(executor_key),
+        Token::Uint(job_id),
+        Token::FixedBytes(keccak256(output).to_vec()),
+        Token::Uint(U256::from_big_endian(&total_time.to_be_bytes())),
+        Token::Uint(error_code.into()),
+    ]));
+
+    // Create the digest
+    let digest = encode_packed(&[
+        Token::String("\x19\x01".to_string()),
+        Token::FixedBytes(domain_separator.to_vec()),
+        Token::FixedBytes(hash_struct.to_vec()),
+    ]);
+    let Ok(digest) = digest else {
+        eprintln!(
+            "Failed to encode the job response for signing: {:?}",
+            digest.unwrap_err()
+        );
+        return None;
+    };
+    let digest = keccak256(digest);
+
+    // Sign the response details using enclave key
+    let Ok((rs, v)) = signer_key.sign_prehash_recoverable(&digest).map_err(|err| {
         eprintln!("Failed to sign the response: {:?}", err);
         err
     }) else {

@@ -231,7 +231,10 @@ pub async fn execute(
     ];
 
     Ok(Cgroups::execute(cgroup, args).map_err(|err| {
-        eprintln!("Failed to execute cgroups or the workerd service: {:?}", err);
+        eprintln!(
+            "Failed to execute cgroups or the workerd service: {:?}",
+            err
+        );
         ServerlessError::Execute
     })?)
 }

@@ -1,61 +1,237 @@
 [
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "_token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_relayBufferTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_executionBufferTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_noOfNodesToSelect",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_executorFeePerMs",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_stakingRewardPerMs",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_gatewayFeePerJob",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
   {
-    "anonymous": false,
+    "inputs": [],
+    "name": "AccessControlBadConfirmation",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
-        "indexed": false,
         "internalType": "address",
-        "name": "previousAdmin",
+        "name": "account",
         "type": "address"
       },
       {
-        "indexed": false,
+        "internalType": "bytes32",
+        "name": "neededRole",
+        "type": "bytes32"
+      }
+    ],
+    "name": "AccessControlUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
-        "name": "newAdmin",
+        "name": "target",
         "type": "address"
       }
     ],
-    "name": "AdminChanged",
-    "type": "event"
+    "name": "AddressEmptyCode",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ECDSAInvalidSignature",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "length",
+        "type": "uint256"
+      }
+    ],
+    "name": "ECDSAInvalidSignatureLength",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "s",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ECDSAInvalidSignatureS",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "implementation",
+        "type": "address"
+      }
+    ],
+    "name": "ERC1967InvalidImplementation",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ERC1967NonPayable",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "FailedInnerCall",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidInitialization",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsDeadlineNotOver",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsExecutionTimeOver",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsExecutorAlreadySubmittedOutput",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsInvalidJob",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsInvalidSequenceId",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsJobAlreadyRelayed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsJobMarkedEndedAsResourceUnavailable",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsNotSelectedExecutor",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsRelayTimeOver",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsUnsupportedChain",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsZeroAddressAdmin",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsZeroAddressToken",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotInitializing",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UUPSUnauthorizedCallContext",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "slot",
+        "type": "bytes32"
+      }
+    ],
+    "name": "UUPSUnsupportedProxiableUUID",
+    "type": "error"
   },
   {
     "anonymous": false,
     "inputs": [
       {
         "indexed": true,
-        "internalType": "address",
-        "name": "beacon",
-        "type": "address"
-      }
-    ],
-    "name": "BeaconUpgraded",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "uint256",
         "name": "jobId",
         "type": "uint256"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
-        "name": "prevGatewayOperator",
+        "name": "prevGateway",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
-        "name": "newGatewayOperator",
+        "name": "reporterGateway",
         "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "sequenceId",
+        "type": "uint8"
       }
     ],
     "name": "GatewayReassigned",
@@ -66,9 +242,9 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint8",
+        "internalType": "uint64",
         "name": "version",
-        "type": "uint8"
+        "type": "uint64"
       }
     ],
     "name": "Initialized",
@@ -110,7 +286,7 @@
       {
         "indexed": false,
         "internalType": "address",
-        "name": "gatewayOperator",
+        "name": "gateway",
         "type": "address"
       },
       {
@@ -121,6 +297,25 @@
       }
     ],
     "name": "JobRelayed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "jobId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "gateway",
+        "type": "address"
+      }
+    ],
+    "name": "JobResourceUnavailable",
     "type": "event"
   },
   {
@@ -239,13 +434,13 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
         "name": "jobId",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "address",
         "name": "executor",
         "type": "address"
@@ -281,46 +476,8 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_admin",
-        "type": "address"
-      },
-      {
-        "internalType": "contract IERC20",
-        "name": "_token",
-        "type": "address"
-      },
-      {
-        "internalType": "contract CommonChainGateways",
-        "name": "_gateways",
-        "type": "address"
-      },
-      {
-        "internalType": "contract CommonChainExecutors",
-        "name": "_executors",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_executionBufferTime",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_noOfNodesToSelect",
-        "type": "uint256"
-      }
-    ],
-    "name": "__CommonChainJobs_init",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [],
-    "name": "executionBufferTime",
+    "name": "EXECUTION_BUFFER_TIME",
     "outputs": [
       {
         "internalType": "uint256",
@@ -333,10 +490,101 @@
   },
   {
     "inputs": [],
+    "name": "EXECUTOR_FEE_PER_MS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "GATEWAY_FEE_PER_JOB",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NO_OF_NODES_TO_SELECT",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "RELAY_BUFFER_TIME",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "STAKING_REWARD_PER_MS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "TOKEN",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "UPGRADE_INTERFACE_VERSION",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "executors",
     "outputs": [
       {
-        "internalType": "contract CommonChainExecutors",
+        "internalType": "contract Executors",
         "name": "",
         "type": "address"
       }
@@ -349,7 +597,7 @@
     "name": "gateways",
     "outputs": [
       {
-        "internalType": "contract CommonChainGateways",
+        "internalType": "contract Gateways",
         "name": "",
         "type": "address"
       }
@@ -384,49 +632,6 @@
         "type": "bytes32"
       },
       {
-        "internalType": "uint256",
-        "name": "index",
-        "type": "uint256"
-      }
-    ],
-    "name": "getRoleMember",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "role",
-        "type": "bytes32"
-      }
-    ],
-    "name": "getRoleMemberCount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "role",
-        "type": "bytes32"
-      },
-      {
         "internalType": "address",
         "name": "account",
         "type": "address"
@@ -435,6 +640,30 @@
     "name": "grantRole",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "hasExecutedJob",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -465,30 +694,6 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_jobId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_executor",
-        "type": "address"
-      }
-    ],
-    "name": "isJobExecutor",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
         "name": "",
         "type": "uint256"
       }
@@ -497,18 +702,8 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "reqChainId",
+        "name": "jobId",
         "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "codehash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes",
-        "name": "codeInputs",
-        "type": "bytes"
       },
       {
         "internalType": "uint256",
@@ -527,26 +722,28 @@
       },
       {
         "internalType": "address",
-        "name": "gatewayOperator",
+        "name": "gateway",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "firstOutputExecutionTime",
+        "type": "uint256"
       },
       {
         "internalType": "uint8",
         "name": "outputCount",
         "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "noOfNodesToSelect",
-    "outputs": [
+      },
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "internalType": "uint8",
+        "name": "sequenceId",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "isResourceUnavailable",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -568,22 +765,145 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_gatewayOperatorOld",
-        "type": "address"
+        "internalType": "bytes32",
+        "name": "role",
+        "type": "bytes32"
       },
       {
+        "internalType": "address",
+        "name": "callerConfirmation",
+        "type": "address"
+      }
+    ],
+    "name": "renounceRole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "role",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "revokeRole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
-        "name": "_jobId",
+        "name": "",
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "selectedExecutors",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newImplementation",
+        "type": "address"
+      },
+      {
         "internalType": "bytes",
-        "name": "_signature",
+        "name": "data",
         "type": "bytes"
       }
     ],
-    "name": "reassignGatewayRelay",
+    "name": "upgradeToAndCall",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_admin",
+        "type": "address"
+      },
+      {
+        "internalType": "contract Gateways",
+        "name": "_gateways",
+        "type": "address"
+      },
+      {
+        "internalType": "contract Executors",
+        "name": "_executors",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract Gateways",
+        "name": "_gateways",
+        "type": "address"
+      }
+    ],
+    "name": "setGatewaysContract",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract Executors",
+        "name": "_executors",
+        "type": "address"
+      }
+    ],
+    "name": "setExecutorsContract",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -639,105 +959,6 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "role",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "renounceRole",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "role",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "revokeRole",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "selectedExecutors",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "contract CommonChainExecutors",
-        "name": "_executors",
-        "type": "address"
-      }
-    ],
-    "name": "setExecutorsContract",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "contract CommonChainGateways",
-        "name": "_gateways",
-        "type": "address"
-      }
-    ],
-    "name": "setGatewaysContract",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_jobId",
-        "type": "uint256"
-      }
-    ],
-    "name": "slashOnExecutionTimeout",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "bytes",
         "name": "_signature",
         "type": "bytes"
@@ -771,12 +992,17 @@
   {
     "inputs": [
       {
-        "internalType": "bytes4",
-        "name": "interfaceId",
-        "type": "bytes4"
+        "internalType": "uint256",
+        "name": "_jobId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_executor",
+        "type": "address"
       }
     ],
-    "name": "supportsInterface",
+    "name": "isJobExecutor",
     "outputs": [
       {
         "internalType": "bool",
@@ -788,27 +1014,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "token",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "newImplementation",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "_jobId",
+        "type": "uint256"
       }
     ],
-    "name": "upgradeTo",
+    "name": "slashOnExecutionTimeout",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -817,18 +1030,57 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "newImplementation",
+        "name": "_gatewayOld",
         "type": "address"
       },
       {
+        "internalType": "uint256",
+        "name": "_jobId",
+        "type": "uint256"
+      },
+      {
         "internalType": "bytes",
-        "name": "data",
+        "name": "_signature",
         "type": "bytes"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_sequenceId",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_jobRequestTimestamp",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_jobOwner",
+        "type": "address"
       }
     ],
-    "name": "upgradeToAndCall",
+    "name": "reassignGatewayRelay",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_jobId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getSelectedExecutors",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]

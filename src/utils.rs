@@ -7,7 +7,7 @@ use ethers::contract::{abigen, FunctionCall};
 use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
 use ethers::providers::{Http, Provider, Ws};
 use ethers::signers::LocalWallet;
-use ethers::types::{Address, TransactionReceipt, U256};
+use ethers::types::{Address, TransactionReceipt, H160, U256};
 use ethers::utils::keccak256;
 use k256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
@@ -16,15 +16,15 @@ use crate::cgroups::Cgroups;
 
 // Generate type-safe ABI bindings for the Executors contract at compile time
 abigen!(
-    CommonChainExecutors,
-    "CommonChainExecutors.json",
+    Executors,
+    "Executors.json",
     derives(serde::Serialize, serde::Deserialize)
 );
 
 // Generate type-safe ABI bindings for the Jobs contract at compile time
 abigen!(
-    CommonChainJobs,
-    "CommonChainJobs.json",
+    Jobs,
+    "Jobs.json",
     derives(serde::Serialize, serde::Deserialize)
 );
 
@@ -35,14 +35,15 @@ pub struct AppState {
     pub job_capacity: usize,
     pub cgroups: Mutex<Cgroups>,
     pub registered: Mutex<bool>,
+    pub num_selected_executors: u8,
     pub common_chain_id: u64,
     pub http_rpc_url: String,
-    pub executors_contract_addr: Address,
-    pub executors_contract_object: Mutex<Option<CommonChainExecutors<HttpSignerProvider>>>,
-    pub jobs_contract_addr: Address,
-    pub jobs_contract_object: Mutex<Option<CommonChainJobs<HttpSignerProvider>>>,
-    pub code_contract_addr: String,
+    pub http_rpc_client: Mutex<Option<Arc<HttpSignerProvider>>>,
     pub web_socket_client: Provider<Ws>,
+    pub executors_contract_addr: Address,
+    pub jobs_contract_addr: Address,
+    pub code_contract_addr: String,
+    pub executor_operator_key: Mutex<Option<H160>>,
     pub enclave_signer_key: SigningKey,
     pub enclave_pub_key: Bytes,
     pub workerd_runtime_path: String,

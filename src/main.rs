@@ -45,11 +45,14 @@ struct Args {
     #[clap(long, value_parser, default_value = "/app/id.sec")]
     enclave_signer_file: String,
 
-    #[clap(long, value_parser, default_value = "10")]
-    execution_buffer_time: u64,
-
     #[clap(long, value_parser, default_value = "/app/id.pub")]
     enclave_pub_key_file: String,
+
+    #[clap(long, value_parser, default_value = "10")]
+    execution_buffer_time: u64, // time in seconds
+
+    #[clap(long, value_parser, default_value = "1")]
+    num_selected_executors: u8,
 }
 
 #[tokio::main]
@@ -90,20 +93,21 @@ async fn main() -> Result<()> {
         job_capacity: cgroups.free.len(),
         cgroups: cgroups.into(),
         registered: false.into(),
+        num_selected_executors: cli.num_selected_executors,
         common_chain_id: cli.common_chain_id,
         http_rpc_url: cli.http_rpc_url,
+        http_rpc_client: None.into(),
+        web_socket_client: web_socket_client,
         executors_contract_addr: cli
             .executors_contract_addr
             .parse::<Address>()
             .context("Invalid common chain executors contract address")?,
-        executors_contract_object: None.into(),
         jobs_contract_addr: cli
             .jobs_contract_addr
             .parse::<Address>()
             .context("Invalid common chain jobs contract address")?,
-        jobs_contract_object: None.into(),
         code_contract_addr: cli.code_contract_addr,
-        web_socket_client: web_socket_client,
+        executor_operator_key: None.into(),
         enclave_signer_key: enclave_signer_key,
         enclave_pub_key: enclave_pub_key.into(),
         workerd_runtime_path: cli.workerd_runtime_path,
