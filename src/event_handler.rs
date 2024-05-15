@@ -5,12 +5,13 @@ use ethers::abi::{decode, ParamType};
 use ethers::providers::{Middleware, StreamExt};
 use ethers::types::{Address, BigEndianHash, Filter, Log};
 use ethers::utils::keccak256;
+use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio_stream::Stream;
 
 use crate::job_handler::execute_job;
 use crate::timeout_handler::handle_timeout;
-use crate::utils::{pub_key_to_address, send_txn, AppState, HttpSignerProvider, JobResponse, Jobs};
+use crate::utils::{send_txn, AppState, HttpSignerProvider, JobResponse, Jobs};
 
 // Start listening to relevant events emitted by the common chain executors and jobs contract
 pub async fn run_job_listener_channel(app_state: Data<AppState>) {
@@ -41,8 +42,9 @@ pub async fn run_job_listener_channel(app_state: Data<AppState>) {
 
     // Create tokio mpsc channel to receive contract events and send transactions to them
     let (tx, rx) = channel::<JobResponse>(100);
+    // Create tokio mpsc channel to relay abort signal to the listeners
+    let (abort_tx, abort_rx) = channel::<()>(1);
     let app_state_clone = app_state.clone();
-    let tx_clone = tx.clone();
 
     tokio::spawn(async move {
         send_execution_output(jobs_contract_object, rx).await;
@@ -68,9 +70,9 @@ pub async fn run_job_listener_channel(app_state: Data<AppState>) {
         };
         let executors_stream = std::pin::pin!(executors_stream);
 
-        handle_event_logs(executors_stream, app_state_clone, tx_clone).await;
+        handle_executors_logs(executors_stream, app_state_clone, abort_tx).await;
     });
-    handle_event_logs(jobs_stream, app_state_clone, tx).await;
+    handle_jobs_logs(jobs_stream, app_state_clone, tx, abort_rx).await;
 }
 
 // Receive job execution responses and send the resulting transactions to the common chain
@@ -119,16 +121,69 @@ async fn send_execution_output(
     }
 }
 
-// Start listening to the subscribed logs
-async fn handle_event_logs(
+// Listen to the executors contract event logs and process them accordingly
+async fn handle_executors_logs(
+    mut stream: impl Stream<Item = Log> + Unpin,
+    app_state: Data<AppState>,
+    abort_tx: Sender<()>,
+) {
+    while let Some(event) = stream.next().await {
+        if event.removed.unwrap_or(false) {
+            continue;
+        }
+
+        // Capture the Executor deregistered event emitted by the executors contract
+        if event.topics[0] == keccak256("ExecutorDeregistered(address)").into() {
+            let Ok(deregistered_executor_bytes): Result<[u8; 20], TryFromSliceError> =
+                event.topics[1].0[12..].try_into().map_err(|err| {
+                    eprintln!(
+                        "Failed to parse the executor address from deregistered event: {:?}",
+                        err
+                    );
+                    err
+                })
+            else {
+                continue;
+            };
+            let deregistered_executor = Address::from_slice(&deregistered_executor_bytes);
+
+            let Some(executor_key) = app_state.executor_operator_key.lock().unwrap().clone() else {
+                eprintln!("Executor key not found");
+                continue;
+            };
+
+            // Check if the executor has been deregistered and mark it as deregistered accordingly
+            if executor_key == deregistered_executor {
+                println!("Enclave deregistered: Executors event listening stopped!");
+                *app_state.registered.lock().unwrap() = false;
+
+                if let Err(err) = abort_tx.send(()).await {
+                    eprintln!(
+                        "Failed to send deregistration signal to transaction sender: {:?}",
+                        err
+                    );
+                }
+
+                return;
+            }
+        }
+    }
+}
+
+// Listen to the jobs contract event logs and process them accordingly
+async fn handle_jobs_logs(
     mut stream: impl Stream<Item = Log> + Unpin,
     app_state: Data<AppState>,
     tx: Sender<JobResponse>,
+    mut abort_rx: Receiver<()>,
 ) {
-    while let Some(event) = stream.next().await {
-        // Stop listening to the events if the executor has been deregistered
+    loop {
+        select! {
+            event = stream.next() => {
+                if let Some(event) = event {
+                    // Stop listening to the events if the executor has been deregistered
         if *app_state.registered.lock().unwrap() == false {
-            eprintln!("Enclave deregistered!");
+            println!("Enclave deregistered!");
             return;
         }
 
@@ -213,26 +268,27 @@ async fn handle_event_logs(
                 .unwrap()
                 .insert(job_id);
 
-            let app_state_1 = app_state.clone();
-            let tx_1 = tx.clone();
+            let app_state_clone = app_state.clone();
+            let tx_clone = tx.clone();
+
             tokio::spawn(async move {
-                handle_timeout(job_id, user_deadline.as_u64(), app_state_1, tx_1).await;
+                handle_timeout(job_id, user_deadline.as_u64(), app_state_clone, tx_clone).await;
             });
 
             if is_node_selected {
                 let code_hash =
                     String::from("0x".to_owned() + &data_encoding::HEXLOWER.encode(&code_hash));
+                let app_state_clone = app_state.clone();
+                let tx_clone = tx.clone();
 
-                let app_state_2 = app_state.clone();
-                let tx_2 = tx.clone();
                 tokio::spawn(async move {
                     execute_job(
                         job_id,
                         code_hash,
                         code_inputs.into(),
                         user_deadline.as_u64(),
-                        app_state_2,
-                        tx_2,
+                        app_state_clone,
+                        tx_clone,
                     )
                     .await;
                 });
@@ -280,35 +336,14 @@ async fn handle_event_logs(
                     .remove(&job_id);
             }
         }
-        // Capture the Executor deregistered event emitted by the executors contract
-        else if event.topics[0] == keccak256("ExecutorDeregistered(address)").into() {
-            let Ok(enclave_key_bytes): Result<[u8; 20], TryFromSliceError> =
-                event.topics[1].0[12..].try_into().map_err(|err| {
-                    eprintln!(
-                        "Failed to parse the address from executor deregistered event: {:?}",
-                        err
-                    );
-                    err
-                })
-            else {
-                continue;
-            };
-            let enclave_key = Address::from_slice(&enclave_key_bytes);
-
-            let current_enclave = pub_key_to_address(app_state.enclave_pub_key.as_ref());
-            let Ok(current_enclave) = current_enclave else {
-                eprintln!(
-                    "Failed to parse the enclave public key into eth address: {:?}",
-                    current_enclave.unwrap_err()
-                );
-                continue;
-            };
-
-            // Check if the executor has been deregistered and mark it as deregistered accordingly
-            if current_enclave == enclave_key {
-                *app_state.registered.lock().unwrap() = false;
-                eprintln!("Enclave deregistered!");
-                return;
+                }
+            }
+            abort_signal = abort_rx.recv() => {
+                // Stop the job listener after getting deregistered signal
+                if let Some(_) = abort_signal {
+                    println!("Enclave Deregistered: Jobs event listening stopped!");
+                    return;
+                }
             }
         }
     }
