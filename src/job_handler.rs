@@ -223,7 +223,7 @@ pub async fn execute_job(
 
     // Worker is ready, Make the request with the expected user timeout
     let response = timeout(
-        Duration::from_millis(user_deadline),
+        Duration::from_millis(user_deadline - (total_time_passed(execution_timer_start) as u64)),
         workerd::get_workerd_response(port, code_inputs),
     )
     .await;

@@ -30,7 +30,7 @@ impl Cgroups {
         self.free.push(cgroup);
     }
 
-    // Allot the user code to a 'cgroup' that'll provide memory and cpu for its execution
+    // Execute the user code using workerd config in the given 'cgroup' which'll provide memory and cpu for the purpose
     pub fn execute(
         cgroup: &str,
         args: impl IntoIterator<Item = impl AsRef<OsStr>>,

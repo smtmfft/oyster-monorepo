@@ -118,7 +118,7 @@ pub async fn create_code_file(
         other => Ok(other),
     }?;
 
-    // Get contract address to which the transaction is send
+    // Get contract address to which the user code transaction is sent
     let contract_address = match tx_data["to"].take() {
         Value::String(value) => Ok(value),
         _ => Err(ServerlessError::InvalidTxToType),
