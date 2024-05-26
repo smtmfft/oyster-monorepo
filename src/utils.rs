@@ -8,7 +8,6 @@ use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
 use ethers::providers::{Http, Provider, Ws};
 use ethers::signers::LocalWallet;
 use ethers::types::{Address, TransactionReceipt, H160, U256};
-use ethers::utils::keccak256;
 use k256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
 
@@ -72,17 +71,6 @@ pub struct ExecutionResponse {
     pub output: Bytes,
     pub error_code: u8,
     pub total_time: U256,
-}
-
-// Convert the 64 bytes 'secp256k1' public key to 20 bytes unique address
-pub fn pub_key_to_address(pub_key: &[u8]) -> Result<Address> {
-    if pub_key.len() != 64 {
-        return Err(anyhow!("Public key is not 64 bytes"));
-    }
-
-    let hash = keccak256(pub_key);
-    let addr_bytes: [u8; 20] = hash[12..].try_into()?;
-    Ok(Address::from_slice(&addr_bytes))
 }
 
 // Send a signed transaction to the rpc network and report its confirmation or rejection

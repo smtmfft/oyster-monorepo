@@ -6,12 +6,13 @@ use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ethers::providers::{Provider, Ws};
 use ethers::types::Address;
+use ethers::utils::public_key_to_address;
 use k256::ecdsa::SigningKey;
 use tokio::fs;
 
 use serverless::cgroups::Cgroups;
 use serverless::node_handler::{export, index, inject};
-use serverless::utils::{pub_key_to_address, AppState};
+use serverless::utils::AppState;
 
 // EXECUTOR CONFIGURATION PARAMETERS
 #[derive(Parser, Debug)]
@@ -45,9 +46,6 @@ struct Args {
     #[clap(long, value_parser, default_value = "/app/id.sec")]
     enclave_signer_file: String,
 
-    #[clap(long, value_parser, default_value = "/app/id.pub")]
-    enclave_pub_key_file: String,
-
     #[clap(long, value_parser, default_value = "10")]
     execution_buffer_time: u64, // time in seconds
 
@@ -75,12 +73,8 @@ async fn main() -> Result<()> {
     )
     .context("Invalid enclave signer key")?;
 
-    let enclave_pub_key = fs::read(cli.enclave_pub_key_file)
-        .await
-        .context("Failed to read the enclave public key")?;
-
     let enclave_address =
-        pub_key_to_address(&enclave_pub_key).context("Failed to calculate enclave address")?;
+        public_key_to_address(&enclave_signer_key.verifying_key());
 
     // Connect to the rpc web socket provider
     let web_socket_client = Provider::<Ws>::connect_with_reconnects(cli.web_socket_url, 5)
