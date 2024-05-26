@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fs;
 use std::process::{Child, Command, Stdio};
@@ -6,7 +7,7 @@ use anyhow::{anyhow, Context, Result};
 
 // Struct to keep track of the free 'cgroups' available to execute code
 pub struct Cgroups {
-    pub free: Vec<String>,
+    pub free: HashSet<String>,
 }
 
 impl Cgroups {
@@ -18,16 +19,20 @@ impl Cgroups {
 
     // Reserve a 'cgroup' and remove it from the free list
     pub fn reserve(&mut self) -> Result<String> {
-        if self.free.len() == 0 {
+        if self.free.is_empty() {
             return Err(anyhow!(""));
         }
 
-        Ok(self.free.swap_remove(0))
+        let Some(cgroup) = self.free.drain().next() else {
+            return Err(anyhow!(""));
+        };
+
+        Ok(cgroup)
     }
 
     // Release a 'cgroup' and add it back to the free list
     pub fn release(&mut self, cgroup: String) {
-        self.free.push(cgroup);
+        self.free.insert(cgroup);
     }
 
     // Execute the user code using workerd config in the given 'cgroup' which'll provide memory and cpu for the purpose
@@ -47,7 +52,7 @@ impl Cgroups {
 }
 
 // Retrieve the names of the 'cgroups' generated inside the enclave to host user code for execution by workerd runtime
-fn get_cgroups() -> Result<Vec<String>> {
+fn get_cgroups() -> Result<HashSet<String>> {
     Ok(fs::read_dir("/sys/fs/cgroup")
         .context("Failed to read the directory /sys/fs/cgroup")?
         .filter_map(|dir| {

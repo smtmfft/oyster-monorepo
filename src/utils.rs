@@ -14,13 +14,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::cgroups::Cgroups;
 
-// Generate type-safe ABI bindings for the Executors contract at compile time
-abigen!(
-    Executors,
-    "Executors.json",
-    derives(serde::Serialize, serde::Deserialize)
-);
-
 // Generate type-safe ABI bindings for the Jobs contract at compile time
 abigen!(
     Jobs,
@@ -35,6 +28,7 @@ pub struct AppState {
     pub job_capacity: usize,
     pub cgroups: Mutex<Cgroups>,
     pub registered: Mutex<bool>,
+    pub register_listener_active: Mutex<bool>,
     pub num_selected_executors: u8,
     pub common_chain_id: u64,
     pub http_rpc_url: String,
@@ -43,46 +37,47 @@ pub struct AppState {
     pub executors_contract_addr: Address,
     pub jobs_contract_addr: Address,
     pub code_contract_addr: String,
-    pub executor_operator_key: Mutex<Option<H160>>,
-    pub enclave_signer_key: SigningKey,
-    pub enclave_pub_key: Bytes,
+    pub enclave_owner: Mutex<Option<H160>>,
+    pub enclave_address: H160,
+    pub enclave_signer: SigningKey,
     pub workerd_runtime_path: String,
     pub job_requests_running: Mutex<HashSet<U256>>,
     pub execution_buffer_time: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct InjectKeyInfo {
-    pub operator_secret: String,
+pub struct InjectInfo {
+    pub owner_address: String,
+    pub gas_key: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RegisterEnclaveInfo {
-    pub attestation: String,
-    pub pcr_0: String,
-    pub pcr_1: String,
-    pub pcr_2: String,
+pub struct Attestation {
     pub timestamp: usize,
-    pub stake_amount: usize,
 }
 
 pub struct JobResponse {
-    pub execution_response: Option<ExecutionResponse>,
+    pub job_output: Option<JobOutput>,
     pub timeout_response: Option<U256>,
 }
 
-pub struct ExecutionResponse {
+pub struct JobOutput {
+    pub signature: Bytes,
     pub id: U256,
+    pub execution_response: ExecutionResponse,
+    pub sign_timestamp: U256,
+}
+
+pub struct ExecutionResponse {
     pub output: Bytes,
     pub error_code: u8,
-    pub total_time: u128,
-    pub signature: Bytes,
+    pub total_time: U256,
 }
 
 // Convert the 64 bytes 'secp256k1' public key to 20 bytes unique address
 pub fn pub_key_to_address(pub_key: &[u8]) -> Result<Address> {
     if pub_key.len() != 64 {
-        return Err(anyhow!("Invalid public key length"));
+        return Err(anyhow!("Public key is not 64 bytes"));
     }
 
     let hash = keccak256(pub_key);

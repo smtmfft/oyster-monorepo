@@ -3,12 +3,17 @@
     "inputs": [
       {
         "internalType": "contract IERC20",
-        "name": "_token",
+        "name": "_stakingToken",
+        "type": "address"
+      },
+      {
+        "internalType": "contract IERC20",
+        "name": "_usdcToken",
         "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "_relayBufferTime",
+        "name": "_signMaxAge",
         "type": "uint256"
       },
       {
@@ -32,9 +37,19 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "_gatewayFeePerJob",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "_stakingPaymentPoolAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_usdcPaymentPoolAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "contract Executors",
+        "name": "_executors",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -70,6 +85,17 @@
       }
     ],
     "name": "AddressEmptyCode",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "AddressInsufficientBalance",
     "type": "error"
   },
   {
@@ -157,17 +183,22 @@
   },
   {
     "inputs": [],
-    "name": "JobsJobMarkedEndedAsResourceUnavailable",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "JobsNotSelectedExecutor",
     "type": "error"
   },
   {
     "inputs": [],
     "name": "JobsRelayTimeOver",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsSignatureTooOld",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsUnavailableResources",
     "type": "error"
   },
   {
@@ -182,12 +213,28 @@
   },
   {
     "inputs": [],
-    "name": "JobsZeroAddressToken",
+    "name": "JobsZeroAddressStakingToken",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "JobsZeroAddressUsdcToken",
     "type": "error"
   },
   {
     "inputs": [],
     "name": "NotInitializing",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
     "type": "error"
   },
   {
@@ -205,37 +252,6 @@
     ],
     "name": "UUPSUnsupportedProxiableUUID",
     "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "jobId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "prevGateway",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "reporterGateway",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "sequenceId",
-        "type": "uint8"
-      }
-    ],
-    "name": "GatewayReassigned",
-    "type": "event"
   },
   {
     "anonymous": false,
@@ -260,6 +276,12 @@
         "type": "uint256"
       },
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "jobOwner",
+        "type": "address"
+      },
+      {
         "indexed": false,
         "internalType": "bytes32",
         "name": "codehash",
@@ -279,43 +301,12 @@
       },
       {
         "indexed": false,
-        "internalType": "address",
-        "name": "jobOwner",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "gateway",
-        "type": "address"
-      },
-      {
-        "indexed": false,
         "internalType": "address[]",
         "name": "selectedExecutors",
         "type": "address[]"
       }
     ],
-    "name": "JobRelayed",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "jobId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "gateway",
-        "type": "address"
-      }
-    ],
-    "name": "JobResourceUnavailable",
+    "name": "JobCreated",
     "type": "event"
   },
   {
@@ -353,6 +344,44 @@
       }
     ],
     "name": "JobResponded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "jobId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "callback_success",
+        "type": "bool"
+      }
+    ],
+    "name": "JobSucceeded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "jobId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "callback_success",
+        "type": "bool"
+      }
+    ],
+    "name": "JobTimeoutFailure",
     "type": "event"
   },
   {
@@ -442,7 +471,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "executor",
+        "name": "enclaveAddress",
         "type": "address"
       }
     ],
@@ -490,12 +519,12 @@
   },
   {
     "inputs": [],
-    "name": "EXECUTOR_FEE_PER_MS",
+    "name": "EXECUTORS",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "contract Executors",
         "name": "",
-        "type": "uint256"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -503,7 +532,7 @@
   },
   {
     "inputs": [],
-    "name": "GATEWAY_FEE_PER_JOB",
+    "name": "EXECUTOR_FEE_PER_MS",
     "outputs": [
       {
         "internalType": "uint256",
@@ -529,12 +558,25 @@
   },
   {
     "inputs": [],
-    "name": "RELAY_BUFFER_TIME",
+    "name": "SIGN_MAX_AGE",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "STAKING_PAYMENT_POOL",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -555,7 +597,7 @@
   },
   {
     "inputs": [],
-    "name": "TOKEN",
+    "name": "STAKING_TOKEN",
     "outputs": [
       {
         "internalType": "contract IERC20",
@@ -581,10 +623,10 @@
   },
   {
     "inputs": [],
-    "name": "executors",
+    "name": "USDC_PAYMENT_POOL",
     "outputs": [
       {
-        "internalType": "contract Executors",
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -594,10 +636,10 @@
   },
   {
     "inputs": [],
-    "name": "gateways",
+    "name": "USDC_TOKEN",
     "outputs": [
       {
-        "internalType": "contract Gateways",
+        "internalType": "contract IERC20",
         "name": "",
         "type": "address"
       }
@@ -645,30 +687,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "hasExecutedJob",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
@@ -702,11 +720,6 @@
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "jobId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
         "name": "deadline",
         "type": "uint256"
       },
@@ -716,34 +729,19 @@
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "executionTime",
+        "type": "uint256"
+      },
+      {
         "internalType": "address",
         "name": "jobOwner",
         "type": "address"
       },
       {
-        "internalType": "address",
-        "name": "gateway",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "firstOutputExecutionTime",
-        "type": "uint256"
-      },
-      {
         "internalType": "uint8",
         "name": "outputCount",
         "type": "uint8"
-      },
-      {
-        "internalType": "uint8",
-        "name": "sequenceId",
-        "type": "uint8"
-      },
-      {
-        "internalType": "bool",
-        "name": "isResourceUnavailable",
-        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -801,30 +799,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "selectedExecutors",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "newImplementation",
         "type": "address"
@@ -865,16 +839,6 @@
         "internalType": "address",
         "name": "_admin",
         "type": "address"
-      },
-      {
-        "internalType": "contract Gateways",
-        "name": "_gateways",
-        "type": "address"
-      },
-      {
-        "internalType": "contract Executors",
-        "name": "_executors",
-        "type": "address"
       }
     ],
     "name": "initialize",
@@ -884,42 +848,6 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "contract Gateways",
-        "name": "_gateways",
-        "type": "address"
-      }
-    ],
-    "name": "setGatewaysContract",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "contract Executors",
-        "name": "_executors",
-        "type": "address"
-      }
-    ],
-    "name": "setExecutorsContract",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes",
-        "name": "_signature",
-        "type": "bytes"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_jobId",
-        "type": "uint256"
-      },
       {
         "internalType": "bytes32",
         "name": "_codehash",
@@ -934,25 +862,16 @@
         "internalType": "uint256",
         "name": "_deadline",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_jobRequestTimestamp",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "_sequenceId",
-        "type": "uint8"
-      },
-      {
-        "internalType": "address",
-        "name": "_jobOwner",
-        "type": "address"
       }
     ],
-    "name": "relayJob",
-    "outputs": [],
+    "name": "createJob",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -982,6 +901,11 @@
         "internalType": "uint8",
         "name": "_errorCode",
         "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_signTimestamp",
+        "type": "uint256"
       }
     ],
     "name": "submitOutput",
@@ -998,7 +922,7 @@
       },
       {
         "internalType": "address",
-        "name": "_executor",
+        "name": "_enclaveAddress",
         "type": "address"
       }
     ],
@@ -1022,44 +946,6 @@
       }
     ],
     "name": "slashOnExecutionTimeout",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_gatewayOld",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_jobId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "_signature",
-        "type": "bytes"
-      },
-      {
-        "internalType": "uint8",
-        "name": "_sequenceId",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_jobRequestTimestamp",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_jobOwner",
-        "type": "address"
-      }
-    ],
-    "name": "reassignGatewayRelay",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

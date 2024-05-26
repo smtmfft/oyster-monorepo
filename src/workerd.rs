@@ -1,3 +1,4 @@
+use std::io::ErrorKind;
 use std::process::Child;
 use std::time::{Duration, Instant};
 
@@ -46,58 +47,6 @@ pub enum ServerlessError {
     BadPort(#[source] std::num::ParseIntError),
 }
 
-// Retrieve user code data transaction data from the http rpc url
-async fn get_transaction_data(tx_hash: &str, rpc: &str) -> Result<Value, reqwest::Error> {
-    let client = Client::new();
-    let method = "eth_getTransactionByHash";
-    let params = json!([&tx_hash]);
-    let id = 1;
-
-    let request = json!({
-        "jsonrpc": "2.0",
-        "method": method,
-        "params": params,
-        "id": id,
-    });
-
-    let response = client
-        .post(rpc)
-        .json(&request)
-        .send()
-        .await
-        .map_err(|err| {
-            eprintln!(
-                "Failed to send the request to retrieve code transaction data: {:?}",
-                err
-            );
-            err
-        })?;
-
-    let json_response = response.json::<Value>().await.map_err(|err| {
-        eprintln!(
-            "Failed to parse the response for the code transaction data: {:?}",
-            err
-        );
-        err
-    })?;
-
-    Ok(json_response)
-}
-
-// Create and write data to a file location asynchronously
-async fn create_and_populate_file(path: String, data: &[u8]) -> Result<(), tokio::io::Error> {
-    let mut file = File::create(&path).await.map_err(|err| {
-        eprintln!("Failed to create the file at path {}: {:?}", path, err);
-        err
-    })?;
-
-    file.write_all(data).await.map_err(|err| {
-        eprintln!("Failed to write to the file at path {}: {:?}", path, err);
-        err
-    })?;
-    Ok(())
-}
-
 pub async fn create_code_file(
     tx_hash: &str,
     slug: &str,
@@ -107,7 +56,7 @@ pub async fn create_code_file(
 ) -> Result<(), ServerlessError> {
     // Get code transaction data from its hash
     let mut tx_data = match Retry::spawn(
-        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        ExponentialBackoff::from_millis(5).map(jitter).take(3),
         || async { get_transaction_data(tx_hash, rpc).await },
     )
     .await
@@ -147,7 +96,7 @@ pub async fn create_code_file(
 
     // Write calldata to the desired file location
     Retry::spawn(
-        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        ExponentialBackoff::from_millis(5).map(jitter).take(3),
         || async {
             create_and_populate_file(
                 workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".js",
@@ -188,7 +137,7 @@ const oysterWorker :Workerd.Worker = (
 
     // Write config to the desired file location
     Retry::spawn(
-        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        ExponentialBackoff::from_millis(5).map(jitter).take(3),
         || async {
             create_and_populate_file(
                 workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".capnp",
@@ -259,7 +208,7 @@ pub async fn cleanup_code_file(
     workerd_runtime_path: &str,
 ) -> Result<(), ServerlessError> {
     Retry::spawn(
-        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        ExponentialBackoff::from_millis(5).map(jitter).take(3),
         || async {
             tokio::fs::remove_file(
                 workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".js",
@@ -269,7 +218,9 @@ pub async fn cleanup_code_file(
     )
     .await
     .map_err(|err| {
-        eprintln!("Failed to clean up the code file: {:?}", err);
+        if err.kind() != ErrorKind::NotFound {
+            eprintln!("Failed to clean up the code file: {:?}", err);
+        }
         ServerlessError::CodeFileDelete(err)
     })?;
 
@@ -283,7 +234,7 @@ pub async fn cleanup_config_file(
     workerd_runtime_path: &str,
 ) -> Result<(), ServerlessError> {
     Retry::spawn(
-        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        ExponentialBackoff::from_millis(5).map(jitter).take(3),
         || async {
             tokio::fs::remove_file(
                 workerd_runtime_path.to_owned() + "/" + tx_hash + "-" + slug + ".capnp",
@@ -293,7 +244,9 @@ pub async fn cleanup_config_file(
     )
     .await
     .map_err(|err| {
-        eprintln!("Failed to clean up the config file: {:?}", err);
+        if err.kind() != ErrorKind::NotFound {
+            eprintln!("Failed to clean up the config file: {:?}", err);
+        }
         ServerlessError::ConfigFileDelete(err)
     })?;
 
@@ -314,11 +267,64 @@ pub async fn get_workerd_response(port: u16, inputs: Bytes) -> Result<Bytes, Ser
         })?;
 
     Ok(Retry::spawn(
-        ExponentialBackoff::from_millis(10).map(jitter).take(3),
+        ExponentialBackoff::from_millis(5).map(jitter).take(3),
         || async { client_call(&client, &req_url, &inputs).await },
     )
     .await
     .map_err(ServerlessError::WorkerRequestError)?)
+}
+
+// Retrieve user code data transaction data from the http rpc url
+async fn get_transaction_data(tx_hash: &str, rpc: &str) -> Result<Value, reqwest::Error> {
+    let client = Client::new();
+    let method = "eth_getTransactionByHash";
+    let params = json!([&tx_hash]);
+    let id = 1;
+
+    let request = json!({
+        "jsonrpc": "2.0",
+        "method": method,
+        "params": params,
+        "id": id,
+    });
+
+    let response = client
+        .post(rpc)
+        .json(&request)
+        .send()
+        .await
+        .map_err(|err| {
+            eprintln!(
+                "Failed to send the request to retrieve code transaction data: {:?}",
+                err
+            );
+            err
+        })?;
+
+    let json_response = response.json::<Value>().await.map_err(|err| {
+        eprintln!(
+            "Failed to parse the response for the code transaction data: {:?}",
+            err
+        );
+        err
+    })?;
+
+    Ok(json_response)
+}
+
+// Create and write data to a file location asynchronously
+async fn create_and_populate_file(path: String, data: &[u8]) -> Result<(), tokio::io::Error> {
+    let mut file = File::create(&path).await.map_err(|err| {
+        eprintln!("Failed to create the file at path {}: {:?}", path, err);
+        err
+    })?;
+
+    file.write_all(data).await.map_err(|err| {
+        eprintln!("Failed to write to the file at path {}: {:?}", path, err);
+        err
+    })?;
+
+    Ok(())
 }
 
 // Make post request to an url using the inputs provided and the reqwest client and parse the response

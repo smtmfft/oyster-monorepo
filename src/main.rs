@@ -10,8 +10,8 @@ use k256::ecdsa::SigningKey;
 use tokio::fs;
 
 use serverless::cgroups::Cgroups;
-use serverless::node_handler::{deregister_enclave, index, inject_key, register_enclave};
-use serverless::utils::AppState;
+use serverless::node_handler::{export, index, inject};
+use serverless::utils::{pub_key_to_address, AppState};
 
 // EXECUTOR CONFIGURATION PARAMETERS
 #[derive(Parser, Debug)]
@@ -79,9 +79,8 @@ async fn main() -> Result<()> {
         .await
         .context("Failed to read the enclave public key")?;
 
-    if enclave_pub_key.len() != 64 {
-        return Err(anyhow!("Enclave public key is not 64 bytes"));
-    }
+    let enclave_address =
+        pub_key_to_address(&enclave_pub_key).context("Failed to calculate enclave address")?;
 
     // Connect to the rpc web socket provider
     let web_socket_client = Provider::<Ws>::connect_with_reconnects(cli.web_socket_url, 5)
@@ -93,6 +92,7 @@ async fn main() -> Result<()> {
         job_capacity: cgroups.free.len(),
         cgroups: cgroups.into(),
         registered: false.into(),
+        register_listener_active: false.into(),
         num_selected_executors: cli.num_selected_executors,
         common_chain_id: cli.common_chain_id,
         http_rpc_url: cli.http_rpc_url,
@@ -107,9 +107,9 @@ async fn main() -> Result<()> {
             .parse::<Address>()
             .context("Invalid common chain jobs contract address")?,
         code_contract_addr: cli.code_contract_addr,
-        executor_operator_key: None.into(),
-        enclave_signer_key: enclave_signer_key,
-        enclave_pub_key: enclave_pub_key.into(),
+        enclave_owner: None.into(),
+        enclave_address: enclave_address,
+        enclave_signer: enclave_signer_key,
         workerd_runtime_path: cli.workerd_runtime_path,
         job_requests_running: HashSet::new().into(),
         execution_buffer_time: cli.execution_buffer_time,
@@ -120,9 +120,8 @@ async fn main() -> Result<()> {
         App::new()
             .app_data(app_data.clone())
             .service(index)
-            .service(inject_key)
-            .service(register_enclave)
-            .service(deregister_enclave)
+            .service(inject)
+            .service(export)
     })
     .bind(("0.0.0.0", cli.port))
     .context(format!("could not bind to port {}", cli.port))?

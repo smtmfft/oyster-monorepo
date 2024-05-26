@@ -30,13 +30,13 @@ pub async fn handle_timeout(
     // Send job response with timeout counterpart
     if let Err(err) = tx
         .send(JobResponse {
-            execution_response: None,
+            job_output: None,
             timeout_response: Some(job_id),
         })
         .await
     {
         eprintln!(
-            "Failed to send timeout response to transaction sender: {:?}",
+            "Failed to send timeout response to receiver channel: {:?}",
             err
         );
     }

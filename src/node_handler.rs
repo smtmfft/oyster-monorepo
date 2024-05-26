@@ -1,49 +1,57 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use actix_web::web::{Data, Json};
-use actix_web::{delete, get, post, HttpResponse, Responder};
+use actix_web::{get, post, HttpResponse, Responder};
 use ethers::abi::{encode, encode_packed, Token};
 use ethers::prelude::*;
 use ethers::utils::keccak256;
 use k256::elliptic_curve::generic_array::sequence::Lengthen;
+use serde_json::json;
 
-use crate::event_handler::run_job_listener_channel;
-use crate::utils::{
-    send_txn, AppState, Attestation, Executors, InjectKeyInfo, RegisterEnclaveInfo,
-};
+use crate::event_handler::register_listener;
+use crate::utils::{AppState, Attestation, InjectInfo};
 
 #[get("/")]
 async fn index() -> impl Responder {
     HttpResponse::Ok()
 }
 
-#[post("/inject-key")]
-// Endpoint exposed to inject operator wallet's private key
-async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -> impl Responder {
+#[post("/inject")]
+// Endpoint exposed to inject owner's address and gas wallet private key
+async fn inject(Json(key): Json<InjectInfo>, app_state: Data<AppState>) -> impl Responder {
     let mut http_rpc_client_guard = app_state.http_rpc_client.lock().unwrap();
-    let mut executor_operator_key_guard = app_state.executor_operator_key.lock().unwrap();
-    if http_rpc_client_guard.is_some() && executor_operator_key_guard.is_some() {
-        return HttpResponse::BadRequest().body("Secret key has already been injected");
+    let mut enclave_owner_guard = app_state.enclave_owner.lock().unwrap();
+    if http_rpc_client_guard.is_some() && enclave_owner_guard.is_some() {
+        return HttpResponse::BadRequest().body("Injection already done!");
     }
 
-    let mut bytes32_key = [0u8; 32];
-    if let Err(err) = hex::decode_to_slice(&key.operator_secret[2..], &mut bytes32_key) {
+    let owner_address = H160::from_str(&key.owner_address[2..]);
+    let Ok(owner_address) = owner_address else {
         return HttpResponse::BadRequest().body(format!(
-            "Failed to hex decode the key into 32 bytes: {:?}",
+            "Invalid owner address provided: {:?}",
+            owner_address.unwrap_err()
+        ));
+    };
+
+    let mut bytes32_gas_key = [0u8; 32];
+    if let Err(err) = hex::decode_to_slice(&key.gas_key[2..], &mut bytes32_gas_key) {
+        return HttpResponse::BadRequest().body(format!(
+            "Failed to hex decode the gas key into 32 bytes: {:?}",
             err
         ));
     }
 
-    // Initialize local wallet with operator's key to send signed transactions to the common chain
-    let signer_wallet = LocalWallet::from_bytes(&bytes32_key);
-    let Ok(signer_wallet) = signer_wallet else {
+    // Initialize local wallet with operator's gas key to send signed transactions to the common chain
+    let gas_wallet = LocalWallet::from_bytes(&bytes32_gas_key);
+    let Ok(gas_wallet) = gas_wallet else {
         return HttpResponse::BadRequest().body(format!(
-            "Invalid secret key provided: {:?}",
-            signer_wallet.unwrap_err()
+            "Invalid gas key provided: {:?}",
+            gas_wallet.unwrap_err()
         ));
     };
-    let signer_wallet = signer_wallet.with_chain_id(app_state.common_chain_id);
-    let signer_address = signer_wallet.address();
+    let gas_wallet = gas_wallet.with_chain_id(app_state.common_chain_id);
+    let gas_address = gas_wallet.address();
 
     // Connect the rpc http provider with the operator's wallet
     let http_rpc_client = Provider::<Http>::try_connect(&app_state.http_rpc_url).await;
@@ -56,33 +64,31 @@ async fn inject_key(Json(key): Json<InjectKeyInfo>, app_state: Data<AppState>) -
     };
     let http_rpc_client = Arc::new(
         http_rpc_client
-            .with_signer(signer_wallet)
-            .nonce_manager(signer_address),
+            .with_signer(gas_wallet)
+            .nonce_manager(gas_address),
     );
 
     // Initialize operator's wallet and http rpc client for sending transactions
-    *executor_operator_key_guard = Some(signer_address);
+    *enclave_owner_guard = Some(owner_address);
     *http_rpc_client_guard = Some(http_rpc_client);
 
-    HttpResponse::Ok().body("Secret key injected successfully")
+    HttpResponse::Ok().body("Injection done successfully")
 }
 
-#[post("/register")]
-// Endpoint exposed to register the enclave on the common chain as a serverless executor
-async fn register_enclave(
-    Json(enclave_info): Json<RegisterEnclaveInfo>,
+#[post("/export")]
+// Endpoint exposed to retrieve the metadata required to register the enclave on the common chain
+async fn export(
+    Json(attestation_timestamp): Json<Attestation>,
     app_state: Data<AppState>,
 ) -> impl Responder {
-    if app_state.executor_operator_key.lock().unwrap().is_none()
+    if app_state.enclave_owner.lock().unwrap().is_none()
         || app_state.http_rpc_client.lock().unwrap().is_none()
     {
-        return HttpResponse::BadRequest().body("Operator secret key not injected yet!");
+        return HttpResponse::BadRequest().body("Injection not done yet!");
     }
 
-    let mut registered_guard = app_state.registered.lock().unwrap();
-    if *registered_guard {
-        return HttpResponse::BadRequest().body("Enclave node is already registered!");
-    }
+    let job_capacity = app_state.job_capacity;
+    let owner = app_state.enclave_owner.lock().unwrap().clone().unwrap();
 
     // Encode and hash the job capacity of executor following EIP712 format
     let domain_separator = keccak256(encode(&[
@@ -90,19 +96,14 @@ async fn register_enclave(
         Token::FixedBytes(keccak256("marlin.oyster.Executors").to_vec()),
         Token::FixedBytes(keccak256("1").to_vec()),
     ]));
-    let register_typehash = keccak256("Register(address executor,uint256 jobCapacity)");
+    let register_typehash =
+        keccak256("Register(address owner,uint256 jobCapacity,uint256 signTimestamp)");
 
     let hash_struct = keccak256(encode(&[
         Token::FixedBytes(register_typehash.to_vec()),
-        Token::Address(
-            app_state
-                .executor_operator_key
-                .lock()
-                .unwrap()
-                .clone()
-                .unwrap(),
-        ),
+        Token::Address(owner),
         Token::Uint(app_state.job_capacity.into()),
+        Token::Uint(attestation_timestamp.timestamp.into()),
     ]));
 
     // Create the digest
@@ -121,9 +122,7 @@ async fn register_enclave(
     let digest = keccak256(digest);
 
     // Sign the digest using enclave key
-    let sig = app_state
-        .enclave_signer_key
-        .sign_prehash_recoverable(&digest);
+    let sig = app_state.enclave_signer.sign_prehash_recoverable(&digest);
     let Ok((rs, v)) = sig else {
         return HttpResponse::InternalServerError().body(format!(
             "Failed to sign the job capacity {}: {:?}",
@@ -133,92 +132,18 @@ async fn register_enclave(
     };
     let signature = rs.to_bytes().append(27 + v.to_byte()).to_vec();
 
-    let Ok(attestation_bytes) = hex::decode(&enclave_info.attestation[2..]) else {
-        return HttpResponse::BadRequest().body("Invalid attestation hex string");
-    };
-    let Ok(pcr_0_bytes) = hex::decode(&enclave_info.pcr_0[2..]) else {
-        return HttpResponse::BadRequest().body("Invalid pcr0 hex string");
-    };
-    let Ok(pcr_1_bytes) = hex::decode(&enclave_info.pcr_1[2..]) else {
-        return HttpResponse::BadRequest().body("Invalid pcr1 hex string");
-    };
-    let Ok(pcr_2_bytes) = hex::decode(&enclave_info.pcr_2[2..]) else {
-        return HttpResponse::BadRequest().body("Invalid pcr2 hex string");
-    };
-
-    // Prepare the transaction to be send to the common chain for registration
-    let txn = Executors::new(
-        app_state.executors_contract_addr,
-        app_state.http_rpc_client.lock().unwrap().clone().unwrap(),
-    )
-    .register_executor(
-        attestation_bytes.into(),
-        Attestation {
-            enclave_pub_key: app_state.enclave_pub_key.clone().into(),
-            pcr0: pcr_0_bytes.into(),
-            pcr1: pcr_1_bytes.into(),
-            pcr2: pcr_2_bytes.into(),
-            timestamp_in_milliseconds: enclave_info.timestamp.into(),
-        },
-        app_state.job_capacity.into(),
-        signature.into(),
-        enclave_info.stake_amount.into(),
-    );
-
-    let txn_result = send_txn(txn).await;
-    let Ok(txn_receipt) = txn_result else {
-        return HttpResponse::InternalServerError().body(format!(
-            "Failed to register the enclave: {:?}",
-            txn_result.unwrap_err()
-        ));
-    };
-
-    *registered_guard = true;
-
-    let app_state_clone = app_state.clone();
-    // Start the listener to receive jobs emitted by the common chain contract
-    tokio::spawn(async move { run_job_listener_channel(app_state_clone).await });
-
-    HttpResponse::Ok().body(format!(
-        "Enclave Node successfully registered on the common chain block {}, hash {:?}",
-        txn_receipt.block_number.unwrap_or(0.into()),
-        txn_receipt.transaction_hash
-    ))
-}
-
-#[delete("/deregister")]
-// Endpoint exposed to deregister the enclave from the common chain as an executor (Can be done manually but preferred this way)
-async fn deregister_enclave(app_state: Data<AppState>) -> impl Responder {
-    if app_state.executor_operator_key.lock().unwrap().is_none()
-        || app_state.http_rpc_client.lock().unwrap().is_none()
-    {
-        return HttpResponse::BadRequest().body("Operator secret key not injected yet!");
+    if *app_state.register_listener_active.lock().unwrap() == false {
+        tokio::spawn(async move {
+            *app_state.register_listener_active.lock().unwrap() = true;
+            register_listener(app_state.clone()).await;
+            *app_state.register_listener_active.lock().unwrap() = false;
+        });
     }
 
-    let mut registered_guard = app_state.registered.lock().unwrap();
-    if *registered_guard == false {
-        return HttpResponse::BadRequest().body("Enclave not registered yet!");
-    }
-
-    // Prepare the transaction to be send to the common chain for deregistration
-    let txn = Executors::new(
-        app_state.executors_contract_addr,
-        app_state.http_rpc_client.lock().unwrap().clone().unwrap(),
-    )
-    .deregister_executor();
-
-    let txn_result = send_txn(txn).await;
-    let Ok(txn_receipt) = txn_result else {
-        return HttpResponse::InternalServerError().body(format!(
-            "Failed to deregister the enclave: {:?}",
-            txn_result.unwrap_err()
-        ));
-    };
-
-    *registered_guard = false;
-    HttpResponse::Ok().body(format!(
-        "Enclave Node successfully deregistered from the common chain block {}, hash {:?}",
-        txn_receipt.block_number.unwrap_or(0.into()),
-        txn_receipt.transaction_hash
-    ))
+    HttpResponse::Ok().json(json!({
+        "job_capacity": job_capacity,
+        "sign_timestamp": attestation_timestamp.timestamp,
+        "owner": owner,
+        "signature": hex::encode(signature),
+    }))
 }
