@@ -73,8 +73,7 @@ async fn main() -> Result<()> {
     )
     .context("Invalid enclave signer key")?;
 
-    let enclave_address =
-        public_key_to_address(&enclave_signer_key.verifying_key());
+    let enclave_address = public_key_to_address(&enclave_signer_key.verifying_key());
 
     // Connect to the rpc web socket provider
     let web_socket_client = Provider::<Ws>::connect_with_reconnects(cli.web_socket_url, 5)

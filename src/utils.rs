@@ -55,11 +55,13 @@ pub struct Attestation {
     pub timestamp: usize,
 }
 
+#[derive(Debug, Clone)]
 pub struct JobResponse {
     pub job_output: Option<JobOutput>,
     pub timeout_response: Option<U256>,
 }
 
+#[derive(Debug, Clone)]
 pub struct JobOutput {
     pub signature: Bytes,
     pub id: U256,
@@ -67,6 +69,7 @@ pub struct JobOutput {
     pub sign_timestamp: U256,
 }
 
+#[derive(Debug, Clone)]
 pub struct ExecutionResponse {
     pub output: Bytes,
     pub error_code: u8,

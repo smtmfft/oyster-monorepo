@@ -179,8 +179,19 @@ pub async fn handle_event_logs(
 
     loop {
         select! {
-            event = jobs_stream.next() => {
-                if let Some(event) = event {
+            Some(event) = executors_stream.next() => {
+                    if event.removed.unwrap_or(true) {
+                        continue;
+                    }
+
+                    // Capture the Executor deregistered event emitted by the executors contract
+                    println!("Enclave deregistered from the common chain!");
+                    *app_state.registered.lock().unwrap() = false;
+
+                    println!("Stopped listening to job events!");
+                    return;
+            }
+            Some(event) = jobs_stream.next() => {
                     if event.removed.unwrap_or(true) {
                         continue;
                     }
@@ -323,22 +334,10 @@ pub async fn handle_event_logs(
                                 .remove(&job_id);
                         }
                     }
-                }
             }
-            event = executors_stream.next() => {
-                if let Some(event) = event {
-                    if event.removed.unwrap_or(true) {
-                        continue;
-                    }
-
-                    // Capture the Executor deregistered event emitted by the executors contract
-                    println!("Enclave deregistered from the common chain!");
-                    *app_state.registered.lock().unwrap() = false;
-
-                    println!("Stopped listening to job events!");
-                    return;
-                }
-            }
+            else => break,
         }
     }
+
+    println!("Both the Jobs and Executors subscription streams have ended!");
 }
