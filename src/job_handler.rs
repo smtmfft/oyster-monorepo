@@ -19,8 +19,9 @@ use crate::workerd::ServerlessError::*;
 
 /* Error code semantics:-
 1 => Provided txn hash doesn't belong to the expected rpc chain or code contract
-2 => Syntax error in the code extracted from the calldata
-3 => User timeout exceeded */
+2 => Calldata corresponding to the txn hash is invalid
+3 => Syntax error in the code extracted from the calldata
+4 => User timeout exceeded */
 
 // Execute the job request using workerd runtime and 'cgroup' environment
 pub async fn handle_job(
@@ -47,7 +48,7 @@ pub async fn handle_job(
     // Initialize the default timeout response and build on that based on the above response
     let mut execution_response = Some(ExecutionResponse {
         output: Bytes::new(),
-        error_code: 3,
+        error_code: 4,
         total_time: user_deadline.into(),
     });
     if response.is_ok() {
@@ -121,15 +122,20 @@ async fn execute_job(
                 error_code: 1,
                 total_time: execution_timer_start.elapsed().as_millis().into(),
             }),
+            InvalidTxCalldata
+            | InvalidTxCalldataType
+            | InvalidTxCalldataLength
+            | BadCalldata(_) => Some(ExecutionResponse {
+                output: Bytes::new(),
+                error_code: 2,
+                total_time: execution_timer_start.elapsed().as_millis().into(),
+            }),
             _ => None,
         };
     }
 
     // Reserve a 'cgroup' for code execution
-    let cgroup = app_state.cgroups.lock().unwrap().reserve();
-    let Ok(cgroup) = cgroup else {
-        let _ = workerd::cleanup_code_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
-
+    let Ok(cgroup) = app_state.cgroups.lock().unwrap().reserve() else {
         eprintln!("No free cgroup available to execute the job");
         return None;
     };
@@ -142,9 +148,6 @@ async fn execute_job(
 
     // Get free port for the 'cgroup'
     let Ok(port) = workerd::get_port(&cgroup) else {
-        app_state.cgroups.lock().unwrap().release(cgroup);
-        let _ = workerd::cleanup_code_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
-
         return None;
     };
 
@@ -152,21 +155,13 @@ async fn execute_job(
     if let Err(_) =
         workerd::create_config_file(&code_hash, slug, &app_state.workerd_runtime_path, port).await
     {
-        app_state.cgroups.lock().unwrap().release(cgroup);
-        let _ = workerd::cleanup_code_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
-
         return None;
     }
 
     // Start workerd execution on the user code file using the config file
-    let child = workerd::execute(&code_hash, slug, &app_state.workerd_runtime_path, &cgroup).await;
-    let Ok(child) = child else {
-        let _ =
-            workerd::cleanup_config_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
-
-        app_state.cgroups.lock().unwrap().release(cgroup);
-        let _ = workerd::cleanup_code_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
-
+    let Ok(child) =
+        workerd::execute(&code_hash, slug, &app_state.workerd_runtime_path, &cgroup).await
+    else {
         return None;
     };
     let child = Arc::new(Mutex::new(child));
@@ -186,21 +181,7 @@ async fn execute_job(
     let res = workerd::wait_for_port(port).await;
 
     if !res {
-        // Kill the worker
-        child
-            .lock()
-            .unwrap()
-            .kill()
-            .context("CRITICAL: Failed to kill worker {cgroup}")
-            .unwrap_or_else(|err| println!("{err:?}"));
-
-        let _ =
-            workerd::cleanup_config_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
-        app_state.cgroups.lock().unwrap().release(cgroup);
-        let _ = workerd::cleanup_code_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
-
-        let mut child_guard = child.lock().unwrap();
-        let Some(stderr) = child_guard.stderr.take() else {
+        let Some(stderr) = child.lock().unwrap().stderr.take() else {
             eprintln!("Failed to retrieve cgroup execution error");
             return None;
         };
@@ -212,7 +193,7 @@ async fn execute_job(
         if stderr_output != "" && stderr_output.contains("SyntaxError") {
             return Some(ExecutionResponse {
                 output: Bytes::new(),
-                error_code: 2,
+                error_code: 3,
                 total_time: execution_timer_start.elapsed().as_millis().into(),
             });
         }
@@ -222,20 +203,7 @@ async fn execute_job(
     }
 
     // Worker is ready, Make the request with the expected user timeout
-    let response = workerd::get_workerd_response(port, code_inputs).await;
-
-    // Kill the worker
-    child
-        .lock()
-        .unwrap()
-        .kill()
-        .context("CRITICAL: Failed to kill worker {cgroup}")
-        .unwrap_or_else(|err| println!("{err:?}"));
-    let _ = workerd::cleanup_config_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
-    app_state.cgroups.lock().unwrap().release(cgroup);
-    let _ = workerd::cleanup_code_file(&code_hash, slug, &app_state.workerd_runtime_path).await;
-
-    let Ok(response) = response else {
+    let Ok(response) = workerd::get_workerd_response(port, code_inputs).await else {
         return None;
     };
 

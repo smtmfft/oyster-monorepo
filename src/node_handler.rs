@@ -1,5 +1,6 @@
 use std::str::FromStr;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use actix_web::web::{Data, Json};
 use actix_web::{get, post, HttpResponse, Responder};
@@ -9,24 +10,26 @@ use ethers::utils::keccak256;
 use k256::elliptic_curve::generic_array::sequence::Lengthen;
 use serde_json::json;
 
-use crate::event_handler::register_listener;
-use crate::utils::{AppState, Attestation, InjectInfo};
+use crate::event_handler::events_listener;
+use crate::utils::{AppState, ImmutableConfig, MutableConfig};
 
 #[get("/")]
 async fn index() -> impl Responder {
     HttpResponse::Ok()
 }
 
-#[post("/inject")]
-// Endpoint exposed to inject owner's address and gas wallet private key
-async fn inject(Json(key): Json<InjectInfo>, app_state: Data<AppState>) -> impl Responder {
-    let mut http_rpc_client_guard = app_state.http_rpc_client.lock().unwrap();
-    let mut enclave_owner_guard = app_state.enclave_owner.lock().unwrap();
-    if http_rpc_client_guard.is_some() && enclave_owner_guard.is_some() {
-        return HttpResponse::BadRequest().body("Injection already done!");
+#[post("/immutable-config")]
+// Endpoint exposed to inject immutable executor config parameters
+async fn inject_immutable_config(
+    Json(immutable_config): Json<ImmutableConfig>,
+    app_state: Data<AppState>,
+) -> impl Responder {
+    let mut immutable_params_injected_guard = app_state.immutable_params_injected.lock().unwrap();
+    if *immutable_params_injected_guard == true {
+        return HttpResponse::BadRequest().body("Immutable params already configured!");
     }
 
-    let owner_address = H160::from_str(&key.owner_address[2..]);
+    let owner_address = H160::from_str(&immutable_config.owner_address_hex);
     let Ok(owner_address) = owner_address else {
         return HttpResponse::BadRequest().body(format!(
             "Invalid owner address provided: {:?}",
@@ -34,10 +37,25 @@ async fn inject(Json(key): Json<InjectInfo>, app_state: Data<AppState>) -> impl 
         ));
     };
 
+    // Initialize owner address for the enclave
+    *app_state.enclave_owner.lock().unwrap() = owner_address;
+    *immutable_params_injected_guard = true;
+
+    HttpResponse::Ok().body("Immutable params configured!")
+}
+
+#[post("/mutable-config")]
+// Endpoint exposed to inject mutable executor config parameters
+async fn inject_mutable_config(
+    Json(mutable_config): Json<MutableConfig>,
+    app_state: Data<AppState>,
+) -> impl Responder {
+    let mut mutable_params_injected_guard = app_state.mutable_params_injected.lock().unwrap();
+
     let mut bytes32_gas_key = [0u8; 32];
-    if let Err(err) = hex::decode_to_slice(&key.gas_key[2..], &mut bytes32_gas_key) {
+    if let Err(err) = hex::decode_to_slice(&mutable_config.gas_key_hex, &mut bytes32_gas_key) {
         return HttpResponse::BadRequest().body(format!(
-            "Failed to hex decode the gas key into 32 bytes: {:?}",
+            "Failed to hex decode the gas private key into 32 bytes: {:?}",
             err
         ));
     }
@@ -46,14 +64,14 @@ async fn inject(Json(key): Json<InjectInfo>, app_state: Data<AppState>) -> impl 
     let gas_wallet = LocalWallet::from_bytes(&bytes32_gas_key);
     let Ok(gas_wallet) = gas_wallet else {
         return HttpResponse::BadRequest().body(format!(
-            "Invalid gas key provided: {:?}",
+            "Invalid gas private key provided: {:?}",
             gas_wallet.unwrap_err()
         ));
     };
     let gas_wallet = gas_wallet.with_chain_id(app_state.common_chain_id);
     let gas_address = gas_wallet.address();
 
-    // Connect the rpc http provider with the operator's wallet
+    // Connect the rpc http provider with the operator's gas wallet
     let http_rpc_client = Provider::<Http>::try_connect(&app_state.http_rpc_url).await;
     let Ok(http_rpc_client) = http_rpc_client else {
         return HttpResponse::InternalServerError().body(format!(
@@ -62,33 +80,34 @@ async fn inject(Json(key): Json<InjectInfo>, app_state: Data<AppState>) -> impl 
             http_rpc_client.unwrap_err()
         ));
     };
-    let http_rpc_client = Arc::new(
-        http_rpc_client
-            .with_signer(gas_wallet)
-            .nonce_manager(gas_address),
-    );
+    let http_rpc_client = http_rpc_client
+        .with_signer(gas_wallet)
+        .nonce_manager(gas_address);
 
-    // Initialize operator's wallet and http rpc client for sending transactions
-    *enclave_owner_guard = Some(owner_address);
-    *http_rpc_client_guard = Some(http_rpc_client);
+    // Create Jobs object to send transactions to the contract
+    *app_state.http_rpc_client.lock().unwrap() = Some(Arc::new(http_rpc_client));
+    *mutable_params_injected_guard = true;
 
-    HttpResponse::Ok().body("Injection done successfully")
+    HttpResponse::Ok().body("Mutable params configured!")
 }
 
-#[post("/export")]
+#[get("/signed-registration-message")]
 // Endpoint exposed to retrieve the metadata required to register the enclave on the common chain
-async fn export(
-    Json(attestation_timestamp): Json<Attestation>,
-    app_state: Data<AppState>,
-) -> impl Responder {
-    if app_state.enclave_owner.lock().unwrap().is_none()
-        || app_state.http_rpc_client.lock().unwrap().is_none()
-    {
-        return HttpResponse::BadRequest().body("Injection not done yet!");
+async fn export_signed_registration_message(app_state: Data<AppState>) -> impl Responder {
+    if *app_state.immutable_params_injected.lock().unwrap() == false {
+        return HttpResponse::BadRequest().body("Immutable params not configured yet!");
+    }
+
+    if *app_state.mutable_params_injected.lock().unwrap() == false {
+        return HttpResponse::BadRequest().body("Mutable params not configured yet!");
     }
 
     let job_capacity = app_state.job_capacity;
-    let owner = app_state.enclave_owner.lock().unwrap().clone().unwrap();
+    let owner = app_state.enclave_owner.lock().unwrap().clone();
+    let sign_timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
 
     // Encode and hash the job capacity of executor following EIP712 format
     let domain_separator = keccak256(encode(&[
@@ -102,8 +121,8 @@ async fn export(
     let hash_struct = keccak256(encode(&[
         Token::FixedBytes(register_typehash.to_vec()),
         Token::Address(owner),
-        Token::Uint(app_state.job_capacity.into()),
-        Token::Uint(attestation_timestamp.timestamp.into()),
+        Token::Uint(job_capacity.into()),
+        Token::Uint(sign_timestamp.into()),
     ]));
 
     // Create the digest
@@ -125,25 +144,39 @@ async fn export(
     let sig = app_state.enclave_signer.sign_prehash_recoverable(&digest);
     let Ok((rs, v)) = sig else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to sign the job capacity {}: {:?}",
+            "Failed to sign the job capacity using enclave key {}: {:?}",
             app_state.job_capacity,
             sig.unwrap_err()
         ));
     };
-    let signature = rs.to_bytes().append(27 + v.to_byte()).to_vec();
+    let signature = hex::encode(rs.to_bytes().append(27 + v.to_byte()).to_vec());
 
-    if *app_state.register_listener_active.lock().unwrap() == false {
+    let mut events_listener_active_guard = app_state.events_listener_active.lock().unwrap();
+    if *events_listener_active_guard == false {
+        let Ok(current_block_number) = app_state
+            .http_rpc_client
+            .lock()
+            .unwrap()
+            .clone()
+            .unwrap()
+            .get_block_number()
+            .await
+        else {
+            return HttpResponse::InternalServerError().body(format!("Failed to fetch the latest block number of the common chain for initiating event listening!"));
+        };
+
+        *events_listener_active_guard = true;
+        drop(events_listener_active_guard);
+
         tokio::spawn(async move {
-            *app_state.register_listener_active.lock().unwrap() = true;
-            register_listener(app_state.clone()).await;
-            *app_state.register_listener_active.lock().unwrap() = false;
+            events_listener(app_state.clone(), current_block_number).await;
         });
     }
 
     HttpResponse::Ok().json(json!({
         "job_capacity": job_capacity,
-        "sign_timestamp": attestation_timestamp.timestamp,
+        "sign_timestamp": sign_timestamp,
         "owner": owner,
-        "signature": hex::encode(signature),
+        "signature": signature,
     }))
 }

@@ -7,7 +7,7 @@ use ethers::contract::{abigen, FunctionCall};
 use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
 use ethers::providers::{Http, Provider, Ws};
 use ethers::signers::LocalWallet;
-use ethers::types::{Address, TransactionReceipt, H160, U256};
+use ethers::types::{Address, TransactionReceipt, H160, U256, U64};
 use k256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
 
@@ -23,36 +23,39 @@ abigen!(
 pub type HttpSignerProvider = NonceManagerMiddleware<SignerMiddleware<Provider<Http>, LocalWallet>>;
 
 // App data struct containing the necessary fields to run the executor
+#[derive(Debug)]
 pub struct AppState {
-    pub job_capacity: usize,
     pub cgroups: Mutex<Cgroups>,
-    pub registered: Mutex<bool>,
-    pub register_listener_active: Mutex<bool>,
-    pub num_selected_executors: u8,
+    pub job_capacity: usize,
+    pub workerd_runtime_path: String,
+    pub execution_buffer_time: u64,
     pub common_chain_id: u64,
     pub http_rpc_url: String,
-    pub http_rpc_client: Mutex<Option<Arc<HttpSignerProvider>>>,
     pub web_socket_client: Provider<Ws>,
     pub executors_contract_addr: Address,
     pub jobs_contract_addr: Address,
     pub code_contract_addr: String,
-    pub enclave_owner: Mutex<Option<H160>>,
+    pub num_selected_executors: u8,
     pub enclave_address: H160,
     pub enclave_signer: SigningKey,
-    pub workerd_runtime_path: String,
+    pub immutable_params_injected: Mutex<bool>,
+    pub mutable_params_injected: Mutex<bool>,
+    pub enclave_registered: Mutex<bool>,
+    pub events_listener_active: Mutex<bool>,
+    pub enclave_owner: Mutex<H160>,
+    pub http_rpc_client: Mutex<Option<Arc<HttpSignerProvider>>>,
     pub job_requests_running: Mutex<HashSet<U256>>,
-    pub execution_buffer_time: u64,
+    pub starting_block_next_subscribe: Mutex<U64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct InjectInfo {
-    pub owner_address: String,
-    pub gas_key: String,
+pub struct ImmutableConfig {
+    pub owner_address_hex: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Attestation {
-    pub timestamp: usize,
+pub struct MutableConfig {
+    pub gas_key_hex: String,
 }
 
 #[derive(Debug, Clone)]

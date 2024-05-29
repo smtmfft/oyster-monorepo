@@ -1,4 +1,3 @@
-use std::io::ErrorKind;
 use std::process::Child;
 use std::time::{Duration, Instant};
 
@@ -29,6 +28,10 @@ pub enum ServerlessError {
     InvalidTxToValue(String, String),
     #[error("calldata field of transaction data is not a string")]
     InvalidTxCalldataType,
+    #[error("calldata string is below 138 characters")]
+    InvalidTxCalldataLength,
+    #[error("calldata doesn't belong to the expected method")]
+    InvalidTxCalldata,
     #[error("calldata field is not a valid hex string")]
     BadCalldata(#[from] hex::FromHexError),
     #[error("Failed to create/write to the code file")]
@@ -86,6 +89,16 @@ pub async fn create_code_file(
         Value::String(calldata) => Ok(calldata),
         _ => Err(ServerlessError::InvalidTxCalldataType),
     }?;
+
+    if calldata.len() < 138 {
+        return Err(ServerlessError::InvalidTxCalldataLength);
+    }
+
+    if !calldata
+        .starts_with("0xff7cdaf30000000000000000000000000000000000000000000000000000000000000020")
+    {
+        return Err(ServerlessError::InvalidTxCalldata);
+    }
 
     // Hex decode the calldata by skipping to the code bytes
     let mut calldata = hex::decode(&calldata[138..])?;
@@ -218,9 +231,7 @@ pub async fn cleanup_code_file(
     )
     .await
     .map_err(|err| {
-        if err.kind() != ErrorKind::NotFound {
-            eprintln!("Failed to clean up the code file: {:?}", err);
-        }
+        eprintln!("Failed to clean up the code file: {:?}", err);
         ServerlessError::CodeFileDelete(err)
     })?;
 
@@ -244,9 +255,7 @@ pub async fn cleanup_config_file(
     )
     .await
     .map_err(|err| {
-        if err.kind() != ErrorKind::NotFound {
-            eprintln!("Failed to clean up the config file: {:?}", err);
-        }
+        eprintln!("Failed to clean up the config file: {:?}", err);
         ServerlessError::ConfigFileDelete(err)
     })?;
 

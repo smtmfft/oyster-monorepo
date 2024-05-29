@@ -5,13 +5,15 @@ use actix_web::{App, HttpServer};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ethers::providers::{Provider, Ws};
-use ethers::types::Address;
+use ethers::types::{Address, H160, U64};
 use ethers::utils::public_key_to_address;
 use k256::ecdsa::SigningKey;
 use tokio::fs;
 
 use serverless::cgroups::Cgroups;
-use serverless::node_handler::{export, index, inject};
+use serverless::node_handler::{
+    export_signed_registration_message, index, inject_immutable_config, inject_mutable_config,
+};
 use serverless::utils::AppState;
 
 // EXECUTOR CONFIGURATION PARAMETERS
@@ -84,28 +86,31 @@ async fn main() -> Result<()> {
     let app_data = Data::new(AppState {
         job_capacity: cgroups.free.len(),
         cgroups: cgroups.into(),
-        registered: false.into(),
-        register_listener_active: false.into(),
-        num_selected_executors: cli.num_selected_executors,
+        workerd_runtime_path: cli.workerd_runtime_path,
+        execution_buffer_time: cli.execution_buffer_time,
         common_chain_id: cli.common_chain_id,
         http_rpc_url: cli.http_rpc_url,
-        http_rpc_client: None.into(),
         web_socket_client: web_socket_client,
         executors_contract_addr: cli
             .executors_contract_addr
             .parse::<Address>()
-            .context("Invalid common chain executors contract address")?,
+            .context("Invalid Executors contract address")?,
         jobs_contract_addr: cli
             .jobs_contract_addr
             .parse::<Address>()
-            .context("Invalid common chain jobs contract address")?,
+            .context("Invalid Jobs contract address")?,
         code_contract_addr: cli.code_contract_addr,
-        enclave_owner: None.into(),
+        num_selected_executors: cli.num_selected_executors,
         enclave_address: enclave_address,
         enclave_signer: enclave_signer_key,
-        workerd_runtime_path: cli.workerd_runtime_path,
+        immutable_params_injected: false.into(),
+        mutable_params_injected: false.into(),
+        enclave_registered: false.into(),
+        events_listener_active: false.into(),
+        enclave_owner: H160::zero().into(),
+        http_rpc_client: None.into(),
         job_requests_running: HashSet::new().into(),
-        execution_buffer_time: cli.execution_buffer_time,
+        starting_block_next_subscribe: U64::zero().into(),
     });
 
     // Start actix server to expose the executor outside the enclave
@@ -113,8 +118,9 @@ async fn main() -> Result<()> {
         App::new()
             .app_data(app_data.clone())
             .service(index)
-            .service(inject)
-            .service(export)
+            .service(inject_immutable_config)
+            .service(inject_mutable_config)
+            .service(export_signed_registration_message)
     })
     .bind(("0.0.0.0", cli.port))
     .context(format!("could not bind to port {}", cli.port))?
