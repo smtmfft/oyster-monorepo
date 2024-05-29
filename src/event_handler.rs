@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use actix_web::web::Data;
 use ethers::abi::{decode, ParamType};
 use ethers::providers::{Middleware, StreamExt};
@@ -8,7 +6,6 @@ use ethers::utils::keccak256;
 use scopeguard::defer;
 use tokio::select;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
-use tokio::time::sleep;
 use tokio_stream::Stream;
 
 use crate::job_handler::handle_job;
@@ -59,9 +56,6 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
         }
     }
     println!("Enclave registered successfully on the common chain!");
-
-    // Add a small delay to ensure the WebSocket connection is ready
-    sleep(Duration::from_secs(1)).await;
 
     // Create filter to listen to relevant events emitted by the Jobs contract
     let jobs_event_filter = Filter::new()
