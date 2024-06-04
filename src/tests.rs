@@ -43,8 +43,6 @@ pub mod serverless_executor_test {
     const EXECUTORS_CONTRACT_ADDR: &str = "0xc58Ffc9bfCc846E56Eeb9AaE5aBFAD00393a19C5";
     const JOBS_CONTRACT_ADDR: &str = "0xaba049A974a331A3b450FB8263710Ad140f64E4F";
     const CODE_CONTRACT_ADDR: &str = "0x44fe06d2940b8782a0a9a9ffd09c65852c0156b1";
-    const GAS_WALLET_KEY: &str = "9472c36867d26994f02342405c8905874fcd2fcd595543923f092d88964e223c";
-    const GAS_ADDRESS: &str = "c19142993b65b5829e14a600743317fd365d1627";
 
     // Generate test app state
     async fn generate_app_state() -> Data<AppState> {
@@ -241,10 +239,11 @@ pub mod serverless_executor_test {
         );
 
         // Inject valid mutable config params
+        let gas_wallet_key = SigningKey::random(&mut OsRng);
         let req = test::TestRequest::post()
             .uri("/mutable-config")
             .set_json(&json!({
-                "gas_key_hex": GAS_WALLET_KEY,
+                "gas_key_hex": hex::encode(gas_wallet_key.to_bytes()),
             }))
             .to_request();
 
@@ -256,24 +255,23 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            hex::encode(
-                app_state
-                    .http_rpc_client
-                    .lock()
-                    .unwrap()
-                    .clone()
-                    .unwrap()
-                    .inner()
-                    .address()
-            ),
-            GAS_ADDRESS
+            app_state
+                .http_rpc_client
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap()
+                .inner()
+                .address(),
+            public_key_to_address(gas_wallet_key.verifying_key())
         );
 
         // Inject valid mutable config params again to test mutability
+        let gas_wallet_key = SigningKey::random(&mut OsRng);
         let req = test::TestRequest::post()
             .uri("/mutable-config")
             .set_json(&json!({
-                "gas_key_hex": GAS_WALLET_KEY,
+                "gas_key_hex": hex::encode(gas_wallet_key.to_bytes()),
             }))
             .to_request();
 
@@ -285,17 +283,15 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            hex::encode(
-                app_state
-                    .http_rpc_client
-                    .lock()
-                    .unwrap()
-                    .clone()
-                    .unwrap()
-                    .inner()
-                    .address()
-            ),
-            GAS_ADDRESS
+            app_state
+                .http_rpc_client
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap()
+                .inner()
+                .address(),
+            public_key_to_address(gas_wallet_key.verifying_key())
         );
     }
 
@@ -362,10 +358,11 @@ pub mod serverless_executor_test {
         );
 
         // Inject valid mutable config params
+        let gas_wallet_key = SigningKey::random(&mut OsRng);
         let req = test::TestRequest::post()
             .uri("/mutable-config")
             .set_json(&json!({
-                "gas_key_hex": GAS_WALLET_KEY,
+                "gas_key_hex": hex::encode(gas_wallet_key.to_bytes()),
             }))
             .to_request();
 
@@ -377,18 +374,18 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            hex::encode(
-                app_state
-                    .http_rpc_client
-                    .lock()
-                    .unwrap()
-                    .clone()
-                    .unwrap()
-                    .inner()
-                    .address()
-            ),
-            GAS_ADDRESS
+            app_state
+                .http_rpc_client
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap()
+                .inner()
+                .address(),
+            public_key_to_address(gas_wallet_key.verifying_key())
         );
+
+        let active_tasks = metrics.active_tasks_count();
 
         // Export the enclave registration details
         let req = test::TestRequest::get()
@@ -417,8 +414,7 @@ pub mod serverless_executor_test {
             verifying_key
         );
         assert_eq!(*app_state.events_listener_active.lock().unwrap(), true);
-
-        let active_tasks = metrics.active_tasks_count();
+        assert_eq!(active_tasks + 1, metrics.active_tasks_count());
 
         // Export the enclave registration details again
         let req = test::TestRequest::get()
@@ -446,7 +442,7 @@ pub mod serverless_executor_test {
             ),
             verifying_key
         );
-        assert_eq!(active_tasks, metrics.active_tasks_count());
+        assert_eq!(active_tasks + 1, metrics.active_tasks_count());
     }
 
     #[actix_web::test]
