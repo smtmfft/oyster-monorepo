@@ -84,7 +84,7 @@ async fn inject_mutable_config(
         .with_signer(gas_wallet)
         .nonce_manager(gas_address);
 
-    // Create Jobs object to send transactions to the contract
+    // Initialize HTTP RPC client for sending signed transactions
     *app_state.http_rpc_client.lock().unwrap() = Some(Arc::new(http_rpc_client));
     *mutable_params_injected_guard = true;
 
@@ -133,8 +133,7 @@ async fn export_signed_registration_message(app_state: Data<AppState>) -> impl R
     ]);
     let Ok(digest) = digest else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to encode the job capacity {} for signing: {:?}",
-            app_state.job_capacity,
+            "Failed to encode the registration message for signing: {:?}",
             digest.unwrap_err()
         ));
     };
@@ -144,8 +143,7 @@ async fn export_signed_registration_message(app_state: Data<AppState>) -> impl R
     let sig = app_state.enclave_signer.sign_prehash_recoverable(&digest);
     let Ok((rs, v)) = sig else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to sign the job capacity using enclave key {}: {:?}",
-            app_state.job_capacity,
+            "Failed to sign the registration message using enclave key: {:?}",
             sig.unwrap_err()
         ));
     };
@@ -169,7 +167,7 @@ async fn export_signed_registration_message(app_state: Data<AppState>) -> impl R
         drop(events_listener_active_guard);
 
         tokio::spawn(async move {
-            events_listener(app_state.clone(), current_block_number).await;
+            events_listener(app_state, current_block_number).await;
         });
     }
 

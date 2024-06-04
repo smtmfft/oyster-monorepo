@@ -110,7 +110,7 @@ async fn main() -> Result<()> {
         enclave_owner: H160::zero().into(),
         http_rpc_client: None.into(),
         job_requests_running: HashSet::new().into(),
-        starting_block_next_subscribe: U64::zero().into(),
+        last_block_seen: U64::zero().into(),
     });
 
     // Start actix server to expose the executor outside the enclave

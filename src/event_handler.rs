@@ -50,7 +50,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
             }
 
             *app_state.enclave_registered.lock().unwrap() = true;
-            *app_state.starting_block_next_subscribe.lock().unwrap() =
+            *app_state.last_block_seen.lock().unwrap() =
                 event.block_number.unwrap_or(starting_block);
             break;
         }
@@ -64,7 +64,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
             keccak256("JobCreated(uint256,address,bytes32,bytes,uint256,address[])"),
             keccak256("JobResponded(uint256,bytes,uint256,uint8,uint8)"),
         ])
-        .from_block(*app_state.starting_block_next_subscribe.lock().unwrap());
+        .from_block(*app_state.last_block_seen.lock().unwrap());
     // Subscribe to the jobs filter through the rpc web socket client
     let jobs_stream = app_state
         .web_socket_client
@@ -87,7 +87,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
         .address(app_state.executors_contract_addr)
         .topic0(H256::from(keccak256("ExecutorDeregistered(address)")))
         .topic1(H256::from(app_state.enclave_address))
-        .from_block(*app_state.starting_block_next_subscribe.lock().unwrap());
+        .from_block(*app_state.last_block_seen.lock().unwrap());
 
     // Subscribe to the executors filter through the rpc web socket client
     let executors_stream = app_state
@@ -201,13 +201,13 @@ pub async fn handle_event_logs(
                 }
 
                 if event.block_number.is_some() {
-                    *app_state.starting_block_next_subscribe.lock().unwrap() = event.block_number.unwrap();
+                    *app_state.last_block_seen.lock().unwrap() = event.block_number.unwrap();
                 }
 
                 // Capture the Job created event emitted by the jobs contract
                 if event.topics[0]
-                == keccak256("JobCreated(uint256,address,bytes32,bytes,uint256,address[])")
-                .into()
+                    == keccak256("JobCreated(uint256,address,bytes32,bytes,uint256,address[])")
+                    .into()
                 {
                     // Decode the event parameters using the ABI information
                     let event_tokens = decode(
@@ -302,7 +302,7 @@ pub async fn handle_event_logs(
                 }
                 // Capture the Job responded event emitted by the Jobs contract
                 else if event.topics[0]
-                == keccak256("JobResponded(uint256,bytes,uint256,uint8,uint8)").into()
+                    == keccak256("JobResponded(uint256,bytes,uint256,uint8,uint8)").into()
                 {
                     let job_id = event.topics[1].into_uint();
 

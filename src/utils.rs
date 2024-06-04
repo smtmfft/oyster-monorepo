@@ -45,7 +45,7 @@ pub struct AppState {
     pub enclave_owner: Mutex<H160>,
     pub http_rpc_client: Mutex<Option<Arc<HttpSignerProvider>>>,
     pub job_requests_running: Mutex<HashSet<U256>>,
-    pub starting_block_next_subscribe: Mutex<U64>,
+    pub last_block_seen: Mutex<U64>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

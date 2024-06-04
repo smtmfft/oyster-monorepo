@@ -28,7 +28,7 @@ pub enum ServerlessError {
     InvalidTxToValue(String, String),
     #[error("calldata field of transaction data is not a string")]
     InvalidTxCalldataType,
-    #[error("calldata string is below 138 characters")]
+    #[error("calldata string is shorter than 138 characters")]
     InvalidTxCalldataLength,
     #[error("calldata doesn't belong to the expected method")]
     InvalidTxCalldata,

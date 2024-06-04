@@ -1,8 +1,9 @@
 // TODO: tests have to be run one by one currently
 /* NOTE: To run an unit test 'test_name', hit the following commands on terminal ->
    1.    sudo ./cgroupv2_setup.sh
-   2.    sudo echo && cargo test 'test name' -- --nocapture &
-   3.    sudo echo && cargo test -- --test-threads 1 &           (For running all the tests sequentially)
+   2.    export RUSTFLAGS="--cfg tokio_unstable"
+   3.    sudo echo && cargo test 'test name' -- --nocapture &
+   4.    sudo echo && cargo test -- --test-threads 1 &           (For running all the tests sequentially)
 */
 
 #[cfg(test)]
@@ -15,13 +16,15 @@ pub mod serverless_executor_test {
     use actix_web::web::{Bytes, Data};
     use actix_web::{http, test, App, Error};
     use ethers::abi::{encode, encode_packed, Token};
-    use ethers::providers::{Provider, Ws};
+    use ethers::providers::{Middleware, Provider, Ws};
     use ethers::types::{Address, BigEndianHash, Log, H160, H256, U256, U64};
     use ethers::utils::{keccak256, public_key_to_address};
     use k256::ecdsa::SigningKey;
     use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
+    use rand::rngs::OsRng;
     use serde::{Deserialize, Serialize};
     use serde_json::json;
+    use tokio::runtime::Handle;
     use tokio::sync::mpsc::channel;
     use tokio::time::{sleep, Duration};
     use tokio_stream::StreamExt as _;
@@ -37,23 +40,15 @@ pub mod serverless_executor_test {
     const CHAIN_ID: u64 = 421614;
     const HTTP_RPC_URL: &str = "https://sepolia-rollup.arbitrum.io/rpc";
     const WS_URL: &str = "wss://arbitrum-sepolia.infura.io/ws/v3/cd72f20b9fd544f8a5b8da706441e01c";
-    const EXECUTORS_CONTRACT_ADDR: &str = "0xdec0719F26f3771D9E84Cf8694DAE79F3f2AbEbB";
-    const JOBS_CONTRACT_ADDR: &str = "0xAc6Ae536203a3ec290ED4aA1d3137e6459f4A963";
+    const EXECUTORS_CONTRACT_ADDR: &str = "0xc58Ffc9bfCc846E56Eeb9AaE5aBFAD00393a19C5";
+    const JOBS_CONTRACT_ADDR: &str = "0xaba049A974a331A3b450FB8263710Ad140f64E4F";
     const CODE_CONTRACT_ADDR: &str = "0x44fe06d2940b8782a0a9a9ffd09c65852c0156b1";
-    const ENCLAVE_KEY: &str = "2526d18e11b6bcb52b1bf9e1c2eca2b0122cfd2be6465c22670d06d4c9a1b030";
-    const GAS_WALLET_KEY: &str = "a8b743563462eb4b943e3de02ce7fcdfde6ca255b2f6850f34d47c1a9824b2f8";
-    const OWNER_ADDRESS: &str = "f90e66d1452be040ca3a82387bf6ad0c472f29dd";
-
-    // const REGISTER_ATTESTATION: &str = "0xcfa7554f87ba13620037695d62a381a2d876b74c2e1b435584fe5c02c53393ac1c5cd5a8b6f92e866f9a65af751e0462cfa7554f87ba13620037695d62a381a2d8";
-    // const REGISTER_PCR_0: &str = "0xcfa7554f87ba13620037695d62a381a2d876b74c2e1b435584fe5c02c53393ac1c5cd5a8b6f92e866f9a65af751e0462";
-    // const REGISTER_PCR_1: &str = "0xbcdf05fefccaa8e55bf2c8d6dee9e79bbff31e34bf28a99aa19e6b29c37ee80b214a414b7607236edf26fcb78654e63f";
-    // const REGISTER_PCR_2: &str = "0x20caae8a6a69d9b1aecdf01a0b9c5f3eafd1f06cb51892bf47cef476935bfe77b5b75714b68a69146d650683a217c5b3";
-    // const REGISTER_TIMESTAMP: usize = 1722134849000;
-    // const REGISTER_STAKE_AMOUNT: usize = 100;
+    const GAS_WALLET_KEY: &str = "9472c36867d26994f02342405c8905874fcd2fcd595543923f092d88964e223c";
+    const GAS_ADDRESS: &str = "c19142993b65b5829e14a600743317fd365d1627";
 
     // Generate test app state
     async fn generate_app_state() -> Data<AppState> {
-        let signer = SigningKey::from_slice(&hex::decode(ENCLAVE_KEY).unwrap()).unwrap();
+        let signer = SigningKey::random(&mut OsRng);
         let signer_verifier_address = public_key_to_address(signer.verifying_key());
 
         Data::new(AppState {
@@ -77,7 +72,7 @@ pub mod serverless_executor_test {
             enclave_owner: H160::zero().into(),
             http_rpc_client: None.into(),
             job_requests_running: HashSet::new().into(),
-            starting_block_next_subscribe: U64::zero().into(),
+            last_block_seen: U64::zero().into(),
         })
     }
 
@@ -104,7 +99,8 @@ pub mod serverless_executor_test {
     #[actix_web::test]
     // Test the various response cases for the 'inject_immutable_config' endpoint
     async fn inject_immutable_config_test() {
-        let app = test::init_service(new_app(generate_app_state().await)).await;
+        let app_state = generate_app_state().await;
+        let app = test::init_service(new_app(app_state.clone())).await;
 
         // Inject invalid owner address hex string (odd length)
         let req = test::TestRequest::post()
@@ -155,10 +151,11 @@ pub mod serverless_executor_test {
         );
 
         // Inject valid immutable config params
+        let valid_owner = H160::random();
         let req = test::TestRequest::post()
             .uri("/immutable-config")
             .set_json(&json!({
-                "owner_address_hex": OWNER_ADDRESS,
+                "owner_address_hex": hex::encode(valid_owner),
             }))
             .to_request();
 
@@ -169,12 +166,14 @@ pub mod serverless_executor_test {
             resp.into_body().try_into_bytes().unwrap(),
             "Immutable params configured!"
         );
+        assert_eq!(*app_state.enclave_owner.lock().unwrap(), valid_owner);
 
         // Inject valid immutable config params again to test immutability
+        let valid_owner_2 = H160::random();
         let req = test::TestRequest::post()
             .uri("/immutable-config")
             .set_json(&json!({
-                "owner_address_hex": OWNER_ADDRESS,
+                "owner_address_hex": hex::encode(valid_owner_2),
             }))
             .to_request();
 
@@ -190,7 +189,8 @@ pub mod serverless_executor_test {
     #[actix_web::test]
     // Test the various response cases for the 'inject_mutable_config' endpoint
     async fn inject_mutable_config_test() {
-        let app = test::init_service(new_app(generate_app_state().await)).await;
+        let app_state = generate_app_state().await;
+        let app = test::init_service(new_app(app_state.clone())).await;
 
         // Inject invalid gas private key hex string (less than 32 bytes)
         let req = test::TestRequest::post()
@@ -255,6 +255,19 @@ pub mod serverless_executor_test {
             resp.into_body().try_into_bytes().unwrap(),
             "Mutable params configured!"
         );
+        assert_eq!(
+            hex::encode(
+                app_state
+                    .http_rpc_client
+                    .lock()
+                    .unwrap()
+                    .clone()
+                    .unwrap()
+                    .inner()
+                    .address()
+            ),
+            GAS_ADDRESS
+        );
 
         // Inject valid mutable config params again to test mutability
         let req = test::TestRequest::post()
@@ -271,6 +284,19 @@ pub mod serverless_executor_test {
             resp.into_body().try_into_bytes().unwrap(),
             "Mutable params configured!"
         );
+        assert_eq!(
+            hex::encode(
+                app_state
+                    .http_rpc_client
+                    .lock()
+                    .unwrap()
+                    .clone()
+                    .unwrap()
+                    .inner()
+                    .address()
+            ),
+            GAS_ADDRESS
+        );
     }
 
     #[derive(Serialize, Deserialize, Debug)]
@@ -284,10 +310,12 @@ pub mod serverless_executor_test {
     #[actix_web::test]
     // Test the various response cases for the 'export_signed_registration_message' endpoint
     async fn export_signed_registration_message_test() {
+        let metrics = Handle::current().metrics();
+
         let app_state = generate_app_state().await;
         let verifying_key = app_state.enclave_signer.verifying_key().to_owned();
 
-        let app = test::init_service(new_app(app_state)).await;
+        let app = test::init_service(new_app(app_state.clone())).await;
 
         // Export the enclave registration details without injecting executor config params
         let req = test::TestRequest::get()
@@ -303,10 +331,11 @@ pub mod serverless_executor_test {
         );
 
         // Inject valid immutable config params
+        let valid_owner = H160::random();
         let req = test::TestRequest::post()
             .uri("/immutable-config")
             .set_json(&json!({
-                "owner_address_hex": OWNER_ADDRESS,
+                "owner_address_hex": hex::encode(valid_owner),
             }))
             .to_request();
 
@@ -317,6 +346,7 @@ pub mod serverless_executor_test {
             resp.into_body().try_into_bytes().unwrap(),
             "Immutable params configured!"
         );
+        assert_eq!(*app_state.enclave_owner.lock().unwrap(), valid_owner);
 
         // Export the enclave registration details without injecting executor config params
         let req = test::TestRequest::get()
@@ -346,6 +376,19 @@ pub mod serverless_executor_test {
             resp.into_body().try_into_bytes().unwrap(),
             "Mutable params configured!"
         );
+        assert_eq!(
+            hex::encode(
+                app_state
+                    .http_rpc_client
+                    .lock()
+                    .unwrap()
+                    .clone()
+                    .unwrap()
+                    .inner()
+                    .address()
+            ),
+            GAS_ADDRESS
+        );
 
         // Export the enclave registration details
         let req = test::TestRequest::get()
@@ -362,39 +405,48 @@ pub mod serverless_executor_test {
 
         let response = response.unwrap();
         assert_eq!(response.job_capacity, 20);
-        assert_eq!(hex::encode(response.owner.0), OWNER_ADDRESS);
+        assert_eq!(response.owner, valid_owner);
         assert_eq!(response.signature.len(), 130);
+        assert_eq!(
+            recover_key(
+                response.owner,
+                response.job_capacity,
+                response.sign_timestamp,
+                response.signature
+            ),
+            verifying_key
+        );
+        assert_eq!(*app_state.events_listener_active.lock().unwrap(), true);
 
-        // Regenerate the digest for verification
-        let domain_separator = keccak256(encode(&[
-            Token::FixedBytes(keccak256("EIP712Domain(string name,string version)").to_vec()),
-            Token::FixedBytes(keccak256("marlin.oyster.Executors").to_vec()),
-            Token::FixedBytes(keccak256("1").to_vec()),
-        ]));
-        let register_typehash =
-            keccak256("Register(address owner,uint256 jobCapacity,uint256 signTimestamp)");
-        let hash_struct = keccak256(encode(&[
-            Token::FixedBytes(register_typehash.to_vec()),
-            Token::Address(response.owner),
-            Token::Uint(response.job_capacity.into()),
-            Token::Uint(response.sign_timestamp.into()),
-        ]));
-        let digest = encode_packed(&[
-            Token::String("\x19\x01".to_string()),
-            Token::FixedBytes(domain_separator.to_vec()),
-            Token::FixedBytes(hash_struct.to_vec()),
-        ])
-        .unwrap();
-        let digest = keccak256(digest);
+        let active_tasks = metrics.active_tasks_count();
 
-        let signature =
-            Signature::from_slice(hex::decode(&response.signature[0..128]).unwrap().as_slice())
-                .unwrap();
-        let v = RecoveryId::try_from((hex::decode(&response.signature[128..]).unwrap()[0]) - 27)
-            .unwrap();
-        let recovered_key = VerifyingKey::recover_from_prehash(&digest, &signature, v).unwrap();
+        // Export the enclave registration details again
+        let req = test::TestRequest::get()
+            .uri("/signed-registration-message")
+            .to_request();
 
-        assert_eq!(recovered_key, verifying_key);
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        let response: Result<ExportResponse, serde_json::Error> =
+            serde_json::from_slice(&resp.into_body().try_into_bytes().unwrap());
+        assert!(response.is_ok());
+
+        let response = response.unwrap();
+        assert_eq!(response.job_capacity, 20);
+        assert_eq!(response.owner, valid_owner);
+        assert_eq!(response.signature.len(), 130);
+        assert_eq!(
+            recover_key(
+                response.owner,
+                response.job_capacity,
+                response.sign_timestamp,
+                response.signature
+            ),
+            verifying_key
+        );
+        assert_eq!(active_tasks, metrics.active_tasks_count());
     }
 
     #[actix_web::test]
@@ -901,7 +953,10 @@ pub mod serverless_executor_test {
             assert!(false, "Response received even after deregistration!");
         }
 
-        assert!(*app_state_clone.enclave_registered.lock().unwrap() == false);
+        assert!(
+            !*app_state_clone.enclave_registered.lock().unwrap(),
+            "Enclave not set to deregistered in the app_state!"
+        );
     }
 
     fn get_job_created_log(
@@ -947,6 +1002,42 @@ pub mod serverless_executor_test {
             removed: Some(false),
             ..Default::default()
         }
+    }
+
+    fn recover_key(
+        owner: H160,
+        job_capacity: usize,
+        sign_timestamp: usize,
+        sign: String,
+    ) -> VerifyingKey {
+        // Regenerate the digest for verification
+        let domain_separator = keccak256(encode(&[
+            Token::FixedBytes(keccak256("EIP712Domain(string name,string version)").to_vec()),
+            Token::FixedBytes(keccak256("marlin.oyster.Executors").to_vec()),
+            Token::FixedBytes(keccak256("1").to_vec()),
+        ]));
+        let register_typehash =
+            keccak256("Register(address owner,uint256 jobCapacity,uint256 signTimestamp)");
+        let hash_struct = keccak256(encode(&[
+            Token::FixedBytes(register_typehash.to_vec()),
+            Token::Address(owner),
+            Token::Uint(job_capacity.into()),
+            Token::Uint(sign_timestamp.into()),
+        ]));
+        let digest = encode_packed(&[
+            Token::String("\x19\x01".to_string()),
+            Token::FixedBytes(domain_separator.to_vec()),
+            Token::FixedBytes(hash_struct.to_vec()),
+        ])
+        .unwrap();
+        let digest = keccak256(digest);
+
+        let signature =
+            Signature::from_slice(hex::decode(&sign[0..128]).unwrap().as_slice()).unwrap();
+        let v = RecoveryId::try_from((hex::decode(&sign[128..]).unwrap()[0]) - 27).unwrap();
+        let recovered_key = VerifyingKey::recover_from_prehash(&digest, &signature, v).unwrap();
+
+        return recovered_key;
     }
 
     fn assert_response(job_response: JobResponse, id: U256, error: u8, output: &str) {
