@@ -1,6 +1,7 @@
 use actix_web::web::Data;
+use anyhow::Context;
 use ethers::abi::{decode, ParamType};
-use ethers::providers::{Middleware, StreamExt};
+use ethers::providers::{Middleware, Provider, StreamExt, Ws};
 use ethers::types::{BigEndianHash, Filter, Log, H256, U64};
 use ethers::utils::keccak256;
 use scopeguard::defer;
@@ -17,104 +18,112 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
     defer! {
         *app_state.events_listener_active.lock().unwrap() = false;
     }
+    loop {
+        // web socket connection
+        let web_socket_client = match Provider::<Ws>::connect_with_reconnects(app_state.ws_rpc_url.clone(), 5)
+            .await
+            .context("Failed to connect to the common chain websocket provider") {
+                Ok(client) => client,
+                Err(err) => {
+                    eprintln!("Failed to connect to the common chain websocket provider: {:?}", err);
+                    continue;
+                }
+            };
 
-    if *app_state.enclave_registered.lock().unwrap() == false {
-        // Create filter to listen to the 'ExecutorRegistered' event emitted by the Executors contract
-        let register_executor_filter = Filter::new()
-            .address(app_state.executors_contract_addr)
-            .topic0(H256::from(keccak256(
-                "ExecutorRegistered(address,address,uint256)",
-            )))
-            .topic1(H256::from(app_state.enclave_address))
-            .topic2(H256::from(*app_state.enclave_owner.lock().unwrap()))
-            .from_block(starting_block);
-        // Subscribe to the executors filter through the rpc web socket client
-        let register_stream = app_state
-            .web_socket_client
-            .subscribe_logs(&register_executor_filter)
-            .await;
-        let Ok(mut register_stream) = register_stream else {
-            unsafe {
-                eprintln!(
-                    "Failed to subscribe to Executors ({:?}) contract 'ExecutorRegistered' event logs: {:?}",
-                    app_state.executors_contract_addr,
-                    register_stream.unwrap_err_unchecked(),
-                );
+        if *app_state.enclave_registered.lock().unwrap() == false {
+            // Create filter to listen to the 'ExecutorRegistered' event emitted by the Executors contract
+            let register_executor_filter = Filter::new()
+                .address(app_state.executors_contract_addr)
+                .topic0(H256::from(keccak256(
+                    "ExecutorRegistered(address,address,uint256)",
+                )))
+                .topic1(H256::from(app_state.enclave_address))
+                .topic2(H256::from(*app_state.enclave_owner.lock().unwrap()))
+                .from_block(starting_block);
+
+            // Subscribe to the executors filter through the rpc web socket client
+            let mut register_stream = match web_socket_client.subscribe_logs(&register_executor_filter).await {
+                Ok(stream) => stream,
+                Err(err) => {
+                    eprintln!(
+                        "Failed to subscribe to Executors ({:?}) contract 'ExecutorRegistered' event logs: {:?}",
+                        app_state.executors_contract_addr,
+                        err,
+                    );
+                    continue;
+                }
+            };
+            while let Some(event) = register_stream.next().await {
+                if event.removed.unwrap_or(true) {
+                    continue;
+                }
+
+                *app_state.enclave_registered.lock().unwrap() = true;
+                *app_state.last_block_seen.lock().unwrap() =
+                    event.block_number.unwrap_or(starting_block);
+                let _ = register_stream.unsubscribe().await;
+                break;
             }
-            return;
-        };
-
-        while let Some(event) = register_stream.next().await {
-            if event.removed.unwrap_or(true) {
+            if !*app_state.enclave_registered.lock().unwrap() {
                 continue;
             }
+        }
+        println!("Enclave registered successfully on the common chain!");
+        // Create filter to listen to relevant events emitted by the Jobs contract
+        let jobs_event_filter = Filter::new()
+            .address(app_state.jobs_contract_addr)
+            .topic0(vec![
+                keccak256("JobCreated(uint256,address,bytes32,bytes,uint256,address[])"),
+                keccak256("JobResponded(uint256,bytes,uint256,uint8,uint8)"),
+            ])
+            .from_block(*app_state.last_block_seen.lock().unwrap());
+        let jobs_stream = match web_socket_client.subscribe_logs(&jobs_event_filter).await {
+            Ok(stream) => stream,
+            Err(err) => {
+                eprintln!(
+                    "Failed to subscribe to Jobs ({:?}) contract 'JobCreated' and 'JobResponded' event logs: {:?}",
+                    app_state.jobs_contract_addr,
+                    err,
+                );
+                continue;
+            }
+        };
+        // Subscribe to the jobs filter through the rpc web socket client
+        let jobs_stream = std::pin::pin!(jobs_stream);
 
-            *app_state.enclave_registered.lock().unwrap() = true;
-            *app_state.last_block_seen.lock().unwrap() =
-                event.block_number.unwrap_or(starting_block);
-            break;
+        // Create filter to listen to 'ExecutorDeregistered' event emitted by the Executors contract
+        let executors_event_filter = Filter::new()
+            .address(app_state.executors_contract_addr)
+            .topic0(H256::from(keccak256("ExecutorDeregistered(address)")))
+            .topic1(H256::from(app_state.enclave_address))
+            .from_block(*app_state.last_block_seen.lock().unwrap());
+
+        // Subscribe to the executors filter through the rpc web socket client
+        let executors_stream = match web_socket_client.subscribe_logs(&executors_event_filter).await {
+            Ok(stream) => stream,
+            Err(err) => {
+                eprintln!(
+                    "Failed to subscribe to Executors ({:?}) contract 'ExecutorDeregistered' event logs: {:?}",
+                    app_state.executors_contract_addr,
+                    err
+                );
+                continue;
+            }
+        };
+        let executors_stream = std::pin::pin!(executors_stream);
+        // Create tokio mpsc channel to receive contract events and send transactions to them
+        let (tx, rx) = channel::<JobResponse>(100);
+        let app_state_clone = app_state.clone();
+
+        tokio::spawn(async move {
+            send_execution_output(app_state_clone, rx).await;
+        });
+
+        handle_event_logs(jobs_stream, executors_stream, app_state.clone(), tx).await;
+        if !*app_state.enclave_registered.lock().unwrap() {
+            return;
         }
     }
-    println!("Enclave registered successfully on the common chain!");
-
-    // Create filter to listen to relevant events emitted by the Jobs contract
-    let jobs_event_filter = Filter::new()
-        .address(app_state.jobs_contract_addr)
-        .topic0(vec![
-            keccak256("JobCreated(uint256,address,bytes32,bytes,uint256,address[])"),
-            keccak256("JobResponded(uint256,bytes,uint256,uint8,uint8)"),
-        ])
-        .from_block(*app_state.last_block_seen.lock().unwrap());
-    // Subscribe to the jobs filter through the rpc web socket client
-    let jobs_stream = app_state
-        .web_socket_client
-        .subscribe_logs(&jobs_event_filter)
-        .await;
-    let Ok(jobs_stream) = jobs_stream else {
-        unsafe {
-            eprintln!(
-                "Failed to subscribe to Jobs ({:?}) contract 'JobCreated' and 'JobResponded' event logs: {:?}",
-                app_state.jobs_contract_addr,
-                jobs_stream.unwrap_err_unchecked(),
-            );
-        }
-        return;
-    };
-    let jobs_stream = std::pin::pin!(jobs_stream);
-
-    // Create filter to listen to 'ExecutorDeregistered' event emitted by the Executors contract
-    let executors_event_filter = Filter::new()
-        .address(app_state.executors_contract_addr)
-        .topic0(H256::from(keccak256("ExecutorDeregistered(address)")))
-        .topic1(H256::from(app_state.enclave_address))
-        .from_block(*app_state.last_block_seen.lock().unwrap());
-
-    // Subscribe to the executors filter through the rpc web socket client
-    let executors_stream = app_state
-        .web_socket_client
-        .subscribe_logs(&executors_event_filter)
-        .await;
-    let Ok(executors_stream) = executors_stream else {
-        unsafe {
-            eprintln!(
-                "Failed to subscribe to Executors ({:?}) contract 'ExecutorDeregistered' event logs: {:?}",
-                app_state.executors_contract_addr,
-                executors_stream.unwrap_err_unchecked()
-            );
-        }
-        return;
-    };
-    let executors_stream = std::pin::pin!(executors_stream);
-
-    // Create tokio mpsc channel to receive contract events and send transactions to them
-    let (tx, rx) = channel::<JobResponse>(100);
-    let app_state_clone = app_state.clone();
-
-    tokio::spawn(async move {
-        send_execution_output(app_state_clone, rx).await;
-    });
-
-    handle_event_logs(jobs_stream, executors_stream, app_state.clone(), tx).await;
 }
 
 // Receive job execution responses and send the resulting transactions to the common chain

@@ -5,7 +5,7 @@ use actix_web::web::Bytes;
 use anyhow::{anyhow, Context, Result};
 use ethers::contract::{abigen, FunctionCall};
 use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
-use ethers::providers::{Http, Provider, Ws};
+use ethers::providers::{Http, Provider};
 use ethers::signers::LocalWallet;
 use ethers::types::{Address, TransactionReceipt, H160, U256, U64};
 use k256::ecdsa::SigningKey;
@@ -31,7 +31,7 @@ pub struct AppState {
     pub execution_buffer_time: u64,
     pub common_chain_id: u64,
     pub http_rpc_url: String,
-    pub web_socket_client: Provider<Ws>,
+    pub ws_rpc_url: String,
     pub executors_contract_addr: Address,
     pub jobs_contract_addr: Address,
     pub code_contract_addr: String,

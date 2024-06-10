@@ -4,7 +4,6 @@ use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use ethers::providers::{Provider, Ws};
 use ethers::types::{Address, H160, U64};
 use ethers::utils::public_key_to_address;
 use k256::ecdsa::SigningKey;
@@ -77,11 +76,6 @@ async fn main() -> Result<()> {
 
     let enclave_address = public_key_to_address(&enclave_signer_key.verifying_key());
 
-    // Connect to the rpc web socket provider
-    let web_socket_client = Provider::<Ws>::connect_with_reconnects(cli.web_socket_url, 5)
-        .await
-        .context("Failed to connect to the common chain websocket provider")?;
-
     // Initialize App data that will be shared across multiple threads and tasks
     let app_data = Data::new(AppState {
         job_capacity: cgroups.free.len(),
@@ -90,7 +84,7 @@ async fn main() -> Result<()> {
         execution_buffer_time: cli.execution_buffer_time,
         common_chain_id: cli.common_chain_id,
         http_rpc_url: cli.http_rpc_url,
-        web_socket_client: web_socket_client,
+        ws_rpc_url: cli.web_socket_url,
         executors_contract_addr: cli
             .executors_contract_addr
             .parse::<Address>()
