@@ -16,7 +16,7 @@ pub mod serverless_executor_test {
     use actix_web::web::{Bytes, Data};
     use actix_web::{http, test, App, Error};
     use ethers::abi::{encode, encode_packed, Token};
-    use ethers::providers::{Middleware, Provider, Ws};
+    use ethers::providers::Middleware;
     use ethers::types::{Address, BigEndianHash, Log, H160, H256, U256, U64};
     use ethers::utils::{keccak256, public_key_to_address};
     use k256::ecdsa::SigningKey;
@@ -56,7 +56,7 @@ pub mod serverless_executor_test {
             execution_buffer_time: 10,
             common_chain_id: CHAIN_ID,
             http_rpc_url: HTTP_RPC_URL.to_owned(),
-            web_socket_client: Provider::<Ws>::connect(WS_URL).await.unwrap(),
+            ws_rpc_url: WS_URL.to_owned(),
             executors_contract_addr: EXECUTORS_CONTRACT_ADDR.parse::<Address>().unwrap(),
             jobs_contract_addr: JOBS_CONTRACT_ADDR.parse::<Address>().unwrap(),
             code_contract_addr: CODE_CONTRACT_ADDR.to_owned(),

@@ -1,5 +1,4 @@
 use actix_web::web::Data;
-use anyhow::Context;
 use ethers::abi::{decode, ParamType};
 use ethers::providers::{Middleware, Provider, StreamExt, Ws};
 use ethers::types::{BigEndianHash, Filter, Log, H256, U64};
@@ -20,12 +19,16 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
     }
     loop {
         // web socket connection
-        let web_socket_client = match Provider::<Ws>::connect_with_reconnects(app_state.ws_rpc_url.clone(), 5)
-            .await
-            .context("Failed to connect to the common chain websocket provider") {
+        let web_socket_client =
+            match Provider::<Ws>::connect_with_reconnects(app_state.ws_rpc_url.clone(), 5)
+                .await
+            {
                 Ok(client) => client,
                 Err(err) => {
-                    eprintln!("Failed to connect to the common chain websocket provider: {:?}", err);
+                    eprintln!(
+                        "Failed to connect to the common chain websocket provider: {:?}",
+                        err
+                    );
                     continue;
                 }
             };
@@ -42,7 +45,10 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
                 .from_block(starting_block);
 
             // Subscribe to the executors filter through the rpc web socket client
-            let mut register_stream = match web_socket_client.subscribe_logs(&register_executor_filter).await {
+            let mut register_stream = match web_socket_client
+                .subscribe_logs(&register_executor_filter)
+                .await
+            {
                 Ok(stream) => stream,
                 Err(err) => {
                     eprintln!(
@@ -53,6 +59,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
                     continue;
                 }
             };
+
             while let Some(event) = register_stream.next().await {
                 if event.removed.unwrap_or(true) {
                     continue;
@@ -61,13 +68,14 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
                 *app_state.enclave_registered.lock().unwrap() = true;
                 *app_state.last_block_seen.lock().unwrap() =
                     event.block_number.unwrap_or(starting_block);
-                let _ = register_stream.unsubscribe().await;
                 break;
             }
+
             if !*app_state.enclave_registered.lock().unwrap() {
                 continue;
             }
         }
+
         println!("Enclave registered successfully on the common chain!");
         // Create filter to listen to relevant events emitted by the Jobs contract
         let jobs_event_filter = Filter::new()
@@ -77,6 +85,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
                 keccak256("JobResponded(uint256,bytes,uint256,uint8,uint8)"),
             ])
             .from_block(*app_state.last_block_seen.lock().unwrap());
+        // Subscribe to the jobs filter through the rpc web socket client
         let jobs_stream = match web_socket_client.subscribe_logs(&jobs_event_filter).await {
             Ok(stream) => stream,
             Err(err) => {
@@ -88,7 +97,6 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
                 continue;
             }
         };
-        // Subscribe to the jobs filter through the rpc web socket client
         let jobs_stream = std::pin::pin!(jobs_stream);
 
         // Create filter to listen to 'ExecutorDeregistered' event emitted by the Executors contract
@@ -97,9 +105,11 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
             .topic0(H256::from(keccak256("ExecutorDeregistered(address)")))
             .topic1(H256::from(app_state.enclave_address))
             .from_block(*app_state.last_block_seen.lock().unwrap());
-
         // Subscribe to the executors filter through the rpc web socket client
-        let executors_stream = match web_socket_client.subscribe_logs(&executors_event_filter).await {
+        let executors_stream = match web_socket_client
+            .subscribe_logs(&executors_event_filter)
+            .await
+        {
             Ok(stream) => stream,
             Err(err) => {
                 eprintln!(
@@ -111,6 +121,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
             }
         };
         let executors_stream = std::pin::pin!(executors_stream);
+
         // Create tokio mpsc channel to receive contract events and send transactions to them
         let (tx, rx) = channel::<JobResponse>(100);
         let app_state_clone = app_state.clone();
