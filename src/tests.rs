@@ -462,13 +462,14 @@ pub mod serverless_executor_test {
         // Prepare the logs for JobCreated and JobResponded events accordingly
         let mut job_logs = vec![
             get_job_created_log(
+                1.into(),
                 0.into(),
                 code_hash,
                 code_input_bytes,
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(0.into()),
+            get_job_responded_log(1.into(), 0.into()),
         ];
 
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({
@@ -480,12 +481,13 @@ pub mod serverless_executor_test {
         job_logs.append(&mut vec![
             get_job_created_log(
                 1.into(),
+                1.into(),
                 code_hash,
                 code_input_bytes,
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(1.into()),
+            get_job_responded_log(1.into(), 1.into()),
         ]);
 
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({
@@ -496,13 +498,14 @@ pub mod serverless_executor_test {
 
         job_logs.append(&mut vec![
             get_job_created_log(
+                1.into(),
                 2.into(),
                 code_hash,
                 code_input_bytes,
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(2.into()),
+            get_job_responded_log(1.into(), 2.into()),
         ]);
 
         job_logs.push(Log {
@@ -556,13 +559,14 @@ pub mod serverless_executor_test {
 
         let job_logs = vec![
             get_job_created_log(
+                1.into(),
                 0.into(),
                 code_hash,
                 code_input_bytes,
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(0.into()),
+            get_job_responded_log(1.into(), 0.into()),
             Log {
                 ..Default::default()
             },
@@ -620,25 +624,27 @@ pub mod serverless_executor_test {
         // Given transaction hash doesn't belong to the expected smart contract
         let mut job_logs = vec![
             get_job_created_log(
+                1.into(),
                 0.into(),
                 "fed8ab36cc27831836f6dcb7291049158b4d8df31c0ffb05a3d36ba6555e29d7",
                 code_input_bytes.clone(),
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(0.into()),
+            get_job_responded_log(1.into(), 0.into()),
         ];
 
         // Given transaction hash doesn't exist in the expected rpc network
         job_logs.append(&mut vec![
             get_job_created_log(
                 1.into(),
+                1.into(),
                 "37b0b2d9dd58d9130781fc914da456c16ec403010e8d4c27b0ea4657a24c8546",
                 code_input_bytes,
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(1.into()),
+            get_job_responded_log(1.into(), 1.into()),
         ]);
 
         job_logs.push(Log {
@@ -691,13 +697,14 @@ pub mod serverless_executor_test {
         // Code corresponding to the provided transaction hash has a syntax error
         let job_logs = vec![
             get_job_created_log(
+                1.into(),
                 0.into(),
                 code_hash,
                 code_input_bytes,
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(0.into()),
+            get_job_responded_log(1.into(), 0.into()),
             Log {
                 ..Default::default()
             },
@@ -748,13 +755,14 @@ pub mod serverless_executor_test {
         // Code corresponding to the provided transaction hash has a syntax error
         let job_logs = vec![
             get_job_created_log(
+                1.into(),
                 0.into(),
                 code_hash,
                 code_input_bytes,
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(0.into()),
+            get_job_responded_log(1.into(), 0.into()),
             Log {
                 ..Default::default()
             },
@@ -805,13 +813,14 @@ pub mod serverless_executor_test {
         // User code didn't return a response in the expected period
         let job_logs = vec![
             get_job_created_log(
+                1.into(),
                 0.into(),
                 code_hash,
                 code_input_bytes,
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(0.into()),
+            get_job_responded_log(1.into(), 0.into()),
             Log {
                 ..Default::default()
             },
@@ -863,6 +872,7 @@ pub mod serverless_executor_test {
         // Add log entry to relay a job but job response event is not sent and the executor doesn't execute the job request
         let job_logs = vec![
             get_job_created_log(
+                1.into(),
                 0.into(),
                 code_hash,
                 code_input_bytes,
@@ -956,6 +966,7 @@ pub mod serverless_executor_test {
     }
 
     fn get_job_created_log(
+        block_number: U64,
         job_id: U256,
         code_hash: &str,
         code_inputs: Bytes,
@@ -963,6 +974,7 @@ pub mod serverless_executor_test {
         enclave: H160,
     ) -> Log {
         Log {
+            block_number: Some(block_number),
             address: H160::from_str(JOBS_CONTRACT_ADDR).unwrap(),
             topics: vec![
                 keccak256("JobCreated(uint256,address,bytes32,bytes,uint256,address[])").into(),
@@ -981,8 +993,9 @@ pub mod serverless_executor_test {
         }
     }
 
-    fn get_job_responded_log(job_id: U256) -> Log {
+    fn get_job_responded_log(block_number: U64, job_id: U256) -> Log {
         Log {
+            block_number: Some(block_number),
             address: H160::from_str(JOBS_CONTRACT_ADDR).unwrap(),
             topics: vec![
                 keccak256("JobResponded(uint256,bytes,uint256,uint8,uint8)").into(),

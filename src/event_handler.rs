@@ -20,7 +20,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
     loop {
         // web socket connection
         let web_socket_client =
-            match Provider::<Ws>::connect_with_reconnects(app_state.ws_rpc_url.clone(), 5)
+            match Provider::<Ws>::connect_with_reconnects(app_state.ws_rpc_url.clone(), 0)
                 .await
             {
                 Ok(client) => client,
@@ -220,9 +220,14 @@ pub async fn handle_event_logs(
                     continue;
                 }
 
-                if event.block_number.is_some() {
-                    *app_state.last_block_seen.lock().unwrap() = event.block_number.unwrap();
+                let Some(current_block) = event.block_number else {
+                    continue;
+                };
+
+                if current_block < *app_state.last_block_seen.lock().unwrap() {
+                    continue;
                 }
+                *app_state.last_block_seen.lock().unwrap() = current_block;
 
                 // Capture the Job created event emitted by the jobs contract
                 if event.topics[0]
