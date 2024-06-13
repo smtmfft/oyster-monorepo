@@ -103,7 +103,6 @@ async fn main() -> Result<()> {
         enclave_registered: false.into(),
         events_listener_active: false.into(),
         enclave_owner: H160::zero().into(),
-        gas_address: H160::zero().into(),
         http_rpc_client: None.into(),
         job_requests_running: HashSet::new().into(),
         last_block_seen: U64::zero().into(),

@@ -84,8 +84,7 @@ async fn inject_mutable_config(
         .with_signer(gas_wallet)
         .nonce_manager(gas_address);
 
-    // Initialize Gas address and HTTP RPC client for sending signed transactions
-    *app_state.gas_address.lock().unwrap() = gas_address;
+    // Initialize HTTP RPC client for sending signed transactions
     *app_state.http_rpc_client.lock().unwrap() = Some(Arc::new(http_rpc_client));
     *mutable_params_injected_guard = true;
 
@@ -106,7 +105,7 @@ async fn get_executor_details(app_state: Data<AppState>) -> impl Responder {
     HttpResponse::Ok().json(json!({
         "enclave_address": app_state.enclave_address,
         "owner_address": *app_state.enclave_owner.lock().unwrap(),
-        "gas_address": *app_state.gas_address.lock().unwrap()
+        "gas_address": app_state.http_rpc_client.lock().unwrap().clone().unwrap().inner().address()
     }))
 }
 

@@ -20,7 +20,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
     loop {
         // web socket connection
         let web_socket_client =
-            match Provider::<Ws>::connect_with_reconnects(app_state.ws_rpc_url.clone(), 0).await {
+            match Provider::<Ws>::connect_with_reconnects(&app_state.ws_rpc_url, 0).await {
                 Ok(client) => client,
                 Err(err) => {
                     eprintln!(

@@ -16,6 +16,7 @@ pub mod serverless_executor_test {
     use actix_web::web::{Bytes, Data};
     use actix_web::{http, test, App, Error};
     use ethers::abi::{encode, encode_packed, Token};
+    use ethers::providers::Middleware;
     use ethers::types::{Address, BigEndianHash, Log, H160, H256, U256, U64};
     use ethers::utils::{keccak256, public_key_to_address};
     use k256::ecdsa::SigningKey;
@@ -68,7 +69,6 @@ pub mod serverless_executor_test {
             enclave_registered: false.into(),
             events_listener_active: false.into(),
             enclave_owner: H160::zero().into(),
-            gas_address: H160::zero().into(),
             http_rpc_client: None.into(),
             job_requests_running: HashSet::new().into(),
             last_block_seen: U64::zero().into(),
@@ -257,7 +257,14 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            *app_state.gas_address.lock().unwrap(),
+            app_state
+                .http_rpc_client
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap()
+                .inner()
+                .address(),
             public_key_to_address(gas_wallet_key.verifying_key())
         );
 
@@ -278,7 +285,14 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            *app_state.gas_address.lock().unwrap(),
+            app_state
+                .http_rpc_client
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap()
+                .inner()
+                .address(),
             public_key_to_address(gas_wallet_key.verifying_key())
         );
     }
@@ -357,7 +371,14 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            *app_state.gas_address.lock().unwrap(),
+            app_state
+                .http_rpc_client
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap()
+                .inner()
+                .address(),
             public_key_to_address(gas_wallet_key.verifying_key())
         );
 
@@ -462,7 +483,14 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            *app_state.gas_address.lock().unwrap(),
+            app_state
+                .http_rpc_client
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap()
+                .inner()
+                .address(),
             public_key_to_address(gas_wallet_key.verifying_key())
         );
 

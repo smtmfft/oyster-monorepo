@@ -54,12 +54,12 @@ pub async fn handle_job(
     if response.is_ok() {
         execution_response = response.unwrap();
     }
-    if execution_response.is_none() {
+
+    let Some(execution_response) = execution_response else {
         return;
-    }
+    };
 
     // Sign and send the job response to the receiver channel
-    let execution_response = execution_response.unwrap();
     let sign_timestamp: U256 = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -186,7 +186,11 @@ async fn execute_job(
             return None;
         };
         let reader = BufReader::new(stderr);
-        let stderr_lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
+        let stderr_lines: Vec<String> = reader
+            .lines()
+            .filter(|l| l.is_ok())
+            .map(|l| l.unwrap())
+            .collect();
         let stderr_output = stderr_lines.join("\n");
 
         // Check if there was a syntax error in the user code
