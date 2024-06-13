@@ -16,7 +16,6 @@ pub mod serverless_executor_test {
     use actix_web::web::{Bytes, Data};
     use actix_web::{http, test, App, Error};
     use ethers::abi::{encode, encode_packed, Token};
-    use ethers::providers::Middleware;
     use ethers::types::{Address, BigEndianHash, Log, H160, H256, U256, U64};
     use ethers::utils::{keccak256, public_key_to_address};
     use k256::ecdsa::SigningKey;
@@ -32,7 +31,8 @@ pub mod serverless_executor_test {
     use crate::cgroups::Cgroups;
     use crate::event_handler::handle_event_logs;
     use crate::node_handler::{
-        export_signed_registration_message, index, inject_immutable_config, inject_mutable_config,
+        export_signed_registration_message, get_executor_details, index, inject_immutable_config,
+        inject_mutable_config,
     };
     use crate::utils::{AppState, JobResponse};
 
@@ -68,6 +68,7 @@ pub mod serverless_executor_test {
             enclave_registered: false.into(),
             events_listener_active: false.into(),
             enclave_owner: H160::zero().into(),
+            gas_address: H160::zero().into(),
             http_rpc_client: None.into(),
             job_requests_running: HashSet::new().into(),
             last_block_seen: U64::zero().into(),
@@ -91,6 +92,7 @@ pub mod serverless_executor_test {
             .service(index)
             .service(inject_immutable_config)
             .service(inject_mutable_config)
+            .service(get_executor_details)
             .service(export_signed_registration_message)
     }
 
@@ -255,14 +257,7 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            app_state
-                .http_rpc_client
-                .lock()
-                .unwrap()
-                .clone()
-                .unwrap()
-                .inner()
-                .address(),
+            *app_state.gas_address.lock().unwrap(),
             public_key_to_address(gas_wallet_key.verifying_key())
         );
 
@@ -283,14 +278,107 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            app_state
-                .http_rpc_client
-                .lock()
-                .unwrap()
-                .clone()
-                .unwrap()
-                .inner()
-                .address(),
+            *app_state.gas_address.lock().unwrap(),
+            public_key_to_address(gas_wallet_key.verifying_key())
+        );
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct ExecutorDetails {
+        enclave_address: H160,
+        owner_address: H160,
+        gas_address: H160,
+    }
+
+    #[actix_web::test]
+    // Test the various response cases for the 'get_executor_details' endpoint
+    async fn get_executor_details_test() {
+        let app_state = generate_app_state().await;
+        let app = test::init_service(new_app(app_state.clone())).await;
+
+        // Get the executor details without injecting any config params
+        let req = test::TestRequest::get()
+            .uri("/executor-details")
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
+        assert_eq!(
+            resp.into_body().try_into_bytes().unwrap(),
+            "Immutable params not configured yet!"
+        );
+
+        // Inject valid immutable config params
+        let valid_owner = H160::random();
+        let req = test::TestRequest::post()
+            .uri("/immutable-config")
+            .set_json(&json!({
+                "owner_address_hex": hex::encode(valid_owner),
+            }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::OK);
+        assert_eq!(
+            resp.into_body().try_into_bytes().unwrap(),
+            "Immutable params configured!"
+        );
+        assert_eq!(*app_state.enclave_owner.lock().unwrap(), valid_owner);
+
+        // Get the executor details without injecting mutable config params
+        let req = test::TestRequest::get()
+            .uri("/executor-details")
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
+        assert_eq!(
+            resp.into_body().try_into_bytes().unwrap(),
+            "Mutable params not configured yet!"
+        );
+
+        // Inject valid mutable config params
+        let gas_wallet_key = SigningKey::random(&mut OsRng);
+        let req = test::TestRequest::post()
+            .uri("/mutable-config")
+            .set_json(&json!({
+                "gas_key_hex": hex::encode(gas_wallet_key.to_bytes()),
+            }))
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::OK);
+        assert_eq!(
+            resp.into_body().try_into_bytes().unwrap(),
+            "Mutable params configured!"
+        );
+        assert_eq!(
+            *app_state.gas_address.lock().unwrap(),
+            public_key_to_address(gas_wallet_key.verifying_key())
+        );
+
+        // Get the executor details
+        let req = test::TestRequest::get()
+            .uri("/executor-details")
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        let response: Result<ExecutorDetails, serde_json::Error> =
+            serde_json::from_slice(&resp.into_body().try_into_bytes().unwrap());
+        assert!(response.is_ok());
+
+        let response = response.unwrap();
+        assert_eq!(response.enclave_address, app_state.enclave_address);
+        assert_eq!(response.owner_address, valid_owner);
+        assert_eq!(
+            response.gas_address,
             public_key_to_address(gas_wallet_key.verifying_key())
         );
     }
@@ -374,14 +462,7 @@ pub mod serverless_executor_test {
             "Mutable params configured!"
         );
         assert_eq!(
-            app_state
-                .http_rpc_client
-                .lock()
-                .unwrap()
-                .clone()
-                .unwrap()
-                .inner()
-                .address(),
+            *app_state.gas_address.lock().unwrap(),
             public_key_to_address(gas_wallet_key.verifying_key())
         );
 

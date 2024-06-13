@@ -11,7 +11,8 @@ use tokio::fs;
 
 use serverless::cgroups::Cgroups;
 use serverless::node_handler::{
-    export_signed_registration_message, index, inject_immutable_config, inject_mutable_config,
+    export_signed_registration_message, get_executor_details, index, inject_immutable_config,
+    inject_mutable_config,
 };
 use serverless::utils::AppState;
 
@@ -47,10 +48,10 @@ struct Args {
     #[clap(long, value_parser, default_value = "/app/id.sec")]
     enclave_signer_file: String,
 
-    #[clap(long, value_parser, default_value = "10")]
+    #[clap(long, value_parser, default_value = "60")]
     execution_buffer_time: u64, // time in seconds
 
-    #[clap(long, value_parser, default_value = "1")]
+    #[clap(long, value_parser, default_value = "3")]
     num_selected_executors: u8,
 }
 
@@ -102,6 +103,7 @@ async fn main() -> Result<()> {
         enclave_registered: false.into(),
         events_listener_active: false.into(),
         enclave_owner: H160::zero().into(),
+        gas_address: H160::zero().into(),
         http_rpc_client: None.into(),
         job_requests_running: HashSet::new().into(),
         last_block_seen: U64::zero().into(),
@@ -114,6 +116,7 @@ async fn main() -> Result<()> {
             .service(index)
             .service(inject_immutable_config)
             .service(inject_mutable_config)
+            .service(get_executor_details)
             .service(export_signed_registration_message)
     })
     .bind(("0.0.0.0", cli.port))

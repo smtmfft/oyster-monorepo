@@ -43,6 +43,7 @@ pub struct AppState {
     pub enclave_registered: Mutex<bool>,
     pub events_listener_active: Mutex<bool>,
     pub enclave_owner: Mutex<H160>,
+    pub gas_address: Mutex<H160>,
     pub http_rpc_client: Mutex<Option<Arc<HttpSignerProvider>>>,
     pub job_requests_running: Mutex<HashSet<U256>>,
     pub last_block_seen: Mutex<U64>,

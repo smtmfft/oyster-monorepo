@@ -111,7 +111,7 @@ async fn execute_job(
         &code_hash,
         slug,
         &app_state.workerd_runtime_path,
-        "https://sepolia-rollup.arbitrum.io/rpc",
+        &app_state.http_rpc_url,
         &app_state.code_contract_addr,
     )
     .await
