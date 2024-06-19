@@ -35,3 +35,4 @@ thiserror = "1.0.57"
 strip = true
 lto = true
 panic = "abort"
+codegen-units = 1
