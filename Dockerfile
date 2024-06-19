@@ -18,21 +18,13 @@ RUN chmod +x supervisord
 RUN wget -O ip-to-vsock-transparent http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-transparent_v1.0.0_linux_amd64
 RUN chmod +x ip-to-vsock-transparent
 
-# Key generator to generate static keys
-RUN wget -O keygen http://public.artifacts.marlin.pro/projects/enclaves/keygen_v1.0.0_linux_amd64
-RUN chmod +x keygen
-
 # Key generator to generate ecdsa keys
 RUN wget -O keygen-secp256k1 http://public.artifacts.marlin.pro/projects/enclaves/keygen-secp256k1_v1.0.0_linux_amd64
 RUN chmod +x keygen-secp256k1
 
 # Attestation server inside the enclave that generates attestations
-RUN wget -O attestation-server http://public.artifacts.marlin.pro/projects/enclaves/attestation-server_v1.0.0_linux_amd64
+RUN wget -O attestation-server http://public.artifacts.marlin.pro/projects/enclaves/attestation-server_v2.0.0_linux_amd64
 RUN chmod +x attestation-server
-
-# Attestation utility for oyster enclaves
-RUN wget -O oyster-attestation-utility http://public.artifacts.marlin.pro/projects/enclaves/oyster-attestation-utility_v1.0.0_linux_amd64
-RUN chmod +x oyster-attestation-utility
 
 # Proxy to expose attestation server outside the enclave
 RUN wget -O vsock-to-ip http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip_v1.0.0_linux_amd64
