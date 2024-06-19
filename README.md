@@ -14,6 +14,18 @@ This repository contains raw IP proxies used to tunnel IP traffic through a vsoc
 cargo build --release
 ```
 
+### Reproducible builds
+
+Reproducible builds can be done using a Rust Docker image to standardize the build environment:
+
+```bash
+# For amd64
+docker run --rm -v `pwd`:/code rust@sha256:ed7795c6eaccae53be35939e883e8c3de0197b21e8eddbd9f04b0c4bc757c094 /code/build-amd64.sh
+
+# For arm64
+docker run --rm -v `pwd`:/code rust@sha256:c428882ff081342a9661fb13a1d059ecdc0b6e979ffec64b80371cf20a2088b0 /code/build-arm64.sh
+```
+
 ## ip-to-vsock-raw-incoming
 
 The ip-to-vsock-raw-incoming proxy listens on a netfilter queue for raw packets and proxies them to a fixed vsock address. Meant to be used in conjunction with [vsock-to-ip-raw-incoming](#vsock-to-ip-raw-incoming) proxy and iptables rules to intercept packets and redirect them into a netfilter queue.
