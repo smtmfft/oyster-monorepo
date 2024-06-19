@@ -34,10 +34,10 @@ The ip-to-vsock-raw-incoming proxy listens on a netfilter queue for raw packets 
 
 ### Prebuilt binaries
 
-amd64: http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-raw-incoming_v1.0.0_linux_amd64
+amd64: http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-raw-incoming_v1.0.0_linux_amd64 \
 checksum: 376d1968b12dabb81935330323177d95c04e238b5085587cb2208a820c8eaa22
 
-arm64: http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-raw-incoming_v1.0.0_linux_arm64
+arm64: http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-raw-incoming_v1.0.0_linux_arm64 \
 checksum: aa16d83f629a3f507dda027db96bd6493b11ae041c2f61c97fef8fff98130f05
 
 ### Usage
@@ -59,10 +59,10 @@ The vsock-to-ip-raw-incoming proxy listens on a vsock address for raw packets an
 
 ### Prebuilt binaries
 
-amd64: http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-raw-incoming_v1.0.0_linux_amd64
+amd64: http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-raw-incoming_v1.0.0_linux_amd64 \
 checksum: 5bd7433956269cea0c92ca64b1e6abe5f763a3cad9c1011885a944cbc0ec53ee
 
-arm64: http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-raw-incoming_v1.0.0_linux_arm64
+arm64: http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-raw-incoming_v1.0.0_linux_arm64 \
 checksum: 71710819e0ef4b2032f58a02501665f636bacacb8d3f42827229da8851cc44aa
 
 ### Usage
@@ -84,10 +84,10 @@ The ip-to-vsock-raw-outgoing proxy listens on a netfilter queue for raw packets 
 
 ### Prebuilt binaries
 
-amd64: http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-raw-outgoing_v1.0.0_linux_amd64
+amd64: http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-raw-outgoing_v1.0.0_linux_amd64 \
 checksum: e94c516dd9608fe2eb2d6d6ff0be54a8f25de4cacdb289999d07bffa75364afe
 
-arm64: http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-raw-outgoing_v1.0.0_linux_arm64
+arm64: http://public.artifacts.marlin.pro/projects/enclaves/ip-to-vsock-raw-outgoing_v1.0.0_linux_arm64 \
 checksum: 2f1a2f23f3157739af43735019c85bca083f05a74117102c327ca28db6c7d03f
 
 ### Usage
@@ -109,10 +109,10 @@ The vsock-to-ip-raw-outgoing proxy listens on a vsock address for raw packets an
 
 ### Prebuilt binaries
 
-amd64: http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-raw-outgoing_v1.0.0_linux_amd64
+amd64: http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-raw-outgoing_v1.0.0_linux_amd64 \
 checksum: 72abb0de36ea71a7d20537bafe5166e3012537ed15930b6db0493e833e0d339f
 
-arm64: http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-raw-outgoing_v1.0.0_linux_arm64
+arm64: http://public.artifacts.marlin.pro/projects/enclaves/vsock-to-ip-raw-outgoing_v1.0.0_linux_arm64 \
 checksum: 407a0949be97fd832d57da522b4868abd66ff4d2b188d204eb43979c096fb658
 
 ### Usage
