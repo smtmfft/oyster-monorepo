@@ -41,9 +41,12 @@
 			url = "http://public.artifacts.marlin.pro/projects/enclaves/attestation-verifier_v2.1.0_linux_amd64";
 			sha256 = "6f32346254fefef7934d965f6341ea340f2a06bf183fb1c8053d7b53f00e097d";
 		};
+		setup = ./. + "/../setup.sh";
+		supervisorConf = ./. + "/../supervisord.conf";
 		in {
 			app = pkgs.runCommand "app" {} ''
 			echo Preparing the app folder
+			pwd
 			mkdir -p $out
 			mkdir -p $out/app
 			cp ${supervisord} $out/app/supervisord
@@ -54,6 +57,8 @@
 			cp ${dnsproxy} $out/app/dnsproxy
 			cp ${keygenSecp256k1} $out/app/keygen-secp256k1
 			cp ${attestationVerifier} $out/app/attestation-verifier
+			cp ${setup} $out/app/setup.sh
+			cp ${supervisorConf} $out/app/supervisord.conf
 			'';
 			packages.${system}.default = nitro.buildEif {
 				name = "enclave";
