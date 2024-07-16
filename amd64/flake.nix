@@ -58,6 +58,7 @@
 			cp ${keygenSecp256k1} $out/app/keygen-secp256k1
 			cp ${attestationVerifier} $out/app/attestation-verifier
 			cp ${setup} $out/app/setup.sh
+			chmod +x $out/app/*
 			cp ${supervisorConf} $out/app/supervisord.conf
 			'';
 			packages.${system}.default = nitro.buildEif {
