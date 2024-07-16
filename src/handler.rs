@@ -39,8 +39,6 @@ pub enum UserError {
     AttestationDecode(#[source] hex::FromHexError),
     #[error("error while verifying attestation")]
     AttestationVerification(#[source] oyster::AttestationError),
-    #[error("invalid secp256k1 length, expected 64")]
-    InvalidSecp256k1Length(#[source] TryFromSliceError),
     #[error("Message generation failed")]
     MessageGeneration(#[source] secp256k1::Error),
     #[error("invalid recovery id")]
