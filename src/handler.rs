@@ -132,11 +132,7 @@ fn verify(
     oyster::verify_with_timestamp(attestation, parsed.pcrs, parsed.timestamp)
         .map_err(UserError::AttestationVerification)?;
 
-    let requester_secp256k1_public: [u8; 64] = parsed
-        .public_key
-        .as_slice()
-        .try_into()
-        .map_err(UserError::InvalidSecp256k1Length)?;
+    let requester_secp256k1_public = parsed.public_key.as_slice();
 
     let digest = compute_digest(
         &requester_secp256k1_public,
