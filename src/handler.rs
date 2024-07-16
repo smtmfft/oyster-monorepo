@@ -53,7 +53,13 @@ impl error::ResponseError for UserError {
     }
 
     fn status_code(&self) -> actix_web::http::StatusCode {
-        StatusCode::INTERNAL_SERVER_ERROR
+        use UserError::*;
+        match self {
+            AttestationDecode(_) => StatusCode::BAD_REQUEST,
+            AttestationVerification(_) => StatusCode::UNAUTHORIZED,
+            MessageGeneration(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            InvalidRecovery(_) => StatusCode::UNAUTHORIZED,
+        }
     }
 }
 
