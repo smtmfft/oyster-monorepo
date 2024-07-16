@@ -71,7 +71,7 @@
 				env = "";
 				copyToRoot = pkgs.buildEnv {
 					name = "image-root";
-					paths = [ self.app ];
+					paths = [ self.app pkgs.nettools pkgs.iproute2 pkgs.iptables-legacy ];
 					pathsToLink = [ "/bin" "/app" ];
 				};
 			};
