@@ -67,11 +67,11 @@
 				# use AWS' nitro-cli binary blobs
 				inherit (nitro.blobs.${eifArch}) kernel kernelConfig nsmKo;
 
-				entrypoint = "/bin/hello";
+				entrypoint = "/app/setup.sh";
 				env = "";
 				copyToRoot = pkgs.buildEnv {
 					name = "image-root";
-					paths = [ pkgs.hello self.app ];
+					paths = [ self.app ];
 					pathsToLink = [ "/bin" "/app" ];
 				};
 			};
