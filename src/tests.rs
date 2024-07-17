@@ -10,6 +10,7 @@
 pub mod serverless_executor_test {
     use std::collections::HashSet;
     use std::str::FromStr;
+    use std::sync::atomic::Ordering;
 
     use actix_web::body::MessageBody;
     use actix_web::dev::{ServiceFactory, ServiceRequest, ServiceResponse};
@@ -39,10 +40,11 @@ pub mod serverless_executor_test {
 
     // Testnet or Local blockchain (Hardhat) configurations
     const CHAIN_ID: u64 = 421614;
-    const HTTP_RPC_URL: &str = "https://sepolia-rollup.arbitrum.io/rpc";
-    const WS_URL: &str = "wss://arbitrum-sepolia.infura.io/ws/v3/cd72f20b9fd544f8a5b8da706441e01c";
-    const EXECUTORS_CONTRACT_ADDR: &str = "0xc58Ffc9bfCc846E56Eeb9AaE5aBFAD00393a19C5";
-    const JOBS_CONTRACT_ADDR: &str = "0xaba049A974a331A3b450FB8263710Ad140f64E4F";
+    const HTTP_RPC_URL: &str =
+        "https://arb-sepolia.g.alchemy.com/v2/U8uYtmU3xK9j7HEZ74riWfj3C4ode7n1";
+    const WS_URL: &str = "wss://arb-sepolia.g.alchemy.com/v2/U8uYtmU3xK9j7HEZ74riWfj3C4ode7n1";
+    const EXECUTORS_CONTRACT_ADDR: &str = "0xE35E287DBC371561E198bFaCBdbEc9cF78bDe930";
+    const JOBS_CONTRACT_ADDR: &str = "0xd3b682f6F58323EC77dEaE730733C6A83a1561Fd";
     const CODE_CONTRACT_ADDR: &str = "0x44fe06d2940b8782a0a9a9ffd09c65852c0156b1";
 
     // Generate test app state
@@ -71,7 +73,7 @@ pub mod serverless_executor_test {
             enclave_owner: H160::zero().into(),
             http_rpc_client: None.into(),
             job_requests_running: HashSet::new().into(),
-            last_block_seen: U64::zero().into(),
+            last_block_seen: 0.into(),
         })
     }
 
@@ -115,7 +117,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Invalid owner address provided: Invalid input length"
+            "Invalid owner address hex string: OddLength\n"
         );
 
         // Inject invalid owner address hex string (invalid hex character)
@@ -131,7 +133,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Invalid owner address provided: Invalid character 'G' at position 5"
+            "Invalid owner address hex string: InvalidHexCharacter { c: 'G', index: 5 }\n"
         );
 
         // Inject invalid owner address hex string (less than 20 bytes)
@@ -147,7 +149,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Invalid owner address provided: Invalid input length"
+            "Owner address must be 20 bytes long!\n"
         );
 
         // Inject valid immutable config params
@@ -164,7 +166,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::OK);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Immutable params configured!"
+            "Immutable params configured!\n"
         );
         assert_eq!(*app_state.enclave_owner.lock().unwrap(), valid_owner);
 
@@ -182,7 +184,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Immutable params already configured!"
+            "Immutable params already configured!\n"
         );
     }
 
@@ -205,7 +207,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Failed to hex decode the gas private key into 32 bytes: InvalidStringLength"
+            "Gas private key must be 32 bytes long!\n"
         );
 
         // Inject invalid gas private key hex string (invalid hex character)
@@ -221,7 +223,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Failed to hex decode the gas private key into 32 bytes: InvalidHexCharacter { c: 'z', index: 17 }"
+            "Invalid gas private key hex string: InvalidHexCharacter { c: 'z', index: 17 }\n"
         );
 
         // Inject invalid gas private key hex string (not ecdsa valid key)
@@ -237,7 +239,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Invalid gas private key provided: EcdsaError(signature::Error { source: None })"
+            "Invalid gas private key provided: EcdsaError(signature::Error { source: None })\n"
         );
 
         // Inject valid mutable config params
@@ -254,7 +256,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::OK);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Mutable params configured!"
+            "Mutable params configured!\n"
         );
         assert_eq!(
             app_state
@@ -282,7 +284,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::OK);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Mutable params configured!"
+            "Mutable params configured!\n"
         );
         assert_eq!(
             app_state
@@ -317,11 +319,16 @@ pub mod serverless_executor_test {
 
         let resp = test::call_service(&app, req).await;
 
-        assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
-        assert_eq!(
-            resp.into_body().try_into_bytes().unwrap(),
-            "Immutable params not configured yet!"
-        );
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        let response: Result<ExecutorDetails, serde_json::Error> =
+            serde_json::from_slice(&resp.into_body().try_into_bytes().unwrap());
+        assert!(response.is_ok());
+
+        let response = response.unwrap();
+        assert_eq!(response.enclave_address, app_state.enclave_address);
+        assert_eq!(response.owner_address, H160::zero());
+        assert_eq!(response.gas_address, H160::zero());
 
         // Inject valid immutable config params
         let valid_owner = H160::random();
@@ -337,7 +344,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::OK);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Immutable params configured!"
+            "Immutable params configured!\n"
         );
         assert_eq!(*app_state.enclave_owner.lock().unwrap(), valid_owner);
 
@@ -348,11 +355,16 @@ pub mod serverless_executor_test {
 
         let resp = test::call_service(&app, req).await;
 
-        assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
-        assert_eq!(
-            resp.into_body().try_into_bytes().unwrap(),
-            "Mutable params not configured yet!"
-        );
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        let response: Result<ExecutorDetails, serde_json::Error> =
+            serde_json::from_slice(&resp.into_body().try_into_bytes().unwrap());
+        assert!(response.is_ok());
+
+        let response = response.unwrap();
+        assert_eq!(response.enclave_address, app_state.enclave_address);
+        assert_eq!(response.owner_address, valid_owner);
+        assert_eq!(response.gas_address, H160::zero());
 
         // Inject valid mutable config params
         let gas_wallet_key = SigningKey::random(&mut OsRng);
@@ -368,7 +380,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::OK);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Mutable params configured!"
+            "Mutable params configured!\n"
         );
         assert_eq!(
             app_state
@@ -432,7 +444,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Immutable params not configured yet!"
+            "Immutable params not configured yet!\n"
         );
 
         // Inject valid immutable config params
@@ -449,7 +461,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::OK);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Immutable params configured!"
+            "Immutable params configured!\n"
         );
         assert_eq!(*app_state.enclave_owner.lock().unwrap(), valid_owner);
 
@@ -463,7 +475,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Mutable params not configured yet!"
+            "Mutable params not configured yet!\n"
         );
 
         // Inject valid mutable config params
@@ -480,7 +492,7 @@ pub mod serverless_executor_test {
         assert_eq!(resp.status(), http::StatusCode::OK);
         assert_eq!(
             resp.into_body().try_into_bytes().unwrap(),
-            "Mutable params configured!"
+            "Mutable params configured!\n"
         );
         assert_eq!(
             app_state
@@ -493,8 +505,6 @@ pub mod serverless_executor_test {
                 .address(),
             public_key_to_address(gas_wallet_key.verifying_key())
         );
-
-        let active_tasks = metrics.active_tasks_count();
 
         // Export the enclave registration details
         let req = test::TestRequest::get()
@@ -523,7 +533,7 @@ pub mod serverless_executor_test {
             verifying_key
         );
         assert_eq!(*app_state.events_listener_active.lock().unwrap(), true);
-        assert_eq!(active_tasks + 1, metrics.active_tasks_count());
+        let active_tasks = metrics.active_tasks_count();
 
         // Export the enclave registration details again
         let req = test::TestRequest::get()
@@ -551,7 +561,7 @@ pub mod serverless_executor_test {
             ),
             verifying_key
         );
-        assert_eq!(active_tasks + 1, metrics.active_tasks_count());
+        assert_eq!(active_tasks, metrics.active_tasks_count());
     }
 
     #[actix_web::test]
@@ -803,7 +813,7 @@ pub mod serverless_executor_test {
 
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({})).unwrap().into();
 
-        // Code corresponding to the provided transaction hash has a syntax error
+        // Calldata corresponding to the provided transaction hash is invalid
         let job_logs = vec![
             get_job_created_log(
                 1.into(),
@@ -1034,7 +1044,7 @@ pub mod serverless_executor_test {
     // Test ExecutorDeregistered event handling
     async fn executor_deregistered_test() {
         let app_state = generate_app_state().await;
-        *app_state.enclave_registered.lock().unwrap() = true;
+        app_state.enclave_registered.store(true, Ordering::Relaxed);
 
         let (tx, mut rx) = channel::<JobResponse>(10);
 
@@ -1069,7 +1079,7 @@ pub mod serverless_executor_test {
         }
 
         assert!(
-            !*app_state_clone.enclave_registered.lock().unwrap(),
+            !app_state_clone.enclave_registered.load(Ordering::Relaxed),
             "Enclave not set to deregistered in the app_state!"
         );
     }

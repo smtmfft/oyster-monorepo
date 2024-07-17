@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -26,22 +25,31 @@ async fn inject_immutable_config(
 ) -> impl Responder {
     let mut immutable_params_injected_guard = app_state.immutable_params_injected.lock().unwrap();
     if *immutable_params_injected_guard == true {
-        return HttpResponse::BadRequest().body("Immutable params already configured!");
+        return HttpResponse::BadRequest().body("Immutable params already configured!\n");
     }
 
-    let owner_address = H160::from_str(&immutable_config.owner_address_hex);
+    let owner_address = hex::decode(
+        &immutable_config
+            .owner_address_hex
+            .strip_prefix("0x")
+            .unwrap_or(&immutable_config.owner_address_hex),
+    );
     let Ok(owner_address) = owner_address else {
         return HttpResponse::BadRequest().body(format!(
-            "Invalid owner address provided: {:?}",
+            "Invalid owner address hex string: {:?}\n",
             owner_address.unwrap_err()
         ));
     };
 
+    if owner_address.len() != 20 {
+        return HttpResponse::BadRequest().body("Owner address must be 20 bytes long!\n");
+    }
+
     // Initialize owner address for the enclave
-    *app_state.enclave_owner.lock().unwrap() = owner_address;
+    *app_state.enclave_owner.lock().unwrap() = H160::from_slice(&owner_address);
     *immutable_params_injected_guard = true;
 
-    HttpResponse::Ok().body("Immutable params configured!")
+    HttpResponse::Ok().body("Immutable params configured!\n")
 }
 
 #[post("/mutable-config")]
@@ -52,19 +60,28 @@ async fn inject_mutable_config(
 ) -> impl Responder {
     let mut mutable_params_injected_guard = app_state.mutable_params_injected.lock().unwrap();
 
-    let mut bytes32_gas_key = [0u8; 32];
-    if let Err(err) = hex::decode_to_slice(&mutable_config.gas_key_hex, &mut bytes32_gas_key) {
+    let bytes32_gas_key = hex::decode(
+        &mutable_config
+            .gas_key_hex
+            .strip_prefix("0x")
+            .unwrap_or(&mutable_config.gas_key_hex),
+    );
+    let Ok(bytes32_gas_key) = bytes32_gas_key else {
         return HttpResponse::BadRequest().body(format!(
-            "Failed to hex decode the gas private key into 32 bytes: {:?}",
-            err
+            "Invalid gas private key hex string: {:?}\n",
+            bytes32_gas_key.unwrap_err()
         ));
+    };
+
+    if bytes32_gas_key.len() != 32 {
+        return HttpResponse::BadRequest().body("Gas private key must be 32 bytes long!\n");
     }
 
     // Initialize local wallet with operator's gas key to send signed transactions to the common chain
     let gas_wallet = LocalWallet::from_bytes(&bytes32_gas_key);
     let Ok(gas_wallet) = gas_wallet else {
         return HttpResponse::BadRequest().body(format!(
-            "Invalid gas private key provided: {:?}",
+            "Invalid gas private key provided: {:?}\n",
             gas_wallet.unwrap_err()
         ));
     };
@@ -72,10 +89,10 @@ async fn inject_mutable_config(
     let gas_address = gas_wallet.address();
 
     // Connect the rpc http provider with the operator's gas wallet
-    let http_rpc_client = Provider::<Http>::try_connect(&app_state.http_rpc_url).await;
+    let http_rpc_client = Provider::<Http>::try_from(&app_state.http_rpc_url);
     let Ok(http_rpc_client) = http_rpc_client else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to connect to the http rpc server {}: {:?}",
+            "Failed to initialize the http rpc server {}: {:?}\n",
             app_state.http_rpc_url,
             http_rpc_client.unwrap_err()
         ));
@@ -88,24 +105,28 @@ async fn inject_mutable_config(
     *app_state.http_rpc_client.lock().unwrap() = Some(Arc::new(http_rpc_client));
     *mutable_params_injected_guard = true;
 
-    HttpResponse::Ok().body("Mutable params configured!")
+    HttpResponse::Ok().body("Mutable params configured!\n")
 }
 
 #[get("/executor-details")]
 // Endpoint exposed to retrieve executor enclave details
 async fn get_executor_details(app_state: Data<AppState>) -> impl Responder {
-    if *app_state.immutable_params_injected.lock().unwrap() == false {
-        return HttpResponse::BadRequest().body("Immutable params not configured yet!");
-    }
-
-    if *app_state.mutable_params_injected.lock().unwrap() == false {
-        return HttpResponse::BadRequest().body("Mutable params not configured yet!");
+    let mut gas_address = H160::zero();
+    if *app_state.mutable_params_injected.lock().unwrap() == true {
+        gas_address = app_state
+            .http_rpc_client
+            .lock()
+            .unwrap()
+            .clone()
+            .unwrap()
+            .inner()
+            .address();
     }
 
     HttpResponse::Ok().json(json!({
         "enclave_address": app_state.enclave_address,
         "owner_address": *app_state.enclave_owner.lock().unwrap(),
-        "gas_address": app_state.http_rpc_client.lock().unwrap().clone().unwrap().inner().address()
+        "gas_address": gas_address,
     }))
 }
 
@@ -113,11 +134,11 @@ async fn get_executor_details(app_state: Data<AppState>) -> impl Responder {
 // Endpoint exposed to retrieve the metadata required to register the enclave on the common chain
 async fn export_signed_registration_message(app_state: Data<AppState>) -> impl Responder {
     if *app_state.immutable_params_injected.lock().unwrap() == false {
-        return HttpResponse::BadRequest().body("Immutable params not configured yet!");
+        return HttpResponse::BadRequest().body("Immutable params not configured yet!\n");
     }
 
     if *app_state.mutable_params_injected.lock().unwrap() == false {
-        return HttpResponse::BadRequest().body("Mutable params not configured yet!");
+        return HttpResponse::BadRequest().body("Mutable params not configured yet!\n");
     }
 
     let job_capacity = app_state.job_capacity;
@@ -151,7 +172,7 @@ async fn export_signed_registration_message(app_state: Data<AppState>) -> impl R
     ]);
     let Ok(digest) = digest else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to encode the registration message for signing: {:?}",
+            "Failed to encode the registration message for signing: {:?}\n",
             digest.unwrap_err()
         ));
     };
@@ -161,24 +182,19 @@ async fn export_signed_registration_message(app_state: Data<AppState>) -> impl R
     let sig = app_state.enclave_signer.sign_prehash_recoverable(&digest);
     let Ok((rs, v)) = sig else {
         return HttpResponse::InternalServerError().body(format!(
-            "Failed to sign the registration message using enclave key: {:?}",
+            "Failed to sign the registration message using enclave key: {:?}\n",
             sig.unwrap_err()
         ));
     };
     let signature = hex::encode(rs.to_bytes().append(27 + v.to_byte()).to_vec());
 
+    let http_rpc_client = app_state.http_rpc_client.lock().unwrap().clone().unwrap();
+    let current_block_number = http_rpc_client.get_block_number().await;
+
     let mut events_listener_active_guard = app_state.events_listener_active.lock().unwrap();
     if *events_listener_active_guard == false {
-        let Ok(current_block_number) = app_state
-            .http_rpc_client
-            .lock()
-            .unwrap()
-            .clone()
-            .unwrap()
-            .get_block_number()
-            .await
-        else {
-            return HttpResponse::InternalServerError().body(format!("Failed to fetch the latest block number of the common chain for initiating event listening!"));
+        let Ok(current_block_number) = current_block_number else {
+            return HttpResponse::InternalServerError().body(format!("Failed to fetch the latest block number of the common chain for initiating event listening: {:?}\n", current_block_number.unwrap_err()));
         };
 
         *events_listener_active_guard = true;

@@ -1,3 +1,5 @@
+use std::sync::atomic::Ordering;
+
 use actix_web::web::Data;
 use ethers::abi::{decode, ParamType};
 use ethers::providers::{Middleware, Provider, StreamExt, Ws};
@@ -31,7 +33,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
                 }
             };
 
-        if *app_state.enclave_registered.lock().unwrap() == false {
+        if !app_state.enclave_registered.load(Ordering::Relaxed) {
             // Create filter to listen to the 'ExecutorRegistered' event emitted by the Executors contract
             let register_executor_filter = Filter::new()
                 .address(app_state.executors_contract_addr)
@@ -63,13 +65,15 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
                     continue;
                 }
 
-                *app_state.enclave_registered.lock().unwrap() = true;
-                *app_state.last_block_seen.lock().unwrap() =
-                    event.block_number.unwrap_or(starting_block);
+                app_state.enclave_registered.store(true, Ordering::Relaxed);
+                app_state.last_block_seen.store(
+                    event.block_number.unwrap_or(starting_block).as_u64(),
+                    Ordering::Relaxed,
+                );
                 break;
             }
 
-            if !*app_state.enclave_registered.lock().unwrap() {
+            if !app_state.enclave_registered.load(Ordering::Relaxed) {
                 continue;
             }
         }
@@ -82,7 +86,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
                 keccak256("JobCreated(uint256,address,bytes32,bytes,uint256,address[])"),
                 keccak256("JobResponded(uint256,bytes,uint256,uint8,uint8)"),
             ])
-            .from_block(*app_state.last_block_seen.lock().unwrap());
+            .from_block(app_state.last_block_seen.load(Ordering::Relaxed));
         // Subscribe to the jobs filter through the rpc web socket client
         let jobs_stream = match web_socket_client.subscribe_logs(&jobs_event_filter).await {
             Ok(stream) => stream,
@@ -102,7 +106,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
             .address(app_state.executors_contract_addr)
             .topic0(H256::from(keccak256("ExecutorDeregistered(address)")))
             .topic1(H256::from(app_state.enclave_address))
-            .from_block(*app_state.last_block_seen.lock().unwrap());
+            .from_block(app_state.last_block_seen.load(Ordering::Relaxed));
         // Subscribe to the executors filter through the rpc web socket client
         let executors_stream = match web_socket_client
             .subscribe_logs(&executors_event_filter)
@@ -129,7 +133,7 @@ pub async fn events_listener(app_state: Data<AppState>, starting_block: U64) {
         });
 
         handle_event_logs(jobs_stream, executors_stream, app_state.clone(), tx).await;
-        if !*app_state.enclave_registered.lock().unwrap() {
+        if !app_state.enclave_registered.load(Ordering::Relaxed) {
             return;
         }
     }
@@ -208,7 +212,7 @@ pub async fn handle_event_logs(
 
                 // Capture the Executor deregistered event emitted by the executors contract
                 println!("Enclave deregistered from the common chain!");
-                *app_state.enclave_registered.lock().unwrap() = false;
+                app_state.enclave_registered.store(false, Ordering::Relaxed);
 
                 println!("Stopped listening to job events!");
                 return;
@@ -222,10 +226,10 @@ pub async fn handle_event_logs(
                     continue;
                 };
 
-                if current_block < *app_state.last_block_seen.lock().unwrap() {
+                if current_block.as_u64() < app_state.last_block_seen.load(Ordering::Relaxed) {
                     continue;
                 }
-                *app_state.last_block_seen.lock().unwrap() = current_block;
+                app_state.last_block_seen.store(current_block.as_u64(), Ordering::Relaxed);
 
                 // Capture the Job created event emitted by the jobs contract
                 if event.topics[0]

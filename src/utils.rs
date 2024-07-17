@@ -1,5 +1,7 @@
 use std::collections::HashSet;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use actix_web::web::Bytes;
 use anyhow::{anyhow, Context, Result};
@@ -7,7 +9,7 @@ use ethers::contract::{abigen, FunctionCall};
 use ethers::middleware::{NonceManagerMiddleware, SignerMiddleware};
 use ethers::providers::{Http, Provider};
 use ethers::signers::LocalWallet;
-use ethers::types::{Address, TransactionReceipt, H160, U256, U64};
+use ethers::types::{Address, TransactionReceipt, H160, U256};
 use k256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
 
@@ -40,12 +42,12 @@ pub struct AppState {
     pub enclave_signer: SigningKey,
     pub immutable_params_injected: Mutex<bool>,
     pub mutable_params_injected: Mutex<bool>,
-    pub enclave_registered: Mutex<bool>,
+    pub enclave_registered: AtomicBool,
     pub events_listener_active: Mutex<bool>,
     pub enclave_owner: Mutex<H160>,
     pub http_rpc_client: Mutex<Option<Arc<HttpSignerProvider>>>,
     pub job_requests_running: Mutex<HashSet<U256>>,
-    pub last_block_seen: Mutex<U64>,
+    pub last_block_seen: AtomicU64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -91,6 +93,7 @@ pub async fn send_txn(
     let txn_hash = pending_txn.tx_hash();
     let Some(txn_receipt) = pending_txn
         .confirmations(1) // TODO: FIX CONFIRMATIONS REQUIRED
+        .interval(Duration::from_millis(1000))
         .await
         .context("Failed to confirm the transaction")?
     else {

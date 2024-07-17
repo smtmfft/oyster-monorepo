@@ -4,7 +4,7 @@ use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use ethers::types::{Address, H160, U64};
+use ethers::types::{Address, H160};
 use ethers::utils::public_key_to_address;
 use k256::ecdsa::SigningKey;
 use tokio::fs;
@@ -27,7 +27,7 @@ struct Args {
     #[clap(long, value_parser, default_value = "./runtime/")]
     workerd_runtime_path: String,
 
-    #[clap(long, value_parser, default_value = "1")]
+    #[clap(long, value_parser, default_value = "")]
     common_chain_id: u64,
 
     #[clap(long, value_parser, default_value = "")]
@@ -105,7 +105,7 @@ async fn main() -> Result<()> {
         enclave_owner: H160::zero().into(),
         http_rpc_client: None.into(),
         job_requests_running: HashSet::new().into(),
-        last_block_seen: U64::zero().into(),
+        last_block_seen: 0.into(),
     });
 
     // Start actix server to expose the executor outside the enclave
