@@ -49,6 +49,7 @@
 			pwd
 			mkdir -p $out
 			mkdir -p $out/app
+			mkdir -p $out/etc
 			cp ${supervisord} $out/app/supervisord
 			cp ${keygenEd25519} $out/app/keygen-ed25519
 			cp ${itvtProxy} $out/app/ip-to-vsock-transparent
@@ -59,7 +60,7 @@
 			cp ${attestationVerifier} $out/app/attestation-verifier
 			cp ${setup} $out/app/setup.sh
 			chmod +x $out/app/*
-			cp ${supervisorConf} $out/app/supervisord.conf
+			cp ${supervisorConf} $out/etc/supervisord.conf
 			'';
 			packages.${system}.default = nitro.buildEif {
 				name = "enclave";
@@ -73,7 +74,7 @@
 				copyToRoot = pkgs.buildEnv {
 					name = "image-root";
 					paths = [ self.app pkgs.nettools pkgs.iproute2 pkgs.iptables-legacy ];
-					pathsToLink = [ "/bin" "/app" ];
+					pathsToLink = [ "/bin" "/app" "/etc" ];
 				};
 			};
 		};
