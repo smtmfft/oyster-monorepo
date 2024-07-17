@@ -4,7 +4,7 @@
 		nitro-util.url = "github:/monzo/aws-nitro-util";
 		nitro-util.inputs.nixpkgs.follows = "nixpkgs";
 	};
-	outputs = { self, nixpkgs, flake-utils, nitro-util }:
+	outputs = { self, nixpkgs, nitro-util }:
 		let system = "x86_64-linux"; 
 		nitro = nitro-util.lib.${system};
 		eifArch = "x86_64";
