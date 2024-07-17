@@ -1,6 +1,6 @@
 ![Marlin Oyster Logo](./logo.svg)
 
-# Attestation verifier enclave
+# Attestation Verifier Enclave
 
 The attestation verifier enclave packages the [attestation verifier](https://github.com/marlinprotocol/oyster-attestation-verifier) along with related services in an enclave.
 
@@ -40,3 +40,13 @@ nix build --out-link result-amd64 ./amd64 -v -L --system x86_64-linux
 # The request-amd64 folder will contain the image and pcrs
 nix build --out-link result-arm64 ./arm64 -v -L --system aarch64-linux
 ```
+
+## Prebuilt enclaves
+
+amd64: http://public.artifacts.marlin.pro/eifs/attestation-verifier_v1.0.0_linux_amd64.eif \
+checksum: 669aa69167c4eae14defadb32973a1bdd62267463c66163de35bbbd69e2e5fcf \
+pcrs: http://public.artifacts.marlin.pro/eifs/attestation-verifier_v1.0.0_linux_amd64.json
+
+arm64: http://public.artifacts.marlin.pro/eifs/attestation-verifier_v1.0.0_linux_arm64.eif \
+checksum: bbebbfea120f7d8030a130dfee6a81f978072b4c6b6e5833f9c49f89b93a13df \
+pcrs: http://public.artifacts.marlin.pro/eifs/attestation-verifier_v1.0.0_linux_arm64.json
