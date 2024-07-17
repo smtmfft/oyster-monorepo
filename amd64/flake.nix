@@ -67,7 +67,7 @@
 				arch = eifArch;
 
 				# use AWS' nitro-cli binary blobs
-				inherit (nitro.blobs.${eifArch}) kernel kernelConfig nsmKo;
+				inherit (nitro.blobs.${eifArch}) kernel kernelConfig nsmKo init;
 
 				entrypoint = "/app/setup.sh";
 				env = "";
