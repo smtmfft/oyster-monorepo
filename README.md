@@ -43,10 +43,10 @@ nix build --out-link result-arm64 ./arm64 -v -L --system aarch64-linux
 
 ## Prebuilt enclaves
 
-amd64: http://public.artifacts.marlin.pro/eifs/attestation-verifier_v1.0.0_linux_amd64.eif \
+amd64: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.0.0_linux_amd64.eif \
 checksum: 669aa69167c4eae14defadb32973a1bdd62267463c66163de35bbbd69e2e5fcf \
-pcrs: http://public.artifacts.marlin.pro/eifs/attestation-verifier_v1.0.0_linux_amd64.json
+pcrs: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.0.0_linux_amd64.json
 
-arm64: http://public.artifacts.marlin.pro/eifs/attestation-verifier_v1.0.0_linux_arm64.eif \
+arm64: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.0.0_linux_arm64.eif \
 checksum: bbebbfea120f7d8030a130dfee6a81f978072b4c6b6e5833f9c49f89b93a13df \
-pcrs: http://public.artifacts.marlin.pro/eifs/attestation-verifier_v1.0.0_linux_arm64.json
+pcrs: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.0.0_linux_arm64.json
