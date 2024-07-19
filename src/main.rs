@@ -78,7 +78,7 @@ struct Args {
 
     // Execution buffer time as configured on common chain (in seconds)
     #[clap(long, value_parser, default_value = "20")]
-    execution_buffer_time: u64, 
+    execution_buffer_time: u64,
 
     // Number of executors selected at a time to execute a job as configured on common chain
     #[clap(long, value_parser, default_value = "3")]

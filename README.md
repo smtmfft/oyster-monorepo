@@ -163,6 +163,17 @@ curl <executor_node_ip:executor_node_port>/signed-registration-message -vs
 
 ## Running the tests
 
+To run the tests, make the following change in file `cgroup.rs`:
+```
+  -     let child = Command::new("cgexec")
+  +     let child = Command::new("sudo")          
+  +         .arg("cgexec")
+            .arg("-g")
+            .arg("memory,cpu:".to_string() + cgroup)
+            .args(args)
+            .stderr(Stdio::piped())
+            .spawn()?;
+```
 Before running the tests, enable the below flag: 
 ```
 sudo ./cgroupv2_setup.sh
