@@ -92,7 +92,7 @@ pub async fn send_txn(
 
     let txn_hash = pending_txn.tx_hash();
     let Some(txn_receipt) = pending_txn
-        .confirmations(1) // TODO: FIX CONFIRMATIONS REQUIRED
+        .confirmations(1)
         .interval(Duration::from_millis(1000))
         .await
         .context("Failed to confirm the transaction")?

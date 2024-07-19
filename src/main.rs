@@ -20,37 +20,67 @@ use serverless::utils::AppState;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    //  TODO: ADD DEFAULT CONFIGURATIONS
+    // Server port
     #[clap(long, value_parser, default_value = "6001")]
     port: u16,
 
+    // Runtime path where code and config files will be created and executed (workerd binary should be present)
     #[clap(long, value_parser, default_value = "./runtime/")]
     workerd_runtime_path: String,
 
-    #[clap(long, value_parser, default_value = "")]
+    // Common chain id
+    #[clap(long, value_parser, default_value = "421614")]
     common_chain_id: u64,
 
-    #[clap(long, value_parser, default_value = "")]
+    // Http url of the RPC endpoint
+    #[clap(
+        long,
+        value_parser,
+        default_value = "https://arb-sepolia.g.alchemy.com/v2/U8uYtmU3xK9j7HEZ74riWfj3C4ode7n1"
+    )]
     http_rpc_url: String,
 
-    #[clap(long, value_parser, default_value = "")]
+    // Websocket url of the RPC endpoint
+    #[clap(
+        long,
+        value_parser,
+        default_value = "wss://arb-sepolia.g.alchemy.com/v2/U8uYtmU3xK9j7HEZ74riWfj3C4ode7n1"
+    )]
     web_socket_url: String,
 
-    #[clap(long, value_parser, default_value = "")]
+    // Executors smart contract address on common chain
+    #[clap(
+        long,
+        value_parser,
+        default_value = "0xE35E287DBC371561E198bFaCBdbEc9cF78bDe930"
+    )]
     executors_contract_addr: String,
 
-    #[clap(long, value_parser, default_value = "")]
+    // Jobs smart contract address on common chain
+    #[clap(
+        long,
+        value_parser,
+        default_value = "0xd3b682f6F58323EC77dEaE730733C6A83a1561Fd"
+    )]
     jobs_contract_addr: String,
 
-    #[clap(long, value_parser, default_value = "")]
+    // User code calldata smart contract address on common chain
+    #[clap(
+        long,
+        value_parser,
+        default_value = "0x44fe06d2940b8782a0a9a9ffd09c65852c0156b1"
+    )]
     code_contract_addr: String,
 
-    #[clap(long, value_parser, default_value = "/app/id.sec")]
+    // path to enclave secp256k1 private key file
+    #[clap(long, value_parser, default_value = "./id.sec")]
     enclave_signer_file: String,
 
-    #[clap(long, value_parser, default_value = "60")]
-    execution_buffer_time: u64, // time in seconds
+    // Execution buffer time as configured on common chain (in seconds)
+    #[clap(long, value_parser, default_value = "20")]
+    execution_buffer_time: u64, 
 
+    // Number of executors selected at a time to execute a job as configured on common chain
     #[clap(long, value_parser, default_value = "3")]
     num_selected_executors: u8,
 }

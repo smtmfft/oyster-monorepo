@@ -1,5 +1,6 @@
-// TODO: tests have to be run one by one currently
-/* NOTE: To run an unit test 'test_name', hit the following commands on terminal ->
+// NOTE: Tests have to be run one by one currently
+
+/* To run an unit test 'test_name', hit the following commands on terminal ->
    1.    sudo ./cgroupv2_setup.sh
    2.    export RUSTFLAGS="--cfg tokio_unstable"
    3.    sudo echo && cargo test 'test name' -- --nocapture &
