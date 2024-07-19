@@ -303,6 +303,7 @@ pub mod serverless_executor_test {
     #[derive(Serialize, Deserialize, Debug)]
     struct ExecutorDetails {
         enclave_address: H160,
+        enclave_public_key: String,
         owner_address: H160,
         gas_address: H160,
     }
@@ -328,6 +329,19 @@ pub mod serverless_executor_test {
 
         let response = response.unwrap();
         assert_eq!(response.enclave_address, app_state.enclave_address);
+        assert_eq!(
+            response.enclave_public_key,
+            format!(
+                "0x{}",
+                hex::encode(
+                    &(app_state
+                        .enclave_signer
+                        .verifying_key()
+                        .to_encoded_point(false)
+                        .as_bytes())[1..]
+                )
+            )
+        );
         assert_eq!(response.owner_address, H160::zero());
         assert_eq!(response.gas_address, H160::zero());
 
@@ -364,6 +378,19 @@ pub mod serverless_executor_test {
 
         let response = response.unwrap();
         assert_eq!(response.enclave_address, app_state.enclave_address);
+        assert_eq!(
+            response.enclave_public_key,
+            format!(
+                "0x{}",
+                hex::encode(
+                    &(app_state
+                        .enclave_signer
+                        .verifying_key()
+                        .to_encoded_point(false)
+                        .as_bytes())[1..]
+                )
+            )
+        );
         assert_eq!(response.owner_address, valid_owner);
         assert_eq!(response.gas_address, H160::zero());
 
@@ -410,6 +437,19 @@ pub mod serverless_executor_test {
 
         let response = response.unwrap();
         assert_eq!(response.enclave_address, app_state.enclave_address);
+        assert_eq!(
+            response.enclave_public_key,
+            format!(
+                "0x{}",
+                hex::encode(
+                    &(app_state
+                        .enclave_signer
+                        .verifying_key()
+                        .to_encoded_point(false)
+                        .as_bytes())[1..]
+                )
+            )
+        );
         assert_eq!(response.owner_address, valid_owner);
         assert_eq!(
             response.gas_address,

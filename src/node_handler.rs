@@ -125,6 +125,7 @@ async fn get_executor_details(app_state: Data<AppState>) -> impl Responder {
 
     HttpResponse::Ok().json(json!({
         "enclave_address": app_state.enclave_address,
+        "enclave_public_key": format!("0x{}", hex::encode(&(app_state.enclave_signer.verifying_key().to_encoded_point(false).as_bytes())[1..])),
         "owner_address": *app_state.enclave_owner.lock().unwrap(),
         "gas_address": gas_address,
     }))

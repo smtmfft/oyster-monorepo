@@ -1,14 +1,18 @@
 # Oyster-serverless-executor
 
-Oyster Serverless Executor is a cutting-edge, high-performance serverless computing platform designed to securely execute JavaScript (JS) and WebAssembly (WASM) code in a highly controlled environment. It is an integral part of the Oyster-Serverless web3 ecosystem used to run dApps via interaction with smart contracts. Executor node is meant to run inside on-chain verified (Oyster-verification protocol) enclave ensuring that any message signed by it will be treated as truth and smart contracts can execute based on that signed message. The owners provide computation services and manage the lifecycle of multiple executor enclaves, like registration, deregistration, stakes etc. Built using the Rust, Actix Web framework and ethers library - Oyster serverless executor leverages the power and security of AWS Nitro Enclaves, Cloudflare workerd runtime, cgroups to provide unparalleled isolation and protection for the executed code and RPCs to interact with the smart contracts.
+Oyster Serverless Executor is a cutting-edge, high-performance serverless computing platform designed to securely execute JavaScript (JS) code in a highly controlled environment. It is an integral part of the Oyster-Serverless web3 ecosystem used to run dApps via interaction with smart contracts. Executor node is meant to run inside on-chain verified (Oyster-verification protocol) enclave ensuring that any message signed by it will be treated as truth and smart contracts can execute based on that signed message. The owners provide computation services and manage the lifecycle of multiple executor enclaves, like registration, deregistration, stakes etc. Built using the Rust, Actix Web framework and ethers library - Oyster serverless executor leverages the power and security of AWS Nitro Enclaves, Cloudflare workerd runtime, cgroups to provide unparalleled isolation and protection for the executed code and RPCs to interact with the smart contracts.
 
-## Getting started
+## Tools and setup required for building executor locally 
 
 <b>Install the following packages : </b>
 
 * build-essential 
 * libc++1
 * cgroup-tools
+* libssl-dev
+* musl-tools
+* make
+* pkg-config
 
 `Note : Oyster serverless executor only works on Ubuntu 22.04 and newer versions due to limitations in the workerd dependency.`
 
@@ -16,6 +20,8 @@ Oyster Serverless Executor is a cutting-edge, high-performance serverless comput
 ```
 sudo ./cgroupv2_setup.sh
 ```
+To check whether the cgroups were successfully created or not on your system, verify that the output of `ls /sys/fs/cgroup` contains folders `workerd_*`(specifically 20 according to current setup).
+
 
 <b>Signer file setup</b>
 
@@ -25,6 +31,21 @@ The <a href="https://github.com/marlinprotocol/keygen">Keygen repo</a> can be us
 <b> RPC and smart contracts configuration</b>
 
 To run the serverless executor, details related to RPC like the HTTP and WebSocket URLs will be needed through which the executor will communicate with the common chain. Also the addresses of the relevant smart contracts deployed there like **Executors**, **Jobs** and **UserCode** will be needed.
+
+<b> Build the executor binary </b>
+
+Default build target is `x86_64-unknown-linux-musl`. Can be changed in the `.cargo/config.toml` file or in the build command itself. Add the required build target first like: 
+```
+rustup target add x86_64-unknown-linux-musl
+```
+Build the binary executable: 
+```
+cargo build --release
+```
+OR (for custom targets)
+```
+cargo build --release --target x86_64-unknown-linux-musl
+```
 
 ## Running serverless executor application
 
@@ -66,115 +87,45 @@ Options:
   -V, --version
           Print version
 ```
+Example command to run the executor locally:
 ```
-cargo build --release && sudo ./target/x86_64-unknown-linux-musl/release/oyster-serverless-executor --signer ./path/to/signer
+sudo ./target/x86_64-unknown-linux-musl/release/oyster-serverless-executor --signer ./path/to/signer
 ```
-
-Default build target is `x86_64-unknown-linux-musl`. Can be changed in the `.cargo/config.toml` file or in the build command itself.
 
 <b> Inject immutable configuration parameters into the application: </b>
 
 Currently there is only one such parameter and it is the address of the executor enclave owner.
 ```
-curl -X POST -H "Content-Type: application/json" -d '{"owner_address_hex": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"}' <executor_node_ip:executor_node_port>/immutable-config -vs
-* Host <executor_node_ip:executor_node_port> was resolved.
-*   Trying <executor_node_ip:executor_node_port>...
-* Connected to <executor_node_ip> (<executor_node_ip>) port <executor_node_port>
-> POST /immutable-config HTTP/1.1
-> Host: <executor_node_ip:executor_node_port>
-> User-Agent: curl/8.5.0
-> Accept: */*
-> Content-Type: application/json
-> Content-Length: 65
-> 
-< HTTP/1.1 200 OK
-< content-length: 29
-< date: Fri, 19 Jul 2024 08:11:09 GMT
-< 
+$ curl -X POST -H "Content-Type: application/json" -d '{"owner_address_hex": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"}' <executor_node_ip:executor_node_port>/immutable-config 
 Immutable params configured!
-* Connection #0 to host <executor_node_ip> left intact
 ```
 
 <b> Inject mutable configuration parameters into the application: </b>
 
-Currently there is only one such parameter and it is the gas private key used by the owner to send transactions through the node.
+Currently there is only one such parameter and it is the gas private key used by the executor enclave to send transactions to the common chain.
 ```
-curl -X POST -H "Content-Type: application/json" -d '{"gas_key_hex": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"}' <executor_node_ip:executor_node_port>/mutable-config -vs
-* Host <executor_node_ip:executor_node_port> was resolved.
-*   Trying <executor_node_ip:executor_node_port>...
-* Connected to <executor_node_ip> (<executor_node_ip>) port <executor_node_port>
-> POST /mutable-config HTTP/1.1
-> Host: <executor_node_ip:executor_node_port>
-> User-Agent: curl/8.5.0
-> Accept: */*
-> Content-Type: application/json
-> Content-Length: 85
-> 
-< HTTP/1.1 200 OK
-< content-length: 27
-< date: Fri, 19 Jul 2024 08:14:38 GMT
-< 
+$ curl -X POST -H "Content-Type: application/json" -d '{"gas_key_hex": "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"}' <executor_node_ip:executor_node_port>/mutable-config 
 Mutable params configured!
-* Connection #0 to host <executor_node_ip> left intact
 ```
 **The owner can use the below endpoint to get details about the state of the executor node**:-
 ```
-curl <executor_node_ip:executor_node_port>/executor-details -vs
-* Host <executor_node_ip:executor_node_port> was resolved.
-*   Trying <executor_node_ip:executor_node_port>...
-* Connected to <executor_node_ip> (<executor_node_ip>) port <executor_node_port>
-> GET /executor-details HTTP/1.1
-> Host: <executor_node_ip:executor_node_port>
-> User-Agent: curl/8.5.0
-> Accept: */*
-> 
-< HTTP/1.1 200 OK
-< content-length: 184
-< content-type: application/json
-< date: Fri, 19 Jul 2024 08:21:01 GMT
-< 
-* Connection #0 to host <executor_node_ip> left intact
-{"enclave_address":"0x2e5e17c117efeb0727765988b230c4d95f8e8c9c","gas_address":"0x90f79bf6eb2c4f870365e785982e1f101e93b906","owner_address":"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"}
+$ curl <executor_node_ip:executor_node_port>/executor-details
+{"enclave_address":"0x2e5e17c117efeb0727765988b230c4d95f8e8c9c","enclave_public_key":"0x2772e3e5d5dfb8e583feb6f4d251f4bda32ef692aad0831055a663d9be3edb4591cc0109d9e8d0672f8576160cf81ed4909b0a0a163951341f74aec44018ea49","gas_address":"0x90f79bf6eb2c4f870365e785982e1f101e93b906","owner_address":"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"}
 ```
 
 <b> Exporting registration details from the executor node: </b>
 
 The owner can hit the below endpoint to get the registration details required to register the executor enclave on the common chain **Executors** contract. The endpoint will also start the listening of such event notifications on the common chain inside the enclave node.
 ```
-curl <executor_node_ip:executor_node_port>/signed-registration-message -vs
-* Host <executor_node_ip:executor_node_port> was resolved.
-*   Trying <executor_node_ip:executor_node_port>...
-* Connected to <executor_node_ip> (<executor_node_ip>) port <executor_node_port>
-> GET /signed-registration-message HTTP/1.1
-> Host: <executor_node_ip:executor_node_port>
-> User-Agent: curl/8.5.0
-> Accept: */*
-> 
-< HTTP/1.1 200 OK
-< content-length: 245
-< content-type: application/json
-< date: Fri, 19 Jul 2024 08:27:40 GMT
-< 
-* Connection #0 to host <executor_node_ip> left intact
-{"job_capacity":20,"owner":"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266","sign_timestamp":1721377660,"signature":"9f7992a1f646963cf62c9ca560c106d1e2aea676f7b7741b3cda13b7f0ca5cd9038ac7892b226fcfafcaf0359950133b41c9e1bc0f5ebc70bcda265ba90e70531b"}
+$ curl <executor_node_ip:executor_node_port>/signed-registration-message
+{"job_capacity":20,"owner":"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266","sign_timestamp":1721388963,"signature":"19902ff8f70d7bba8d0001f619eb5c67bf1a97f8ed0b45fdba1b64a5a25dac5c1e253b533a06f477f7e7673a8ad1875dd415ed01640813a0a5f88723bbb2d8e51b"}
 ```
 
 **Note:** After the owner will register the executor enclave on the common chain, the node will listen to that event and start the listening of job requests created by the **Jobs** contract on the common chain and execute them acordingly.
 
 ## Running the tests
 
-To run the tests, make the following change in file `cgroup.rs`:
-```
-  -     let child = Command::new("cgexec")
-  +     let child = Command::new("sudo")          
-  +         .arg("cgexec")
-            .arg("-g")
-            .arg("memory,cpu:".to_string() + cgroup)
-            .args(args)
-            .stderr(Stdio::piped())
-            .spawn()?;
-```
-Before running the tests, enable the below flag: 
+Before running the tests, generate the cgroups (if not already) and enable the below flag: 
 ```
 sudo ./cgroupv2_setup.sh
 export RUSTFLAGS="--cfg tokio_unstable"

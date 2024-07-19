@@ -32,11 +32,28 @@ impl Cgroups {
     }
 
     // Execute the user code using workerd config in the given 'cgroup' which'll provide memory and cpu for the purpose
+    #[cfg(not(test))]
     pub fn execute(
         cgroup: &str,
         args: impl IntoIterator<Item = impl AsRef<OsStr>>,
     ) -> Result<Child> {
         let child = Command::new("cgexec")
+            .arg("-g")
+            .arg("memory,cpu:".to_string() + cgroup)
+            .args(args)
+            .stderr(Stdio::piped())
+            .spawn()?;
+
+        Ok(child)
+    }
+
+    #[cfg(test)]
+    pub fn execute(
+        cgroup: &str,
+        args: impl IntoIterator<Item = impl AsRef<OsStr>>,
+    ) -> Result<Child> {
+        let child = Command::new("sudo")
+            .arg("cgexec")
             .arg("-g")
             .arg("memory,cpu:".to_string() + cgroup)
             .args(args)
