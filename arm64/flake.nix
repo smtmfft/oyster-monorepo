@@ -43,6 +43,22 @@
 			url = "https://artifacts.marlin.org/oyster/binaries/attestation-verifier_v2.1.0_linux_arm64";
 			sha256 = "1fb9424b8972bedc80ee2bafa2d662e8dde01f9615542beec30497a37da19cb1";
 		};
+		kernel = builtins.fetchurl {
+			url = "https://artifacts.marlin.org/oyster/kernels/vanilla_7614f199_arm64/Image";
+			sha256 = "62d5c3f1217c2d488acef23a190d6c01080c47662596325838da7889c806c8a3";
+		};
+		kernelConfig = builtins.fetchurl {
+			url = "https://artifacts.marlin.org/oyster/kernels/vanilla_7614f199_arm64/Image.config";
+			sha256 = "c147022ad53d564ef6774be918f654ef60d9333b0a307a4e521879dd959941b4";
+		};
+		nsmKo = builtins.fetchurl {
+			url = "https://artifacts.marlin.org/oyster/kernels/vanilla_7614f199_arm64/nsm.ko";
+			sha256 = "2535b8b4e0b8697c33ba3bb64e3ca15360ceea75eb6cfba6ca3d86300c250368";
+		};
+		init = builtins.fetchurl {
+			url = "https://artifacts.marlin.org/oyster/kernels/vanilla_7614f199_arm64/init";
+			sha256 = "1d02f2fabd6574903c624bce6499fbd9d92283afefe6f9e5c2eead6917463c53";
+		};
 		setup = ./. + "/../setup.sh";
 		supervisorConf = ./. + "/../supervisord.conf";
 		in {
@@ -68,8 +84,10 @@
 				name = "enclave";
 				arch = eifArch;
 
-				# use AWS' nitro-cli binary blobs
-				inherit (nitro.blobs.${eifArch}) kernel kernelConfig nsmKo init;
+				kernel = kernel;
+				kernelConfig = kernelConfig;
+				nsmKo = nsmKo;
+				init = init;
 
 				entrypoint = "/app/setup.sh";
 				env = "";
