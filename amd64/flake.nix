@@ -84,10 +84,10 @@
 				name = "enclave";
 				arch = eifArch;
 
+				inherit (nitro.blobs.${eifArch}) init;
 				kernel = kernel;
 				kernelConfig = kernelConfig;
 				nsmKo = nsmKo;
-				init = init;
 
 				entrypoint = "/app/setup.sh";
 				env = "";
