@@ -1,9 +1,7 @@
 {
 	inputs = {
-		# latest commit on 23.11 channel as of 17th July 2024
-		nixpkgs.url = "github:NixOS/nixpkgs/205fd4226592cc83fd4c0885a3e4c9c400efabb5";
-		# latest commit on master branch as of 17th July 2024
-		nitro-util.url = "github:/monzo/aws-nitro-util/7591f28388e531c5fbb7a8fc9f9d2bc3b5c05894";
+		nixpkgs.url = "github:NixOS/nixpkgs/24.05";
+		nitro-util.url = "github:/monzo/aws-nitro-util";
 		nitro-util.inputs.nixpkgs.follows = "nixpkgs";
 	};
 	outputs = { self, nixpkgs, nitro-util }:
