@@ -86,6 +86,7 @@
 				kernel = kernel;
 				kernelConfig = kernelConfig;
 				nsmKo = nsmKo;
+				cmdline = builtins.readFile nitro.blobs.${eifArch}.cmdLine;
 
 				entrypoint = "/app/setup.sh";
 				env = "";
