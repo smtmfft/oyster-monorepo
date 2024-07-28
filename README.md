@@ -43,10 +43,10 @@ nix build --out-link result-arm64 ./arm64 -v -L --system aarch64-linux
 
 ## Prebuilt enclaves
 
-amd64: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.0.0_linux_amd64.eif \
-checksum: 669aa69167c4eae14defadb32973a1bdd62267463c66163de35bbbd69e2e5fcf \
-pcrs: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.0.0_linux_amd64.json
+amd64: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.1.0_linux_amd64.eif \
+checksum: f50bd44512132aa7a8bae6e73c8a1c2120b76061707dcc60a2196d7a3d17bb45 \
+pcrs: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.1.0_linux_amd64.json
 
-arm64: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.0.0_linux_arm64.eif \
-checksum: bbebbfea120f7d8030a130dfee6a81f978072b4c6b6e5833f9c49f89b93a13df \
-pcrs: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.0.0_linux_arm64.json
+arm64: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.1.0_linux_arm64.eif \
+checksum: f390fe6a75f3fea548ae806871c2b2d64bea24bc17a445cda019dc6953c5f01f \
+pcrs: https://artifacts.marlin.org/oyster/eifs/attestation-verifier_v1.1.0_linux_arm64.json
