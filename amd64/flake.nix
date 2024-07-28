@@ -78,11 +78,16 @@
 			chmod +x $out/app/*
 			cp ${supervisorConf} $out/etc/supervisord.conf
 			'';
+			# kinda hacky, my nix-fu is not great, figure out a better way
+			initPerms = pkgs.runCommand "initPerms" {} ''
+			cp ${init} $out
+			chmod +x $out
+			'';
 			packages.${system}.default = nitro.buildEif {
 				name = "enclave";
 				arch = eifArch;
 
-				inherit (nitro.blobs.${eifArch}) init;
+				init = self.initPerms;
 				kernel = kernel;
 				kernelConfig = kernelConfig;
 				nsmKo = nsmKo;
