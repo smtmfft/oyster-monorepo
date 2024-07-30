@@ -18,7 +18,6 @@ iptables -L -t nat
 /app/keygen-ed25519 --secret /app/id.sec --public /app/id.pub
 
 # your custom setup goes here
-/app/keygen-secp256k1 --secret /app/secp256k1.sec --public /app/secp256k1.pub
 
 # starting supervisord
 cat /etc/supervisord.conf
