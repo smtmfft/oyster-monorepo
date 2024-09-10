@@ -68,7 +68,7 @@ func LaunchInstance(name string, keyPairName string, profile string, region stri
 	keyName := keyPairName
 	owner := "099720109477" // Canonical/Ubuntu
 	fname := "name"
-	fvalues := "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-" + arch + "-server-????????"
+	fvalues := "ubuntu/images/hvm-ssd/ubuntu-noble-24.04-" + arch + "-server-????????"
 	imageRes, err := ec2Client.DescribeImages(&ec2.DescribeImagesInput{
 		Owners: []*string{&owner},
 		Filters: []*ec2.Filter{{
