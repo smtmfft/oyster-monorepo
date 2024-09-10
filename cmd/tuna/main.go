@@ -21,6 +21,8 @@ func main() {
 	})
 	// log.SetLevel(log.DebugLevel)
 
+	date := os.Args[1]
+
 	keyPairName, exist := os.LookupEnv("KEY")
 	if !exist {
 		log.Panic("Key not set")
@@ -45,28 +47,28 @@ func main() {
 	keypairs.SetupKeys(keyPairName, keyStoreLocation, profile, region)
 	privateKeyLocation := keyStoreLocation + "/" + keyPairName + ".pem"
 
-	exist_amd64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-tuna-amd64-????????", profile, region)
-	exist_arm64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-tuna-arm64-????????", profile, region)
+	exist_amd64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-tuna-amd64-"+date, profile, region)
+	exist_arm64 := instances.CheckAMIFromNameTag("marlin/oyster/worker-tuna-arm64-"+date, profile, region)
 
 	if !exist_arm64 && !exist_amd64 {
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			create_ami(keyPairName, privateKeyLocation, profile, region, "amd64")
+			create_ami(keyPairName, privateKeyLocation, profile, region, "amd64", date)
 		}()
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			create_ami(keyPairName, privateKeyLocation, profile, region, "arm64")
+			create_ami(keyPairName, privateKeyLocation, profile, region, "arm64", date)
 		}()
 		wg.Wait()
 	} else if exist_arm64 && !exist_amd64 {
 		log.Info("arm64 AMI already exists.")
-		create_ami(keyPairName, privateKeyLocation, profile, region, "amd64")
+		create_ami(keyPairName, privateKeyLocation, profile, region, "amd64", date)
 	} else if exist_amd64 && !exist_arm64 {
 		log.Info("amd64 AMI already exists.")
-		create_ami(keyPairName, privateKeyLocation, profile, region, "arm64")
+		create_ami(keyPairName, privateKeyLocation, profile, region, "arm64", date)
 	} else {
 		log.Info("AMIs already exist.")
 		return
@@ -74,7 +76,7 @@ func main() {
 
 }
 
-func create_ami(keyPairName string, keyStoreLocation string, profile string, region string, arch string) {
+func create_ami(keyPairName string, keyStoreLocation string, profile string, region string, arch string, date string) {
 	log.Info("Creating AMI for " + arch)
 	name := "oyster_tuna_" + arch
 	newInstanceID := ""
@@ -96,7 +98,7 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 	)
 	SetupPreRequisites(client, *(instance.PublicIpAddress), newInstanceID, profile, region, arch)
 
-	amiName := "marlin/oyster/worker-tuna-" + arch + "-" + time.Now().UTC().Format("20060102")
+	amiName := "marlin/oyster/worker-tuna-" + arch + "-" + date
 	instances.CreateAMI(amiName, newInstanceID, profile, region, arch)
 	time.Sleep(7 * time.Minute)
 	TearDown(newInstanceID, profile, region)
