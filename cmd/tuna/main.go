@@ -161,7 +161,7 @@ func RunCommand(client *connect.SshClient, cmd string) string {
 	output, err := client.RunCommand(cmd)
 
 	if err != nil {
-		log.Warn("SSH run command error %v", err)
+		log.Warn("SSH run command error", err)
 
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Retry? ")
