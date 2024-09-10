@@ -39,7 +39,7 @@ func ListRunningInstances(profile string, region string) {
 	})
 
 	if err != nil {
-		log.Warn("Failed to initialize new session: %v", err)
+		log.Warn("Failed to initialize new session", err)
 		return
 	}
 
@@ -47,7 +47,7 @@ func ListRunningInstances(profile string, region string) {
 
 	runningInstances, err := GetRunningInstances(ec2Client)
 	if err != nil {
-		log.Warn("Couldn't retrieve running instances: %v", err)
+		log.Warn("Couldn't retrieve running instances", err)
 		return
 	}
 
@@ -67,7 +67,7 @@ func GetInstanceDetails(instanceID string, profile string, region string) *ec2.I
 	})
 
 	if err != nil {
-		log.Error("Failed to initialize new session: %v", err)
+		log.Error("Failed to initialize new session", err)
 		return nil
 	}
 
@@ -75,7 +75,7 @@ func GetInstanceDetails(instanceID string, profile string, region string) *ec2.I
 
 	runningInstances, err := GetRunningInstances(ec2Client)
 	if err != nil {
-		log.Error("Couldn't retrieve running instances: %v", err)
+		log.Error("Couldn't retrieve running instances", err)
 		return nil
 	}
 
@@ -104,7 +104,7 @@ func GetInstanceFromNameTag(name string, profile string, region string) (bool, *
 	})
 
 	if err != nil {
-		log.Error("Failed to initialize new session: %v", err)
+		log.Error("Failed to initialize new session", err)
 		return false, nil
 	}
 
@@ -112,7 +112,7 @@ func GetInstanceFromNameTag(name string, profile string, region string) (bool, *
 
 	runningInstances, err := GetRunningInstances(ec2Client)
 	if err != nil {
-		log.Error("Couldn't retrieve running instances: %v", err)
+		log.Error("Couldn't retrieve running instances", err)
 		return false, nil
 	}
 
@@ -138,7 +138,7 @@ func CheckAMIFromNameTag(amiName string, profile string, region string) bool {
 	})
 
 	if err != nil {
-		log.Error("Failed to initialize new session: %v", err)
+		log.Error("Failed to initialize new session", err)
 		return false
 	}
 
@@ -163,7 +163,7 @@ func CheckAMIFromNameTag(amiName string, profile string, region string) bool {
 		}
 	}
 	if err != nil {
-		log.Error("Couldn't retrieve running instances: %v", err)
+		log.Error("Couldn't retrieve running instances", err)
 		return false
 	}
 

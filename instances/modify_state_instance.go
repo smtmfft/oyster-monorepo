@@ -109,7 +109,7 @@ func LaunchInstance(name string, keyPairName string, profile string, region stri
 	securityGroupID := *securityGroup.GroupId
 	newInstance, err := CreateInstance(name, ec2Client, imageId, minCount, maxCount, instanceType, keyName, arch, subnetId, securityGroupID)
 	if err != nil {
-		log.Error("Couldn't create new instance: %v", err)
+		log.Error("Couldn't create new instance", err)
 		return nil
 	}
 	instanceID := newInstance.Instances[0].InstanceId
@@ -209,7 +209,7 @@ func GetClient(profile string, region string) *ec2.EC2 {
 	})
 
 	if err != nil {
-		log.Error("Failed to initialize new session: %v", err)
+		log.Error("Failed to initialize new session", err)
 		return nil
 	}
 
