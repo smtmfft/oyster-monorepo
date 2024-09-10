@@ -3,7 +3,7 @@
 set -e
 
 # setting an address for loopback
-ifconfig lo 127.0.0.1
+ifconfig lo 127.0.0.1 mtu 9001
 ifconfig
 
 # adding a default route
