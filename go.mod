@@ -1,15 +1,17 @@
 module OysterSetupAWS
 
-go 1.18
+go 1.21
+
+toolchain go1.22.6
 
 require (
-	github.com/aws/aws-sdk-go v1.44.65
-	github.com/bramvdbogaerde/go-scp v1.2.0
-	github.com/sirupsen/logrus v1.9.0
-	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
+	github.com/aws/aws-sdk-go v1.55.5
+	github.com/bramvdbogaerde/go-scp v1.5.0
+	github.com/sirupsen/logrus v1.9.3
+	golang.org/x/crypto v0.27.0
 )
 
 require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+	golang.org/x/sys v0.25.0 // indirect
 )
