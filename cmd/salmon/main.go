@@ -85,7 +85,7 @@ func create_ami(keyPairName string, keyStoreLocation string, profile string, reg
 		log.Info("Found Existing instance for ", arch)
 		newInstanceID = *instance.InstanceId
 	} else {
-		newInstanceID = *instances.LaunchInstance(name, keyPairName, profile, region, arch)
+		newInstanceID = *instances.LaunchInstance(name, keyPairName, profile, region, arch, date)
 		time.Sleep(1 * time.Minute)
 		instance = instances.GetInstanceDetails(newInstanceID, profile, region)
 	}

@@ -60,7 +60,7 @@ func CreateInstance(name string, client *ec2.EC2, imageId string, minCount int, 
 	return res, nil
 }
 
-func LaunchInstance(name string, keyPairName string, profile string, region string, arch string) *string {
+func LaunchInstance(name string, keyPairName string, profile string, region string, arch string, date string) *string {
 	log.Info("Launching Instance.")
 
 	ec2Client := GetClient(profile, region)
@@ -68,7 +68,7 @@ func LaunchInstance(name string, keyPairName string, profile string, region stri
 	keyName := keyPairName
 	owner := "099720109477" // Canonical/Ubuntu
 	fname := "name"
-	fvalues := "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-" + arch + "-server-????????"
+	fvalues := "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-" + arch + "-server-" + date
 	imageRes, err := ec2Client.DescribeImages(&ec2.DescribeImagesInput{
 		Owners: []*string{&owner},
 		Filters: []*ec2.Filter{{
