@@ -3,7 +3,7 @@ package instances
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -85,7 +85,7 @@ func GetInstanceDetails(instanceID string, profile string, region string) *ec2.I
 			if *(instance.InstanceId) == instanceID {
 				file, _ := json.MarshalIndent(instance, "", " ")
 
-				_ = ioutil.WriteFile("instance.json", file, 0644)
+				_ = os.WriteFile("instance.json", file, 0644)
 				return instance
 			}
 
