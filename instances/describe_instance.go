@@ -173,7 +173,7 @@ func CheckAMIFromNameTag(amiName string, profile string, region string) bool {
 func GetSecurityGroup(client *ec2.EC2) *ec2.SecurityGroup {
 	result, err := client.DescribeSecurityGroups(&ec2.DescribeSecurityGroupsInput{
 		Filters: []*ec2.Filter{
-			&ec2.Filter{
+			{
 				Name: aws.String("tag:project"),
 				Values: []*string{
 					aws.String("oyster"),
@@ -200,7 +200,7 @@ func GetSecurityGroup(client *ec2.EC2) *ec2.SecurityGroup {
 func GetSubnet(client *ec2.EC2) *ec2.Subnet {
 	result, err := client.DescribeSubnets(&ec2.DescribeSubnetsInput{
 		Filters: []*ec2.Filter{
-			&ec2.Filter{
+			{
 				Name: aws.String("tag:project"),
 				Values: []*string{
 					aws.String("oyster"),
