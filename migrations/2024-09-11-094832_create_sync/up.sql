@@ -1,4 +1,4 @@
 CREATE TABLE sync (
-  key PRIMARY KEY,
+  key VARCHAR(16) PRIMARY KEY,
   value TEXT NOT NULL
 );
