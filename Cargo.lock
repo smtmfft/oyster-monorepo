@@ -1564,16 +1564,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "indexer"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "anyhow",
- "tokio",
- "tokio-stream",
-]
-
-[[package]]
 name = "indexmap"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1875,6 +1865,16 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "oyster-indexer"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "tokio",
+ "tokio-stream",
 ]
 
 [[package]]

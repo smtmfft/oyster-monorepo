@@ -1,7 +1,11 @@
 [package]
-name = "indexer"
+name = "oyster-indexer"
 version = "0.1.0"
 edition = "2021"
+
+[lib]
+name = "oyster_indexer"
+path = "src/lib.rs"
 
 [dependencies]
 alloy = { version = "0.3.3", features = ["full"] }
