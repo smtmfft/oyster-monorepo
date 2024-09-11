@@ -3,29 +3,53 @@ mod schema;
 use std::time::Duration;
 
 use alloy::primitives::Address;
+use alloy::providers::Provider;
 use alloy::rpc::types::eth::Log;
+use alloy::rpc::types::Filter;
+use alloy::transports::http::reqwest::Url;
 use anyhow::{anyhow, Context, Result};
 use diesel::connection::LoadConnection;
 use diesel::prelude::*;
 
 pub trait LogsProvider {
-    fn latest_block(&mut self) -> Result<i64>;
-    fn logs(&self, start_block: i64, end_block: i64) -> Result<impl IntoIterator<Item = Log>>;
+    fn latest_block(&mut self) -> Result<u64>;
+    fn logs(&self, start_block: u64, end_block: u64) -> Result<impl IntoIterator<Item = Log>>;
 }
 
 #[derive(Clone)]
 pub struct AlloyProvider {
+    pub url: Url,
     pub contract: Address,
 }
 
-// impl LogsProvider for AlloyProvider {
-//     async fn logs<'a>(
-//         &'a self,
-//         client: &'a impl Provider<PubSubFrontend>,
-//     ) -> Result<impl StreamExt<Item = Log> + 'a> {
-//         todo!()
-//     }
-// }
+impl LogsProvider for AlloyProvider {
+    fn latest_block(&mut self) -> Result<u64> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        Ok(rt.block_on(
+            alloy::providers::ProviderBuilder::new()
+                .on_http(self.url.clone())
+                .get_block_number(),
+        )?)
+    }
+
+    fn logs(&self, start_block: u64, end_block: u64) -> Result<impl IntoIterator<Item = Log>> {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        Ok(rt.block_on(
+            alloy::providers::ProviderBuilder::new()
+                .on_http(self.url.clone())
+                .get_logs(
+                    &Filter::new()
+                        .from_block(start_block)
+                        .to_block(end_block)
+                        .address(self.contract),
+                ),
+        )?)
+    }
+}
 
 // sqlite for testing the future
 #[derive(diesel::MultiConnection)]
@@ -45,7 +69,7 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
         .last()
         .ok_or(anyhow!(
             "no last updated block found, should never happen unless the database is corrupted"
-        ))?;
+        ))? as u64;
 
     loop {
         // fetch latest block from the rpc
@@ -77,7 +101,7 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
         // might be limiting for certain things like making rpc queries while processing events
         conn.transaction(|conn| {
             diesel::update(schema::sync::table)
-                .set(schema::sync::block.eq(end_block))
+                .set(schema::sync::block.eq(end_block as i64))
                 .execute(conn)
         })?;
 

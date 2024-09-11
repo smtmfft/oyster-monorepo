@@ -10,19 +10,19 @@ use oyster_indexer::event_loop;
 use oyster_indexer::LogsProvider;
 
 struct DummyProvider {
-    x: i64,
+    x: u64,
 }
 
 impl LogsProvider for DummyProvider {
-    fn latest_block(&mut self) -> Result<i64> {
+    fn latest_block(&mut self) -> Result<u64> {
         self.x += 10;
         Ok(self.x)
     }
 
     fn logs(
         &self,
-        _start_block: i64,
-        _end_block: i64,
+        _start_block: u64,
+        _end_block: u64,
     ) -> anyhow::Result<impl IntoIterator<Item = Log>> {
         Ok([].into_iter())
     }
