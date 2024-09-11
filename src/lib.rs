@@ -42,11 +42,12 @@ pub enum AnyConnection {
 }
 
 pub async fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> Result<()> {
+    // fetch last updated block from the db
     let mut last_updated = schema::sync::table
         .select(schema::sync::block)
         .limit(1)
         .load::<i64>(conn)
-        .context("failed to load last updated block")?
+        .context("failed to fetch last updated block")?
         .into_iter()
         .last()
         .ok_or(anyhow!(
@@ -54,7 +55,23 @@ pub async fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvide
         ))?;
 
     loop {
+        // fetch latest block from the rpc
         let latest_block = provider.latest_block().await?;
+
+        // should not really ever be true
+        // effectively means the rpc was rolled back
+        if latest_block < last_updated {
+            return Err(anyhow!(
+                "rpc is behind the db, should never happen unless the rpc was rolled back"
+            ));
+        }
+
+        if latest_block == last_updated {
+            // we are up to date, simply sleep for a bit
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            continue;
+        }
+
         let start_block = last_updated + 1;
         let end_block = std::cmp::min(start_block + 1999, latest_block);
 
