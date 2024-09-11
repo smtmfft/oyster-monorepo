@@ -1,6 +1,5 @@
 mod schema;
 
-use std::future::Future;
 use std::time::Duration;
 
 use alloy::primitives::Address;
@@ -8,7 +7,6 @@ use alloy::rpc::types::eth::Log;
 use anyhow::{anyhow, Context, Result};
 use diesel::connection::LoadConnection;
 use diesel::prelude::*;
-use tokio_stream::StreamExt;
 
 pub trait LogsProvider {
     fn latest_block(&mut self) -> Result<i64>;

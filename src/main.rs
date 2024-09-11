@@ -21,8 +21,8 @@ impl LogsProvider for DummyProvider {
 
     fn logs<'a>(
         &'a self,
-        start_block: i64,
-        end_block: i64,
+        _start_block: i64,
+        _end_block: i64,
     ) -> anyhow::Result<impl IntoIterator<Item = Log> + 'a> {
         Ok([].into_iter())
     }
