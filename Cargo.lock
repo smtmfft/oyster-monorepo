@@ -1999,7 +1999,6 @@ dependencies = [
  "diesel",
  "dotenvy",
  "tokio",
- "tokio-stream",
 ]
 
 [[package]]
