@@ -10,12 +10,7 @@ use diesel::prelude::*;
 
 pub trait LogsProvider {
     fn latest_block(&mut self) -> Result<i64>;
-
-    fn logs<'a>(
-        &'a self,
-        start_block: i64,
-        end_block: i64,
-    ) -> Result<impl IntoIterator<Item = Log> + 'a>;
+    fn logs(&self, start_block: i64, end_block: i64) -> Result<impl IntoIterator<Item = Log>>;
 }
 
 #[derive(Clone)]
