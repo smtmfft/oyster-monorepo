@@ -10,10 +10,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    sync (key) {
-        #[max_length = 16]
-        key -> Varchar,
-        value -> Text,
+    sync (block) {
+        block -> Int8,
     }
 }
 
