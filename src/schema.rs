@@ -8,3 +8,16 @@ diesel::table! {
         is_active -> Bool,
     }
 }
+
+diesel::table! {
+    sync (key) {
+        #[max_length = 16]
+        key -> Varchar,
+        value -> Text,
+    }
+}
+
+diesel::allow_tables_to_appear_in_same_query!(
+    providers,
+    sync,
+);
