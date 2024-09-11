@@ -94,7 +94,8 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
         // cap block range to 2000, seems to be a popular rate limit
         let end_block = std::cmp::min(start_block + 1999, latest_block);
 
-        let _logs = provider.logs(start_block, end_block);
+        let logs = provider.logs(start_block, end_block)?;
+        println!("{:?}", logs.into_iter().collect::<Vec<Log>>());
 
         // execute db writes within a transaction for consistency
         // NOTE: diesel transactions are synchronous, async is not allowed inside
