@@ -1,7 +1,6 @@
 CREATE TABLE sync (
-  key VARCHAR(16) PRIMARY KEY,
-  value TEXT NOT NULL
+  block BIGINT PRIMARY KEY
 );
 
 -- Initial values
-INSERT INTO sync VALUES (block, 0);
+INSERT INTO sync VALUES (0);
