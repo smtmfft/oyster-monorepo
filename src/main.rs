@@ -1,5 +1,6 @@
 use std::env;
 
+use alloy::rpc::types::eth::Log;
 use anyhow::Result;
 use diesel::Connection;
 use diesel::PgConnection;
@@ -22,8 +23,8 @@ impl LogsProvider for DummyProvider {
         &'a self,
         start_block: i64,
         end_block: i64,
-    ) -> anyhow::Result<impl tokio_stream::StreamExt<Item = alloy::rpc::types::Log> + 'a> {
-        Ok(tokio_stream::empty())
+    ) -> anyhow::Result<impl IntoIterator<Item = Log> + 'a> {
+        Ok([].into_iter())
     }
 }
 

@@ -17,7 +17,7 @@ pub trait LogsProvider {
         &'a self,
         start_block: i64,
         end_block: i64,
-    ) -> Result<impl StreamExt<Item = Log> + 'a>;
+    ) -> Result<impl IntoIterator<Item = Log> + 'a>;
 }
 
 #[derive(Clone)]
