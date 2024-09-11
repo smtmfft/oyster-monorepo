@@ -11,13 +11,13 @@ use diesel::prelude::*;
 use tokio_stream::StreamExt;
 
 pub trait LogsProvider {
-    fn latest_block(&mut self) -> impl Future<Output = Result<i64>>;
+    fn latest_block(&mut self) -> Result<i64>;
 
     fn logs<'a>(
         &'a self,
         start_block: i64,
         end_block: i64,
-    ) -> impl Future<Output = Result<impl StreamExt<Item = Log> + 'a>>;
+    ) -> Result<impl StreamExt<Item = Log> + 'a>;
 }
 
 #[derive(Clone)]
@@ -41,7 +41,7 @@ pub enum AnyConnection {
     Sqlite(diesel::SqliteConnection),
 }
 
-pub async fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> Result<()> {
+pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> Result<()> {
     // fetch last updated block from the db
     let mut last_updated = schema::sync::table
         .select(schema::sync::block)
@@ -56,7 +56,7 @@ pub async fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvide
 
     loop {
         // fetch latest block from the rpc
-        let latest_block = provider.latest_block().await?;
+        let latest_block = provider.latest_block()?;
 
         // should not really ever be true
         // effectively means the rpc was rolled back
@@ -68,15 +68,20 @@ pub async fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvide
 
         if latest_block == last_updated {
             // we are up to date, simply sleep for a bit
-            tokio::time::sleep(Duration::from_secs(5)).await;
+            std::thread::sleep(Duration::from_secs(5));
             continue;
         }
 
+        // start from the next block to what has already been processed
         let start_block = last_updated + 1;
+        // cap block range to 2000, seems to be a popular rate limit
         let end_block = std::cmp::min(start_block + 1999, latest_block);
 
         let _logs = provider.logs(start_block, end_block);
 
+        // execute db writes within a transaction for consistency
+        // NOTE: diesel transactions are synchronous, async is not allowed inside
+        // might be limiting for certain things like making rpc queries while processing events
         conn.transaction(|conn| {
             diesel::update(schema::sync::table)
                 .set(schema::sync::block.eq(end_block))
@@ -85,6 +90,6 @@ pub async fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvide
 
         last_updated = end_block;
 
-        tokio::time::sleep(Duration::from_secs(2)).await;
+        std::thread::sleep(Duration::from_secs(2));
     }
 }

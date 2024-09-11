@@ -13,12 +13,12 @@ struct DummyProvider {
 }
 
 impl LogsProvider for DummyProvider {
-    async fn latest_block(&mut self) -> Result<i64> {
+    fn latest_block(&mut self) -> Result<i64> {
         self.x += 10;
         Ok(self.x)
     }
 
-    async fn logs<'a>(
+    fn logs<'a>(
         &'a self,
         start_block: i64,
         end_block: i64,
@@ -27,8 +27,7 @@ impl LogsProvider for DummyProvider {
     }
 }
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let conn = PgConnection::establish(&database_url)
@@ -39,5 +38,4 @@ async fn main() -> Result<()> {
         &mut oyster_indexer::AnyConnection::Postgresql(conn),
         provider,
     )
-    .await
 }
