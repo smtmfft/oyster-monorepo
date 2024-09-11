@@ -10,6 +10,6 @@ path = "src/lib.rs"
 [dependencies]
 alloy = { version = "0.3.3", features = ["full"] }
 anyhow = "1.0.87"
-diesel = { version = "2.2.4", features = ["postgres"] }
+diesel = { version = "2.2.4", features = ["postgres", "sqlite"] }
 tokio = { version = "1.40.0", features = ["full"] }
 tokio-stream = "0.1.16"
