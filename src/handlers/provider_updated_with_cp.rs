@@ -20,6 +20,7 @@ pub fn handle_provider_updated_with_cp(conn: &mut PgConnection, log: Log) -> Res
     info!(provider, "updating provider");
     let count = diesel::update(providers::table)
         .filter(providers::id.eq(&provider))
+        .filter(providers::is_active.eq(true))
         .set(providers::cp.eq(cp))
         .execute(conn)
         .context("failed to update provider")?;
