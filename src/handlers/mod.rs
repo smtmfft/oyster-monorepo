@@ -107,3 +107,6 @@ pub fn handle_provider_updated_with_cp(conn: &mut PgConnection, log: Log) -> Res
 
     Ok(())
 }
+
+#[cfg(test)]
+mod test_db;
