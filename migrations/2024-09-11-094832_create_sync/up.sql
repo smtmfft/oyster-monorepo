@@ -3,4 +3,4 @@ CREATE TABLE sync (
 );
 
 -- Initial values
-INSERT INTO sync VALUES (0);
+INSERT INTO sync VALUES (-1);
