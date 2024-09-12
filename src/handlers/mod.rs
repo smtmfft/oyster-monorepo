@@ -16,31 +16,28 @@ mod provider_updated_with_cp;
 use provider_updated_with_cp::handle_provider_updated_with_cp;
 
 // provider logs
-static PROVIDER_ADDED_TOPIC: [u8; 32] = event!("ProviderAdded(address,string)");
-static PROVIDER_REMOVED_TOPIC: [u8; 32] = event!("ProviderRemoved(address)");
-static PROVIDER_UPDATED_WITH_CP_TOPIC: [u8; 32] = event!("ProviderUpdatedWithCp(address,string)");
+static PROVIDER_ADDED: [u8; 32] = event!("ProviderAdded(address,string)");
+static PROVIDER_REMOVED: [u8; 32] = event!("ProviderRemoved(address)");
+static PROVIDER_UPDATED_WITH_CP: [u8; 32] = event!("ProviderUpdatedWithCp(address,string)");
 
 // job logs
-static JOB_OPENED_TOPIC: [u8; 32] =
+static JOB_OPENED: [u8; 32] =
     event!("JobOpened(bytes32,string,address,address,uint256,uint256,uint256)");
-static JOB_SETTLED_TOPIC: [u8; 32] = event!("JobSettled(bytes32,uint256,uint256)");
-static JOB_CLOSED_TOPIC: [u8; 32] = event!("JobClosed(bytes32)");
-static JOB_DEPOSITED_TOPIC: [u8; 32] = event!("JobDeposited(bytes32,address,uint256)");
-static JOB_WITHDREW_TOPIC: [u8; 32] = event!("JobWithdrew(bytes32,address,uint256)");
-static JOB_REVISE_RATE_INITIATED_TOPIC: [u8; 32] =
-    event!("JobReviseRateInitiated(bytes32,uint256)");
-static JOB_REVISE_RATE_CANCELLED_TOPIC: [u8; 32] = event!("JobReviseRateCancelled(bytes32)");
-static JOB_REVISE_RATE_FINALIZED_TOPIC: [u8; 32] =
-    event!("JobReviseRateFinalized(bytes32,uint256)");
-static JOB_METADATA_UPDATED_TOPIC: [u8; 32] = event!("JobMetadataUpdated(bytes32,string)");
+static JOB_SETTLED: [u8; 32] = event!("JobSettled(bytes32,uint256,uint256)");
+static JOB_CLOSED: [u8; 32] = event!("JobClosed(bytes32)");
+static JOB_DEPOSITED: [u8; 32] = event!("JobDeposited(bytes32,address,uint256)");
+static JOB_WITHDREW: [u8; 32] = event!("JobWithdrew(bytes32,address,uint256)");
+static JOB_REVISE_RATE_INITIATED: [u8; 32] = event!("JobReviseRateInitiated(bytes32,uint256)");
+static JOB_REVISE_RATE_CANCELLED: [u8; 32] = event!("JobReviseRateCancelled(bytes32)");
+static JOB_REVISE_RATE_FINALIZED: [u8; 32] = event!("JobReviseRateFinalized(bytes32,uint256)");
+static JOB_METADATA_UPDATED: [u8; 32] = event!("JobMetadataUpdated(bytes32,string)");
 
 // ignored logs
-static UPGRADED_TOPIC: [u8; 32] = event!("Upgraded(address)");
-static LOCK_WAIT_TIME_UPDATED_TOPIC: [u8; 32] =
-    event!("LockWaitTimeUpdated(bytes32,uint256,uint256)");
-static ROLE_GRANTED_TOPIC: [u8; 32] = event!("RoleGranted(bytes32,address,address)");
-static TOKEN_UPDATED_TOPIC: [u8; 32] = event!("TokenUpdated(address,address)");
-static INITIALIZED_TOPIC: [u8; 32] = event!("Initialized(uint8)");
+static UPGRADED: [u8; 32] = event!("Upgraded(address)");
+static LOCK_WAIT_TIME_UPDATED: [u8; 32] = event!("LockWaitTimeUpdated(bytes32,uint256,uint256)");
+static ROLE_GRANTED: [u8; 32] = event!("RoleGranted(bytes32,address,address)");
+static TOKEN_UPDATED: [u8; 32] = event!("TokenUpdated(address,address)");
+static INITIALIZED: [u8; 32] = event!("Initialized(uint8)");
 
 #[instrument(
     level = "info",
@@ -55,17 +52,17 @@ pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
         .topic0()
         .ok_or(anyhow!("log does not have topic0, should never happen"))?;
 
-    if log_type == PROVIDER_ADDED_TOPIC {
+    if log_type == PROVIDER_ADDED {
         handle_provider_added(conn, log)
-    } else if log_type == PROVIDER_REMOVED_TOPIC {
+    } else if log_type == PROVIDER_REMOVED {
         handle_provider_removed(conn, log)
-    } else if log_type == PROVIDER_UPDATED_WITH_CP_TOPIC {
+    } else if log_type == PROVIDER_UPDATED_WITH_CP {
         handle_provider_updated_with_cp(conn, log)
-    } else if log_type == UPGRADED_TOPIC
-        || log_type == LOCK_WAIT_TIME_UPDATED_TOPIC
-        || log_type == ROLE_GRANTED_TOPIC
-        || log_type == TOKEN_UPDATED_TOPIC
-        || log_type == INITIALIZED_TOPIC
+    } else if log_type == UPGRADED
+        || log_type == LOCK_WAIT_TIME_UPDATED
+        || log_type == ROLE_GRANTED
+        || log_type == TOKEN_UPDATED
+        || log_type == INITIALIZED
     {
         info!(?log_type, "ignoring log type");
         Ok(())
