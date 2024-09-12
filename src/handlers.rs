@@ -6,6 +6,7 @@ use alloy::sol_types::SolValue;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use diesel::query_dsl::methods::FilterDsl;
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 use ethp::event;
@@ -14,6 +15,7 @@ use tracing::{info, instrument};
 
 // provider logs
 static PROVIDER_ADDED_TOPIC: [u8; 32] = event!("ProviderAdded(address,string)");
+static PROVIDER_REMOVED_TOPIC: [u8; 32] = event!("ProviderRemoved(address)");
 
 // ignored logs
 static UPGRADED_TOPIC: [u8; 32] = event!("Upgraded(address)");
@@ -38,6 +40,8 @@ pub fn handle_log(conn: &mut AnyConnection, log: Log) -> Result<()> {
 
     if log_type == PROVIDER_ADDED_TOPIC {
         handle_provider_added(conn, log)
+    } else if log_type == PROVIDER_REMOVED_TOPIC {
+        handle_provider_removed(conn, log)
     } else if log_type == UPGRADED_TOPIC
         || log_type == LOCK_WAIT_TIME_UPDATED_TOPIC
         || log_type == ROLE_GRANTED_TOPIC
@@ -69,6 +73,29 @@ pub fn handle_provider_added(conn: &mut AnyConnection, log: Log) -> Result<()> {
         .execute(conn)
         .context("failed to add provider")?;
     info!(provider, cp, "inserted provider");
+
+    Ok(())
+}
+
+#[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
+pub fn handle_provider_removed(conn: &mut AnyConnection, log: Log) -> Result<()> {
+    info!(?log, "processing");
+
+    let provider = Address::from_word(log.topics()[1]).to_checksum(None);
+
+    info!(provider, "removing provider");
+    let count = diesel::update(providers::table)
+        .filter(providers::id.eq(&provider))
+        .set(providers::is_active.eq(false))
+        .execute(conn)
+        .context("failed to update latest block")?;
+
+    // warn just in case
+    if count != 1 {
+        warn!(count, "count should have been 1");
+    }
+
+    info!(provider, "removed provider");
 
     Ok(())
 }
