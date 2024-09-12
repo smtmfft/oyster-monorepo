@@ -1,32 +1,12 @@
 use std::env;
 
-use alloy::rpc::types::eth::Log;
 use anyhow::Result;
 use diesel::Connection;
 use diesel::PgConnection;
 use dotenvy::dotenv;
 
 use oyster_indexer::event_loop;
-use oyster_indexer::LogsProvider;
-
-struct DummyProvider {
-    x: u64,
-}
-
-impl LogsProvider for DummyProvider {
-    fn latest_block(&mut self) -> Result<u64> {
-        self.x += 10;
-        Ok(self.x)
-    }
-
-    fn logs(
-        &self,
-        _start_block: u64,
-        _end_block: u64,
-    ) -> anyhow::Result<impl IntoIterator<Item = Log>> {
-        Ok([].into_iter())
-    }
-}
+use oyster_indexer::AlloyProvider;
 
 fn main() -> Result<()> {
     dotenv().ok();
@@ -34,7 +14,10 @@ fn main() -> Result<()> {
     let conn = PgConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
-    let provider = DummyProvider { x: 0 };
+    let provider = AlloyProvider {
+        url: "https://arb1.arbitrum.io/rpc".parse()?,
+        contract: "0x9d95D61eA056721E358BC49fE995caBF3B86A34B".parse()?,
+    };
     event_loop(
         &mut oyster_indexer::AnyConnection::Postgresql(conn),
         provider,
