@@ -24,9 +24,13 @@ pub fn handle_provider_updated_with_cp(conn: &mut PgConnection, log: Log) -> Res
         .execute(conn)
         .context("failed to update provider")?;
 
-    // warn just in case
     if count != 1 {
-        warn!(count, "count should have been 1");
+        // !!! should never happen
+        // we should have had exactly one row made inactive
+        // if count is 0, that means the provider did not exist or was not active
+        // if count is more than 1, there was somehow more than one provider entry
+        // we error out for now, can consider just moving on
+        return Err(anyhow::anyhow!("count {count} should have been 1"));
     }
 
     info!(provider, "updated provider");
