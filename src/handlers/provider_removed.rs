@@ -60,7 +60,7 @@ mod tests {
         diesel::insert_into(providers::table)
             .values((
                 providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
-                providers::cp.eq("some other cp"),
+                providers::cp.eq("some cp"),
                 providers::is_active.eq(true),
             ))
             .execute(conn)?;
@@ -70,7 +70,7 @@ mod tests {
             providers::table.select(providers::all_columns).first(conn),
             Ok((
                 "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some other cp".to_owned(),
+                "some cp".to_owned(),
                 true
             ))
         );
@@ -173,7 +173,7 @@ mod tests {
         diesel::insert_into(providers::table)
             .values((
                 providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
-                providers::cp.eq("some other cp"),
+                providers::cp.eq("some cp"),
                 providers::is_active.eq(false),
             ))
             .execute(conn)?;
@@ -183,7 +183,7 @@ mod tests {
             providers::table.select(providers::all_columns).first(conn),
             Ok((
                 "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some other cp".to_owned(),
+                "some cp".to_owned(),
                 false
             ))
         );
