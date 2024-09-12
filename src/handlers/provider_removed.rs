@@ -18,6 +18,7 @@ pub fn handle_provider_removed(conn: &mut PgConnection, log: Log) -> Result<()> 
     info!(provider, "removing provider");
     let count = diesel::update(providers::table)
         .filter(providers::id.eq(&provider))
+        .filter(providers::is_active.eq(true))
         .set(providers::is_active.eq(false))
         .execute(conn)
         .context("failed to remove provider")?;
