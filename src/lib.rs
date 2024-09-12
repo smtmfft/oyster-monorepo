@@ -91,8 +91,9 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
 
         // start from the next block to what has already been processed
         let start_block = last_updated + 1;
-        // cap block range to 2000, seems to be a popular rate limit
-        let end_block = std::cmp::min(start_block + 1999, latest_block);
+        // cap block range to 1000000
+        // might need some babysitting during initial sync
+        let end_block = std::cmp::min(start_block + 999999, latest_block);
 
         let logs = provider.logs(start_block, end_block)?;
         println!("{:?}", logs.into_iter().collect::<Vec<Log>>());
