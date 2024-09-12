@@ -41,7 +41,6 @@ pub fn handle_provider_updated_with_cp(conn: &mut PgConnection, log: Log) -> Res
 
 #[cfg(test)]
 mod tests {
-    use alloy::primitives::Bytes;
     use alloy::{primitives::LogData, rpc::types::Log};
     use anyhow::Result;
     use diesel::QueryDsl;
