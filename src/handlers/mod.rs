@@ -20,6 +20,20 @@ static PROVIDER_ADDED_TOPIC: [u8; 32] = event!("ProviderAdded(address,string)");
 static PROVIDER_REMOVED_TOPIC: [u8; 32] = event!("ProviderRemoved(address)");
 static PROVIDER_UPDATED_WITH_CP_TOPIC: [u8; 32] = event!("ProviderUpdatedWithCp(address,string)");
 
+// job logs
+static JOB_OPENED_TOPIC: [u8; 32] =
+    event!("JobOpened(bytes32,string,address,address,uint256,uint256,uint256)");
+static JOB_SETTLED_TOPIC: [u8; 32] = event!("JobSettled(bytes32,uint256,uint256)");
+static JOB_CLOSED_TOPIC: [u8; 32] = event!("JobClosed(bytes32)");
+static JOB_DEPOSITED_TOPIC: [u8; 32] = event!("JobDeposited(bytes32,address,uint256)");
+static JOB_WITHDREW_TOPIC: [u8; 32] = event!("JobWithdrew(bytes32,address,uint256)");
+static JOB_REVISE_RATE_INITIATED_TOPIC: [u8; 32] =
+    event!("JobReviseRateInitiated(bytes32,uint256)");
+static JOB_REVISE_RATE_CANCELLED_TOPIC: [u8; 32] = event!("JobReviseRateCancelled(bytes32)");
+static JOB_REVISE_RATE_FINALIZED_TOPIC: [u8; 32] =
+    event!("JobReviseRateFinalized(bytes32,uint256)");
+static JOB_METADATA_UPDATED_TOPIC: [u8; 32] = event!("JobMetadataUpdated(bytes32,string)");
+
 // ignored logs
 static UPGRADED_TOPIC: [u8; 32] = event!("Upgraded(address)");
 static LOCK_WAIT_TIME_UPDATED_TOPIC: [u8; 32] =
