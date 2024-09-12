@@ -108,7 +108,5 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
         })?;
 
         last_updated = end_block;
-
-        std::thread::sleep(Duration::from_secs(2));
     }
 }
