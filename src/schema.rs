@@ -1,6 +1,22 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    jobs (id) {
+        #[max_length = 66]
+        id -> Bpchar,
+        metadata -> Text,
+        #[max_length = 42]
+        owner -> Bpchar,
+        #[max_length = 42]
+        provider -> Bpchar,
+        rate -> Int8,
+        balance -> Int8,
+        last_settled -> Timestamp,
+        created -> Timestamp,
+    }
+}
+
+diesel::table! {
     providers (id) {
         #[max_length = 42]
         id -> Bpchar,
@@ -15,7 +31,10 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(jobs -> providers (provider));
+
 diesel::allow_tables_to_appear_in_same_query!(
+    jobs,
     providers,
     sync,
 );
