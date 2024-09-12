@@ -100,6 +100,7 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
         // execute db writes within a transaction for consistency
         // NOTE: diesel transactions are synchronous, async is not allowed inside
         // might be limiting for certain things like making rpc queries while processing events
+        // using a temporary tokio runtime is a possibility
         conn.transaction(|conn| {
             diesel::update(schema::sync::table)
                 .set(schema::sync::block.eq(end_block as i64))
