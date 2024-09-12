@@ -46,7 +46,7 @@ pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
     } else if log_type == PROVIDER_REMOVED_TOPIC {
         handle_provider_removed(conn, log)
     } else if log_type == PROVIDER_UPDATED_WITH_CP_TOPIC {
-        handle_provider_removed(conn, log)
+        handle_provider_updated_with_cp(conn, log)
     } else if log_type == UPGRADED_TOPIC
         || log_type == LOCK_WAIT_TIME_UPDATED_TOPIC
         || log_type == ROLE_GRANTED_TOPIC
