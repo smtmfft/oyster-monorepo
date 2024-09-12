@@ -4,9 +4,13 @@ use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
+use diesel::query_dsl::methods::FilterDsl;
+use diesel::BoolExpressionMethods;
 use diesel::ExpressionMethods;
 use diesel::PgConnection;
+use diesel::QueryDsl;
 use diesel::RunQueryDsl;
+use tracing::error;
 use tracing::warn;
 use tracing::{info, instrument};
 
@@ -17,15 +21,44 @@ pub fn handle_provider_added(conn: &mut PgConnection, log: Log) -> Result<()> {
     let provider = Address::from_word(log.topics()[1]).to_checksum(None);
     let cp = String::abi_decode(&log.data().data, true)?;
 
+    // we want to insert if provider does not exist
+    // we want to error out if provider exists and is_active is true
+    // we want to update only if is_active is false
+
     info!(provider, cp, "inserting provider");
-    diesel::insert_into(providers::table)
+
+    // target sql:
+    // INSERT INTO providers (id, cp, is_active)
+    // VALUES("<provider>", "<cp>", true)
+    // ON CONFLICT (id)
+    // DO UPDATE SET
+    //     is_active = true
+    //     cp = "<cp>"
+    // WHERE is_active = false;
+    let count = diesel::insert_into(providers::table)
         .values((
             providers::id.eq(&provider),
             providers::cp.eq(&cp),
             providers::is_active.eq(true),
         ))
+        .on_conflict(providers::id)
+        .do_update()
+        .set((providers::is_active.eq(true), providers::cp.eq(&cp)))
+        // we want to detect if we update any rows
+        // we do it by only updating rows where is_active is false
+        // and later checking if any rows were updated
+        .filter(providers::is_active.eq(false))
         .execute(conn)
         .context("failed to add provider")?;
+
+    if count == 0 {
+        // !!! should never happen
+        // we have failed to make any changes
+        // the only real condition is when there is an existing active provider
+        // we error out for now, can consider just moving on
+        return Err(anyhow::anyhow!("did not expect to find existing provider"));
+    }
+
     info!(provider, cp, "inserted provider");
 
     Ok(())
@@ -148,7 +181,10 @@ mod tests {
         let res = handle_log(conn, log);
 
         // checks
-        assert_eq!(format!("{:?}", res.unwrap_err()), "failed to add provider\n\nCaused by:\n    duplicate key value violates unique constraint \"providers_pkey\"");
+        assert_eq!(
+            format!("{:?}", res.unwrap_err()),
+            "did not expect to find existing provider"
+        );
 
         Ok(())
     }
