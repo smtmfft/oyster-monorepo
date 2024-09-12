@@ -12,6 +12,9 @@ use ethp::event;
 use tracing::warn;
 use tracing::{info, instrument};
 
+mod provider_added;
+use provider_added::handle_provider_added;
+
 // provider logs
 static PROVIDER_ADDED_TOPIC: [u8; 32] = event!("ProviderAdded(address,string)");
 static PROVIDER_REMOVED_TOPIC: [u8; 32] = event!("ProviderRemoved(address)");
@@ -56,27 +59,6 @@ pub fn handle_log(conn: &mut AnyConnection, log: Log) -> Result<()> {
         warn!(?log_type, "unknown log type");
         Ok(())
     }
-}
-
-#[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
-pub fn handle_provider_added(conn: &mut AnyConnection, log: Log) -> Result<()> {
-    info!(?log, "processing");
-
-    let provider = Address::from_word(log.topics()[1]).to_checksum(None);
-    let cp = String::abi_decode(&log.data().data, true)?;
-
-    info!(provider, cp, "inserting provider");
-    diesel::insert_into(providers::table)
-        .values((
-            providers::id.eq(&provider),
-            providers::cp.eq(&cp),
-            providers::is_active.eq(true),
-        ))
-        .execute(conn)
-        .context("failed to add provider")?;
-    info!(provider, cp, "inserted provider");
-
-    Ok(())
 }
 
 #[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
