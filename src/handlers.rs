@@ -6,7 +6,6 @@ use alloy::sol_types::SolValue;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-use diesel::query_dsl::methods::FilterDsl;
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 use ethp::event;
@@ -16,6 +15,7 @@ use tracing::{info, instrument};
 // provider logs
 static PROVIDER_ADDED_TOPIC: [u8; 32] = event!("ProviderAdded(address,string)");
 static PROVIDER_REMOVED_TOPIC: [u8; 32] = event!("ProviderRemoved(address)");
+static PROVIDER_UPDATED_WITH_CP_TOPIC: [u8; 32] = event!("ProviderUpdatedWithCp(address,string)");
 
 // ignored logs
 static UPGRADED_TOPIC: [u8; 32] = event!("Upgraded(address)");
@@ -41,6 +41,8 @@ pub fn handle_log(conn: &mut AnyConnection, log: Log) -> Result<()> {
     if log_type == PROVIDER_ADDED_TOPIC {
         handle_provider_added(conn, log)
     } else if log_type == PROVIDER_REMOVED_TOPIC {
+        handle_provider_removed(conn, log)
+    } else if log_type == PROVIDER_UPDATED_WITH_CP_TOPIC {
         handle_provider_removed(conn, log)
     } else if log_type == UPGRADED_TOPIC
         || log_type == LOCK_WAIT_TIME_UPDATED_TOPIC
@@ -88,7 +90,7 @@ pub fn handle_provider_removed(conn: &mut AnyConnection, log: Log) -> Result<()>
         .filter(providers::id.eq(&provider))
         .set(providers::is_active.eq(false))
         .execute(conn)
-        .context("failed to update latest block")?;
+        .context("failed to remove provider")?;
 
     // warn just in case
     if count != 1 {
@@ -96,6 +98,30 @@ pub fn handle_provider_removed(conn: &mut AnyConnection, log: Log) -> Result<()>
     }
 
     info!(provider, "removed provider");
+
+    Ok(())
+}
+
+#[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
+pub fn handle_provider_updated_with_cp(conn: &mut AnyConnection, log: Log) -> Result<()> {
+    info!(?log, "processing");
+
+    let provider = Address::from_word(log.topics()[1]).to_checksum(None);
+    let cp = String::abi_decode(&log.data().data, true)?;
+
+    info!(provider, "updating provider");
+    let count = diesel::update(providers::table)
+        .filter(providers::id.eq(&provider))
+        .set(providers::cp.eq(cp))
+        .execute(conn)
+        .context("failed to update provider")?;
+
+    // warn just in case
+    if count != 1 {
+        warn!(count, "count should have been 1");
+    }
+
+    info!(provider, "updated provider");
 
     Ok(())
 }
