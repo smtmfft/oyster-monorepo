@@ -1,10 +1,8 @@
 use crate::schema::providers;
 use alloy::primitives::Address;
 use alloy::rpc::types::Log;
-use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
-use diesel::query_dsl::methods::FilterDsl;
 use diesel::ExpressionMethods;
 use diesel::PgConnection;
 use diesel::RunQueryDsl;

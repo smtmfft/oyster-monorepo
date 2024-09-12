@@ -65,29 +65,6 @@ pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
 }
 
 #[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
-pub fn handle_provider_removed(conn: &mut PgConnection, log: Log) -> Result<()> {
-    info!(?log, "processing");
-
-    let provider = Address::from_word(log.topics()[1]).to_checksum(None);
-
-    info!(provider, "removing provider");
-    let count = diesel::update(providers::table)
-        .filter(providers::id.eq(&provider))
-        .set(providers::is_active.eq(false))
-        .execute(conn)
-        .context("failed to remove provider")?;
-
-    // warn just in case
-    if count != 1 {
-        warn!(count, "count should have been 1");
-    }
-
-    info!(provider, "removed provider");
-
-    Ok(())
-}
-
-#[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
 pub fn handle_provider_updated_with_cp(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
