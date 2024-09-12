@@ -52,12 +52,11 @@ impl Drop for TestDb {
 
         let admin_url = std::env::var("TEST_DATABASE_URL").unwrap();
 
-        // Connect to the default database to drop the test database
-        let mut admin_conn = PgConnection::establish(&admin_url)
+        self.conn = PgConnection::establish(&admin_url)
             .expect("Failed to connect to PostgreSQL for cleanup");
 
         diesel::sql_query(&format!("DROP DATABASE {}", self.name))
-            .execute(&mut admin_conn)
+            .execute(&mut self.conn)
             .expect("Failed to drop test database");
     }
 }
