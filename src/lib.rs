@@ -116,7 +116,7 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
         // using a temporary tokio runtime is a possibility
         conn.transaction(move |conn| {
             for log in logs {
-                handle_log(log).context("failed to handle log")?;
+                handle_log(conn, log).context("failed to handle log")?;
             }
             diesel::update(schema::sync::table)
                 .set(schema::sync::block.eq(end_block as i64))
