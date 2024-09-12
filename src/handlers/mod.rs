@@ -18,6 +18,9 @@ use provider_added::handle_provider_added;
 mod provider_removed;
 use provider_removed::handle_provider_removed;
 
+mod provider_updated_with_cp;
+use provider_updated_with_cp::handle_provider_updated_with_cp;
+
 // provider logs
 static PROVIDER_ADDED_TOPIC: [u8; 32] = event!("ProviderAdded(address,string)");
 static PROVIDER_REMOVED_TOPIC: [u8; 32] = event!("ProviderRemoved(address)");
