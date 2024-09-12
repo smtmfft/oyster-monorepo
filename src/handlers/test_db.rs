@@ -10,7 +10,6 @@ fn id() -> usize {
 
 pub struct TestDb {
     pub name: String,
-    pub url: String,
     pub conn: PgConnection,
 }
 
@@ -35,7 +34,6 @@ impl TestDb {
 
         let mut db = TestDb {
             name: db_name,
-            url: test_url,
             conn: test_conn,
         };
 

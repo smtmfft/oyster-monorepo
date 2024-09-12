@@ -9,7 +9,6 @@ use alloy::rpc::types::eth::Log;
 use alloy::rpc::types::Filter;
 use alloy::transports::http::reqwest::Url;
 use anyhow::{anyhow, Context, Result};
-use diesel::connection::LoadConnection;
 use diesel::prelude::*;
 
 use handlers::handle_log;

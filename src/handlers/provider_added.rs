@@ -5,12 +5,9 @@ use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
 use diesel::query_dsl::methods::FilterDsl;
-use diesel::BoolExpressionMethods;
 use diesel::ExpressionMethods;
 use diesel::PgConnection;
-use diesel::QueryDsl;
 use diesel::RunQueryDsl;
-use tracing::error;
 use tracing::warn;
 use tracing::{info, instrument};
 
