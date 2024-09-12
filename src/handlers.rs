@@ -12,9 +12,10 @@ use ethp::event;
 use tracing::warn;
 use tracing::{info, instrument};
 
+// provider logs
 static PROVIDER_ADDED_TOPIC: [u8; 32] = event!("ProviderAdded(address,string)");
 
-// Ignored logs
+// ignored logs
 static UPGRADED_TOPIC: [u8; 32] = event!("Upgraded(address)");
 static LOCK_WAIT_TIME_UPDATED_TOPIC: [u8; 32] =
     event!("LockWaitTimeUpdated(bytes32,uint256,uint256)");
