@@ -1,5 +1,3 @@
-use std::env;
-
 use anyhow::Result;
 use diesel::Connection;
 use diesel::PgConnection;
@@ -8,10 +6,23 @@ use dotenvy::dotenv;
 use oyster_indexer::event_loop;
 use oyster_indexer::start_from;
 use oyster_indexer::AlloyProvider;
+use tracing::debug;
+use tracing_subscriber::EnvFilter;
 
 fn main() -> Result<()> {
     dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    // seems messy, see if there is a better way
+    let mut filter = EnvFilter::new("info");
+    if let Ok(var) = std::env::var("RUST_LOG") {
+        filter = filter.add_directive(var.parse()?);
+    }
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_env_filter(filter)
+        .init();
+
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let conn = PgConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
@@ -21,6 +32,6 @@ fn main() -> Result<()> {
         contract: "0x9d95D61eA056721E358BC49fE995caBF3B86A34B".parse()?,
     };
     let is_start_set = start_from(&mut conn, 87252070)?;
-    println!("is_start_set: {}", is_start_set);
+    debug!("is_start_set: {}", is_start_set);
     event_loop(&mut conn, provider)
 }
