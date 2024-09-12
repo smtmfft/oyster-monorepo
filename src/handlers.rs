@@ -1,8 +1,9 @@
 use alloy::rpc::types::Log;
 use anyhow::Result;
-use tracing::info;
+use tracing::{info, instrument};
 
+#[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
 pub fn handle_log(log: Log) -> Result<()> {
-    info!("Received: {:?}", log);
+    info!(?log, "processing");
     Ok(())
 }

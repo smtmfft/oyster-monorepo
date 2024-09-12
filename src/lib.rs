@@ -13,6 +13,7 @@ use diesel::connection::LoadConnection;
 use diesel::prelude::*;
 
 use handlers::handle_log;
+use tracing::{info, instrument};
 
 pub trait LogsProvider {
     fn latest_block(&mut self) -> Result<u64>;
@@ -61,6 +62,7 @@ pub enum AnyConnection {
     Sqlite(diesel::SqliteConnection),
 }
 
+#[instrument(level = "info", skip_all, parent = None)]
 pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> Result<()> {
     // fetch last updated block from the db
     let mut last_updated = schema::sync::table
@@ -74,9 +76,13 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
             "no last updated block found, should never happen unless the database is corrupted"
         ))? as u64;
 
+    info!(block = last_updated, "last updated");
+
     loop {
         // fetch latest block from the rpc
         let latest_block = provider.latest_block()?;
+
+        info!(block = latest_block, "latest block");
 
         // should not really ever be true
         // effectively means the rpc was rolled back
@@ -98,7 +104,11 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
         // might need some babysitting during initial sync
         let end_block = std::cmp::min(start_block + 999999, latest_block);
 
+        info!(start_block, end_block, "fetching range");
+
         let logs = provider.logs(start_block, end_block)?;
+
+        info!(start_block, end_block, "processing range");
 
         // execute db writes within a transaction for consistency
         // NOTE: diesel transactions are synchronous, async is not allowed inside
