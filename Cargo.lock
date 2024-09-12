@@ -1288,6 +1288,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethp"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1ae0d39a0a5dee32a550cf204d013832fcee94be48b2b956c5786c2559c375f"
+dependencies = [
+ "quote",
+ "syn 2.0.77",
+ "tiny-keccak",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2032,6 +2043,7 @@ dependencies = [
  "anyhow",
  "diesel",
  "dotenvy",
+ "ethp",
  "tokio",
  "tracing",
  "tracing-subscriber",
