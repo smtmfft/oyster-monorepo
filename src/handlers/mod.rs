@@ -15,6 +15,9 @@ use provider_removed::handle_provider_removed;
 mod provider_updated_with_cp;
 use provider_updated_with_cp::handle_provider_updated_with_cp;
 
+mod job_opened;
+use job_opened::handle_job_opened;
+
 // provider logs
 static PROVIDER_ADDED: [u8; 32] = event!("ProviderAdded(address,string)");
 static PROVIDER_REMOVED: [u8; 32] = event!("ProviderRemoved(address)");
@@ -58,6 +61,8 @@ pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
         handle_provider_removed(conn, log)
     } else if log_type == PROVIDER_UPDATED_WITH_CP {
         handle_provider_updated_with_cp(conn, log)
+    } else if log_type == JOB_OPENED {
+        handle_job_opened(conn, log)
     } else if log_type == UPGRADED
         || log_type == LOCK_WAIT_TIME_UPDATED
         || log_type == ROLE_GRANTED
