@@ -120,7 +120,7 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
 
 pub fn start_from(conn: &mut AnyConnection, start: u64) -> Result<bool> {
     diesel::update(schema::sync::table)
-        .filter(schema::sync::block.lt(start as i64))
+        .filter(schema::sync::block.lt(start as i64 - 1))
         .set(schema::sync::block.eq(start as i64 - 1))
         .execute(conn)
         .map(|x| x > 0)
