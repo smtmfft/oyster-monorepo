@@ -1,3 +1,4 @@
+mod handlers;
 mod schema;
 
 use std::time::Duration;
@@ -10,6 +11,8 @@ use alloy::transports::http::reqwest::Url;
 use anyhow::{anyhow, Context, Result};
 use diesel::connection::LoadConnection;
 use diesel::prelude::*;
+
+use handlers::handle_log;
 
 pub trait LogsProvider {
     fn latest_block(&mut self) -> Result<u64>;
@@ -96,16 +99,19 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
         let end_block = std::cmp::min(start_block + 999999, latest_block);
 
         let logs = provider.logs(start_block, end_block)?;
-        println!("{:?}", logs.into_iter().collect::<Vec<Log>>());
 
         // execute db writes within a transaction for consistency
         // NOTE: diesel transactions are synchronous, async is not allowed inside
-        // might be limiting for certain things like making rpc queries while processing events
+        // might be limiting for certain things like making rpc queries while processing logs
         // using a temporary tokio runtime is a possibility
-        conn.transaction(|conn| {
+        conn.transaction(move |conn| {
+            for log in logs {
+                handle_log(log).context("failed to handle log")?;
+            }
             diesel::update(schema::sync::table)
                 .set(schema::sync::block.eq(end_block as i64))
                 .execute(conn)
+                .context("failed to update latest block")
         })?;
 
         last_updated = end_block;
