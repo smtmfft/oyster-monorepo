@@ -55,15 +55,8 @@ impl LogsProvider for AlloyProvider {
     }
 }
 
-// sqlite for testing the future
-#[derive(diesel::MultiConnection)]
-pub enum AnyConnection {
-    Postgresql(diesel::PgConnection),
-    Sqlite(diesel::SqliteConnection),
-}
-
 #[instrument(level = "info", skip_all, parent = None)]
-pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> Result<()> {
+pub fn event_loop(conn: &mut PgConnection, mut provider: impl LogsProvider) -> Result<()> {
     // fetch last updated block from the db
     let mut last_updated = schema::sync::table
         .select(schema::sync::block)
@@ -128,7 +121,7 @@ pub fn event_loop(conn: &mut AnyConnection, mut provider: impl LogsProvider) -> 
     }
 }
 
-pub fn start_from(conn: &mut AnyConnection, start: u64) -> Result<bool> {
+pub fn start_from(conn: &mut PgConnection, start: u64) -> Result<bool> {
     diesel::update(schema::sync::table)
         .filter(schema::sync::block.lt(start as i64 - 1))
         .set(schema::sync::block.eq(start as i64 - 1))

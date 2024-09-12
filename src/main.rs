@@ -12,10 +12,8 @@ use tracing_subscriber::EnvFilter;
 
 fn run() -> Result<()> {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let conn = PgConnection::establish(&database_url)
+    let mut conn = PgConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
-
-    let mut conn = oyster_indexer::AnyConnection::Postgresql(conn);
     let provider = AlloyProvider {
         url: "https://arb1.arbitrum.io/rpc".parse()?,
         contract: "0x9d95D61eA056721E358BC49fE995caBF3B86A34B".parse()?,

@@ -1,5 +1,4 @@
 use crate::schema::providers;
-use crate::AnyConnection;
 use alloy::primitives::Address;
 use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
@@ -7,6 +6,7 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use diesel::ExpressionMethods;
+use diesel::PgConnection;
 use diesel::RunQueryDsl;
 use ethp::event;
 use tracing::warn;
@@ -34,7 +34,7 @@ static INITIALIZED_TOPIC: [u8; 32] = event!("Initialized(uint8)");
     parent = None,
     fields(block = log.block_number, idx = log.log_index, tx = ?log.transaction_hash
 ))]
-pub fn handle_log(conn: &mut AnyConnection, log: Log) -> Result<()> {
+pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
     let log_type = log
@@ -62,7 +62,7 @@ pub fn handle_log(conn: &mut AnyConnection, log: Log) -> Result<()> {
 }
 
 #[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
-pub fn handle_provider_removed(conn: &mut AnyConnection, log: Log) -> Result<()> {
+pub fn handle_provider_removed(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
     let provider = Address::from_word(log.topics()[1]).to_checksum(None);
@@ -85,7 +85,7 @@ pub fn handle_provider_removed(conn: &mut AnyConnection, log: Log) -> Result<()>
 }
 
 #[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
-pub fn handle_provider_updated_with_cp(conn: &mut AnyConnection, log: Log) -> Result<()> {
+pub fn handle_provider_updated_with_cp(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
     let provider = Address::from_word(log.topics()[1]).to_checksum(None);
