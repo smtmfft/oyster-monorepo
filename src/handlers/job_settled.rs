@@ -27,7 +27,7 @@ pub fn handle_job_settled(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
     let id = log.topics()[1].encode_hex_with_prefix();
-    let (amount, timestamp) = <(U256, U256)>::abi_decode(&log.data().data, true)?;
+    let (amount, timestamp) = <(U256, U256)>::abi_decode_sequence(&log.data().data, true)?;
     let (amount, timestamp) = (
         BigDecimal::from_str(&amount.to_string())?,
         std::time::SystemTime::UNIX_EPOCH
@@ -179,7 +179,7 @@ mod tests {
                         "0x3333333333333333333333333333333333333333333333333333333333333333"
                             .parse()?,
                     ],
-                    (5, timestamp).abi_encode().into(),
+                    (5, timestamp).abi_encode_sequence().into(),
                 )
                 .unwrap(),
             },

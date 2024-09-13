@@ -31,7 +31,7 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
     let provider = Address::from_word(log.topics()[3]).to_checksum(None);
     let (metadata, rate, balance, timestamp) =
         // parse rate and balance as B256 since the integer representation is not used
-        <(String, U256, U256, U256)>::abi_decode(&log.data().data, true)?;
+        <(String, U256, U256, U256)>::abi_decode_sequence(&log.data().data, true)?;
     let (rate, balance, timestamp) = (
         BigDecimal::from_str(&rate.to_string())?,
         BigDecimal::from_str(&balance.to_string())?,
@@ -177,7 +177,9 @@ mod tests {
                             .parse::<Address>()?
                             .into_word(),
                     ],
-                    ("some metadata", 1, 2, timestamp).abi_encode().into(),
+                    ("some metadata", 1, 2, timestamp)
+                        .abi_encode_sequence()
+                        .into(),
                 )
                 .unwrap(),
             },
@@ -305,7 +307,9 @@ mod tests {
                             .parse::<Address>()?
                             .into_word(),
                     ],
-                    ("some metadata", 1, 2, timestamp).abi_encode().into(),
+                    ("some metadata", 1, 2, timestamp)
+                        .abi_encode_sequence()
+                        .into(),
                 )
                 .unwrap(),
             },
@@ -476,7 +480,9 @@ mod tests {
                             .parse::<Address>()?
                             .into_word(),
                     ],
-                    ("some metadata", 1, 2, timestamp).abi_encode().into(),
+                    ("some metadata", 1, 2, timestamp)
+                        .abi_encode_sequence()
+                        .into(),
                 )
                 .unwrap(),
             },
@@ -622,7 +628,9 @@ mod tests {
                             .parse::<Address>()?
                             .into_word(),
                     ],
-                    ("some metadata", 1, 2, timestamp).abi_encode().into(),
+                    ("some metadata", 1, 2, timestamp)
+                        .abi_encode_sequence()
+                        .into(),
                 )
                 .unwrap(),
             },
@@ -754,7 +762,9 @@ mod tests {
                             .parse::<Address>()?
                             .into_word(),
                     ],
-                    ("some metadata", 1, 2, timestamp).abi_encode().into(),
+                    ("some metadata", 1, 2, timestamp)
+                        .abi_encode_sequence()
+                        .into(),
                 )
                 .unwrap(),
             },
