@@ -110,20 +110,48 @@ mod tests {
             ))
             .execute(conn)
             .context("failed to create job")?;
-
-        assert_eq!(jobs::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            jobs::table.select(jobs::all_columns).first(conn),
-            Ok((
-                "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
-                "some metadata".to_owned(),
-                "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                BigDecimal::from(1),
-                BigDecimal::from(20),
-                creation_now,
-                creation_now,
+        diesel::insert_into(jobs::table)
+            .values((
+                jobs::id.eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
+                jobs::owner.eq("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"),
+                jobs::provider.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
+                jobs::metadata.eq("some metadata"),
+                jobs::rate.eq(BigDecimal::from(1)),
+                jobs::balance.eq(BigDecimal::from(20)),
+                jobs::last_settled.eq(&creation_now),
+                jobs::created.eq(&creation_now),
             ))
+            .execute(conn)
+            .context("failed to create job")?;
+
+        assert_eq!(jobs::table.count().get_result(conn), Ok(2));
+        assert_eq!(
+            jobs::table
+                .select(jobs::all_columns)
+                .order_by(jobs::id)
+                .load(conn),
+            Ok(vec![
+                (
+                    "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
+                    "some metadata".to_owned(),
+                    "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
+                    "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                    BigDecimal::from(1),
+                    BigDecimal::from(20),
+                    creation_now,
+                    creation_now,
+                ),
+                (
+                    "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
+                    "some metadata".to_owned(),
+                    "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
+                    "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                    BigDecimal::from(1),
+                    BigDecimal::from(20),
+                    creation_now,
+                    creation_now,
+                )
+            ])
         );
 
         // log under test
@@ -156,19 +184,34 @@ mod tests {
         handle_log(conn, log)?;
 
         // checks
-        assert_eq!(jobs::table.count().get_result(conn), Ok(1));
+        assert_eq!(jobs::table.count().get_result(conn), Ok(2));
         assert_eq!(
-            jobs::table.select(jobs::all_columns).first(conn),
-            Ok((
-                "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
-                "some metadata".to_owned(),
-                "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                BigDecimal::from(1),
-                BigDecimal::from(15),
-                now,
-                creation_now,
-            ))
+            jobs::table
+                .select(jobs::all_columns)
+                .order_by(jobs::id)
+                .load(conn),
+            Ok(vec![
+                (
+                    "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
+                    "some metadata".to_owned(),
+                    "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
+                    "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                    BigDecimal::from(1),
+                    BigDecimal::from(15),
+                    now,
+                    creation_now,
+                ),
+                (
+                    "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
+                    "some metadata".to_owned(),
+                    "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
+                    "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                    BigDecimal::from(1),
+                    BigDecimal::from(20),
+                    creation_now,
+                    creation_now,
+                )
+            ])
         );
 
         Ok(())
