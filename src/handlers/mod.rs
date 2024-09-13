@@ -18,6 +18,9 @@ use provider_updated_with_cp::handle_provider_updated_with_cp;
 mod job_opened;
 use job_opened::handle_job_opened;
 
+mod job_settled;
+use job_settled::handle_job_settled;
+
 // provider logs
 static PROVIDER_ADDED: [u8; 32] = event!("ProviderAdded(address,string)");
 static PROVIDER_REMOVED: [u8; 32] = event!("ProviderRemoved(address)");
