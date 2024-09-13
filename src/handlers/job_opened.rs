@@ -1,4 +1,5 @@
 use crate::schema::jobs;
+use crate::schema::providers;
 use alloy::hex::ToHexExt;
 use alloy::primitives::Address;
 use alloy::primitives::B256;
@@ -7,9 +8,12 @@ use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
-use diesel::query_dsl::methods::FilterDsl;
+use diesel::sql_types::Text;
+use diesel::sql_types::Timestamp;
 use diesel::ExpressionMethods;
+use diesel::IntoSql;
 use diesel::PgConnection;
+use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use tracing::warn;
 use tracing::{info, instrument};
@@ -42,19 +46,34 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
         "creating job"
     );
 
-    diesel::insert_into(jobs::table)
-        .values((
-            jobs::id.eq(&id),
-            jobs::owner.eq(&owner),
-            jobs::provider.eq(&provider),
-            jobs::metadata.eq(&metadata),
-            jobs::rate.eq(&rate),
-            jobs::balance.eq(&balance),
-            jobs::last_settled.eq(&timestamp),
-            jobs::created.eq(&timestamp),
-        ))
+    let count = diesel::insert_into(jobs::table)
+        .values(
+            providers::table
+                .select((
+                    id.as_sql::<Text>(),
+                    metadata.as_sql::<Text>(),
+                    owner.as_sql::<Text>(),
+                    providers::id,
+                    rate.as_sql::<Text>(),
+                    balance.as_sql::<Text>(),
+                    timestamp.as_sql::<Timestamp>(),
+                    timestamp.as_sql::<Timestamp>(),
+                ))
+                .filter(providers::is_active.eq(true))
+                .filter(providers::id.eq(&provider)),
+        )
         .execute(conn)
         .context("failed to create job")?;
+
+    if count != 1 {
+        // !!! should never happen
+        // we have failed to make any changes
+        // the only real condition is when the provider does not exist or is inactive
+        // we error out for now, can consider just moving on
+        return Err(anyhow::anyhow!(
+            "did not expect to find a non existent or inactive provider"
+        ));
+    }
 
     info!(
         id,
