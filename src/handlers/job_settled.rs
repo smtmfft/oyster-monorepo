@@ -39,6 +39,7 @@ pub fn handle_job_settled(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(id, ?amount, ?timestamp, "settling job");
 
     diesel::update(jobs::table)
+        .filter(jobs::id.eq(&id))
         .set((
             jobs::balance.eq(jobs::balance.sub(&amount)),
             jobs::last_settled.eq(&timestamp),
