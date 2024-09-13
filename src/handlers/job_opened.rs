@@ -60,8 +60,11 @@ mod tests {
         assert_eq!(jobs::table.count().get_result(conn), Ok(0));
 
         // log under test
-        let now = std::time::SystemTime::now();
-        let timestamp = now.duration_since(std::time::UNIX_EPOCH)?.as_secs();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
+        // we do this after the timestamp to truncate beyond seconds
+        let now = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(timestamp);
         let log = Log {
             block_hash: Some(keccak256!("some block").into()),
             block_number: Some(42),
