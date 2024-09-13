@@ -181,8 +181,8 @@ mod tests {
                 "some metadata".to_owned(),
                 "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
                 "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                1.eip712_data_word().to_string(),
-                2.eip712_data_word().to_string(),
+                BigDecimal::from(1),
+                BigDecimal::from(2),
                 now,
                 now,
             ))
@@ -228,8 +228,8 @@ mod tests {
                 jobs::owner.eq("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"),
                 jobs::provider.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
                 jobs::metadata.eq("some metadata"),
-                jobs::rate.eq(1.eip712_data_word().to_string()),
-                jobs::balance.eq(2.eip712_data_word().to_string()),
+                jobs::rate.eq(BigDecimal::from(1)),
+                jobs::balance.eq(BigDecimal::from(2)),
                 jobs::last_settled.eq(&now),
                 jobs::created.eq(&now),
             ))
@@ -244,8 +244,8 @@ mod tests {
                 "some metadata".to_owned(),
                 "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
                 "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                1.eip712_data_word().to_string(),
-                2.eip712_data_word().to_string(),
+                BigDecimal::from(1),
+                BigDecimal::from(2),
                 now,
                 now,
             ))
