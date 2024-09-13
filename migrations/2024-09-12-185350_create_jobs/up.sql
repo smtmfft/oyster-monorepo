@@ -3,8 +3,8 @@ CREATE TABLE jobs (
   metadata text NOT NULL,
   owner CHAR(42) NOT NULL,
   provider CHAR(42) NOT NULL REFERENCES providers (id),
-  rate CHAR(66) NOT NULL,
-  balance CHAR(66) NOT NULL,
+  rate NUMERIC NOT NULL,
+  balance NUMERIC NOT NULL,
   last_settled timestamp NOT NULL,
   created timestamp NOT NULL
 );
