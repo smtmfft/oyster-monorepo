@@ -66,6 +66,8 @@ pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
         handle_provider_updated_with_cp(conn, log)
     } else if log_type == JOB_OPENED {
         handle_job_opened(conn, log)
+    } else if log_type == JOB_SETTLED {
+        handle_job_settled(conn, log)
     } else if log_type == UPGRADED
         || log_type == LOCK_WAIT_TIME_UPDATED
         || log_type == ROLE_GRANTED
