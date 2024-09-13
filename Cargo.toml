@@ -10,6 +10,7 @@ path = "src/lib.rs"
 [dependencies]
 alloy = { version = "0.3.3", features = ["full"] }
 anyhow = "1.0.87"
+bigdecimal = "0.4.5"
 diesel = { version = "2.2.4", features = ["postgres", "sqlite"] }
 dotenvy = "0.15.7"
 ethp = "0.1.0"
