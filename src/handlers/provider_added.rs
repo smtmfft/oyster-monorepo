@@ -48,7 +48,7 @@ pub fn handle_provider_added(conn: &mut PgConnection, log: Log) -> Result<()> {
         .execute(conn)
         .context("failed to add provider")?;
 
-    if count == 0 {
+    if count != 1 {
         // !!! should never happen
         // we have failed to make any changes
         // the only real condition is when there is an existing active provider
