@@ -342,7 +342,7 @@ mod tests {
         assert_eq!(jobs::table.count().get_result(conn), Ok(0));
         assert_eq!(
             format!("{:?}", res.unwrap_err()),
-            "failed to create job\n\nCaused by:\n    insert or update on table \"jobs\" violates foreign key constraint \"jobs_provider_fkey\""
+            "did not expect to find a non existent or inactive provider"
         );
 
         Ok(())
@@ -418,7 +418,7 @@ mod tests {
         assert_eq!(jobs::table.count().get_result(conn), Ok(0));
         assert_eq!(
             format!("{:?}", res.unwrap_err()),
-            "failed to create job\n\nCaused by:\n    insert or update on table \"jobs\" violates foreign key constraint \"jobs_provider_fkey\""
+            "did not expect to find a non existent or inactive provider"
         );
 
         Ok(())
