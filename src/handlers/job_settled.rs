@@ -1,3 +1,6 @@
+use std::ops::Sub;
+use std::str::FromStr;
+
 use crate::schema::jobs;
 use crate::schema::providers;
 use alloy::hex::ToHexExt;
@@ -8,6 +11,7 @@ use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
+use bigdecimal::BigDecimal;
 use diesel::sql_types::Text;
 use diesel::sql_types::Timestamp;
 use diesel::ExpressionMethods;
@@ -22,7 +26,29 @@ use tracing::{info, instrument};
 pub fn handle_job_settled(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!("handle_job_settled")
+    let id = log.topics()[1].encode_hex_with_prefix();
+    let (amount, timestamp) =
+        // parse rate and balance as B256 since the integer representation is not used
+        <(U256, U256)>::abi_decode(&log.data().data, true)?;
+    let (amount, timestamp) = (
+        BigDecimal::from_str(&amount.to_string())?,
+        std::time::SystemTime::UNIX_EPOCH
+            + std::time::Duration::from_secs(timestamp.into_limbs()[0]),
+    );
+
+    info!(id, ?amount, ?timestamp, "settling job");
+
+    diesel::update(jobs::table)
+        .set((
+            jobs::balance.eq(jobs::balance.sub(&amount)),
+            jobs::last_settled.eq(&timestamp),
+        ))
+        .execute(conn)
+        .context("failed to update provider")?;
+
+    info!(id, ?amount, ?timestamp, "created job");
+
+    Ok(())
 }
 
 #[cfg(test)]
