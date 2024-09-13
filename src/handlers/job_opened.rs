@@ -39,6 +39,9 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
             + std::time::Duration::from_secs(timestamp.into_limbs()[0]),
     );
 
+    // we want to insert if job does not exist and provider exists and is active
+    // we want to error out if job already exists or provider does not exist or is inactive
+
     info!(
         id,
         owner,
@@ -50,8 +53,19 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
         "creating job"
     );
 
+    // target sql:
+    // INSERT INTO jobs (id, metadata, owner, provider, rate, balance, last_settled, created)
+    // SELECT "<id>", "<metadata>", "<owner>", id, "<rate>", "<balance>", "<last_settled>", "<created>"
+    // FROM providers
+    // WHERE providers.is_active = true
+    // AND id = "<provider>";
     let count = diesel::insert_into(jobs::table)
         .values(
+            // we want to detect if the provider exists and is active
+            // we do it by using INSERT INTO ... SELECT ... WHERE ...
+            // the INSERT happens if SELECT returns something
+            // which happens only if the WHERE conditions match
+            // the rest of the values are just piped through SELECT
             providers::table
                 .select((
                     id.as_sql::<Text>(),
