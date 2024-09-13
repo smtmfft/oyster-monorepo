@@ -88,9 +88,7 @@ mod tests {
                             .parse::<Address>()?
                             .into_word(),
                     ],
-                    ("some metadata", 1, 2, timestamp)
-                        .abi_encode_sequence()
-                        .into(),
+                    ("some metadata", 1, 2, timestamp).abi_encode().into(),
                 )
                 .unwrap(),
             },
@@ -108,8 +106,8 @@ mod tests {
                 "some metadata".to_owned(),
                 "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
                 "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                1,
-                2,
+                1.eip712_data_word().to_string(),
+                2.eip712_data_word().to_string(),
                 now,
                 now,
             ))
