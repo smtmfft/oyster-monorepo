@@ -17,9 +17,21 @@ pub fn handle_provider_updated_with_cp(conn: &mut PgConnection, log: Log) -> Res
     let provider = Address::from_word(log.topics()[1]).to_checksum(None);
     let cp = String::abi_decode(&log.data().data, true)?;
 
+    // we want to update if provider is active
+    // we want to error out if provider does not exist or is not active
+
     info!(provider, "updating provider");
+
+    // target sql:
+    // UPDATE providers
+    // SET cp = "<cp>"
+    // WHERE id = "<id>"
+    // AND is_active = true;
     let count = diesel::update(providers::table)
         .filter(providers::id.eq(&provider))
+        // we want to detect if provider is inactive
+        // we do it by only updating rows where is_active is true
+        // and later checking if any rows were updated
         .filter(providers::is_active.eq(true))
         .set(providers::cp.eq(cp))
         .execute(conn)
