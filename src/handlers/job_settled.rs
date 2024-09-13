@@ -65,11 +65,12 @@ mod tests {
             ))
         );
 
-        let timestamp = std::time::SystemTime::now()
+        let creation_timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_secs();
         // we do this after the timestamp to truncate beyond seconds
-        let now = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(timestamp);
+        let creation_now =
+            std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(creation_timestamp);
         diesel::insert_into(jobs::table)
             .values((
                 jobs::id.eq("0x3333333333333333333333333333333333333333333333333333333333333333"),
@@ -78,8 +79,8 @@ mod tests {
                 jobs::metadata.eq("some metadata"),
                 jobs::rate.eq(BigDecimal::from(1)),
                 jobs::balance.eq(BigDecimal::from(20)),
-                jobs::last_settled.eq(&now),
-                jobs::created.eq(&now),
+                jobs::last_settled.eq(&creation_now),
+                jobs::created.eq(&creation_now),
             ))
             .execute(conn)
             .context("failed to create job")?;
@@ -94,13 +95,13 @@ mod tests {
                 "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
                 BigDecimal::from(1),
                 BigDecimal::from(20),
-                now,
-                now,
+                creation_now,
+                creation_now,
             ))
         );
 
         // log under test
-        let timestamp = timestamp + 5;
+        let timestamp = creation_timestamp + 5;
         // we do this after the timestamp to truncate beyond seconds
         let now = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(timestamp);
         let log = Log {
@@ -140,7 +141,7 @@ mod tests {
                 BigDecimal::from(1),
                 BigDecimal::from(15),
                 now,
-                now,
+                creation_now,
             ))
         );
 
