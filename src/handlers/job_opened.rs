@@ -218,4 +218,62 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_create_job_when_provider_does_not_exist() -> Result<()> {
+        // setup
+        let mut db = TestDb::new();
+        let conn = &mut db.conn;
+
+        let contract = "0x1111111111111111111111111111111111111111".parse()?;
+
+        assert_eq!(jobs::table.count().get_result(conn), Ok(0));
+
+        // log under test
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
+        // we do this after the timestamp to truncate beyond seconds
+        let now = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(timestamp);
+        let log = Log {
+            block_hash: Some(keccak256!("some block").into()),
+            block_number: Some(42),
+            block_timestamp: None,
+            log_index: Some(69),
+            transaction_hash: Some(keccak256!("some tx").into()),
+            transaction_index: Some(420),
+            removed: false,
+            inner: alloy::primitives::Log {
+                address: contract,
+                data: LogData::new(
+                    vec![
+                        event!("JobOpened(bytes32,string,address,address,uint256,uint256,uint256)")
+                            .into(),
+                        "0x3333333333333333333333333333333333333333333333333333333333333333"
+                            .parse()?,
+                        "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"
+                            .parse::<Address>()?
+                            .into_word(),
+                        "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"
+                            .parse::<Address>()?
+                            .into_word(),
+                    ],
+                    ("some metadata", 1, 2, timestamp).abi_encode().into(),
+                )
+                .unwrap(),
+            },
+        };
+
+        // use handle_log instead of concrete handler to test dispatch
+        let res = handle_log(conn, log);
+
+        // checks
+        assert_eq!(jobs::table.count().get_result(conn), Ok(0));
+        assert_eq!(
+            format!("{:?}", res.unwrap_err()),
+            "failed to create job\n\nCaused by:\n    insert or update on table \"jobs\" violates foreign key constraint \"jobs_provider_fkey\""
+        );
+
+        Ok(())
+    }
 }
