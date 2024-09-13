@@ -27,9 +27,7 @@ pub fn handle_job_settled(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
     let id = log.topics()[1].encode_hex_with_prefix();
-    let (amount, timestamp) =
-        // parse rate and balance as B256 since the integer representation is not used
-        <(U256, U256)>::abi_decode(&log.data().data, true)?;
+    let (amount, timestamp) = <(U256, U256)>::abi_decode(&log.data().data, true)?;
     let (amount, timestamp) = (
         BigDecimal::from_str(&amount.to_string())?,
         std::time::SystemTime::UNIX_EPOCH
@@ -82,16 +80,25 @@ mod tests {
             ))
             .execute(conn)?;
 
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
+        let original_timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_secs();
+        // we do this after the timestamp to truncate beyond seconds
+        let original_now =
+            std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(original_timestamp);
+        diesel::insert_into(jobs::table)
+            .values((
+                jobs::id.eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
+                jobs::owner.eq("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"),
+                jobs::provider.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
+                jobs::metadata.eq("some other metadata"),
+                jobs::rate.eq(BigDecimal::from(3)),
+                jobs::balance.eq(BigDecimal::from(21)),
+                jobs::last_settled.eq(&original_now),
+                jobs::created.eq(&original_now),
             ))
-        );
-
+            .execute(conn)
+            .context("failed to create job")?;
         let creation_timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_secs();
@@ -111,19 +118,16 @@ mod tests {
             ))
             .execute(conn)
             .context("failed to create job")?;
-        diesel::insert_into(jobs::table)
-            .values((
-                jobs::id.eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
-                jobs::owner.eq("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"),
-                jobs::provider.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
-                jobs::metadata.eq("some metadata"),
-                jobs::rate.eq(BigDecimal::from(1)),
-                jobs::balance.eq(BigDecimal::from(20)),
-                jobs::last_settled.eq(&creation_now),
-                jobs::created.eq(&creation_now),
+
+        assert_eq!(providers::table.count().get_result(conn), Ok(1));
+        assert_eq!(
+            providers::table.select(providers::all_columns).first(conn),
+            Ok((
+                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                "some cp".to_owned(),
+                true
             ))
-            .execute(conn)
-            .context("failed to create job")?;
+        );
 
         assert_eq!(jobs::table.count().get_result(conn), Ok(2));
         assert_eq!(
@@ -144,13 +148,13 @@ mod tests {
                 ),
                 (
                     "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
-                    "some metadata".to_owned(),
+                    "some other metadata".to_owned(),
                     "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
                     "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                    BigDecimal::from(1),
-                    BigDecimal::from(20),
-                    creation_now,
-                    creation_now,
+                    BigDecimal::from(3),
+                    BigDecimal::from(21),
+                    original_now,
+                    original_now,
                 )
             ])
         );
@@ -185,6 +189,16 @@ mod tests {
         handle_log(conn, log)?;
 
         // checks
+        assert_eq!(providers::table.count().get_result(conn), Ok(1));
+        assert_eq!(
+            providers::table.select(providers::all_columns).first(conn),
+            Ok((
+                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                "some cp".to_owned(),
+                true
+            ))
+        );
+
         assert_eq!(jobs::table.count().get_result(conn), Ok(2));
         assert_eq!(
             jobs::table
@@ -204,13 +218,13 @@ mod tests {
                 ),
                 (
                     "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
-                    "some metadata".to_owned(),
+                    "some other metadata".to_owned(),
                     "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
                     "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                    BigDecimal::from(1),
-                    BigDecimal::from(20),
-                    creation_now,
-                    creation_now,
+                    BigDecimal::from(3),
+                    BigDecimal::from(21),
+                    original_now,
+                    original_now,
                 )
             ])
         );
