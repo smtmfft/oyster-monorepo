@@ -81,10 +81,10 @@ mod tests {
                             .into(),
                         "0x3333333333333333333333333333333333333333333333333333333333333333"
                             .parse()?,
-                        "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"
+                        "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"
                             .parse::<Address>()?
                             .into_word(),
-                        "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                        "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"
                             .parse::<Address>()?
                             .into_word(),
                     ],
@@ -106,8 +106,8 @@ mod tests {
             Ok((
                 "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
                 "some metadata".to_owned(),
+                "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
                 "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_owned(),
                 1,
                 2,
                 now,
