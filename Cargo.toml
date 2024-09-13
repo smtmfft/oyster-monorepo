@@ -11,7 +11,7 @@ path = "src/lib.rs"
 alloy = { version = "0.3.3", features = ["full"] }
 anyhow = "1.0.87"
 bigdecimal = "0.4.5"
-diesel = { version = "2.2.4", features = ["postgres", "sqlite"] }
+diesel = { version = "2.2.4", features = ["numeric", "postgres", "sqlite"] }
 dotenvy = "0.15.7"
 ethp = "0.1.0"
 tokio = { version = "1.40.0", features = ["full"] }
