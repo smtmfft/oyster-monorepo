@@ -9,10 +9,8 @@ diesel::table! {
         owner -> Bpchar,
         #[max_length = 42]
         provider -> Bpchar,
-        #[max_length = 66]
-        rate -> Bpchar,
-        #[max_length = 66]
-        balance -> Bpchar,
+        rate -> Numeric,
+        balance -> Numeric,
         last_settled -> Timestamp,
         created -> Timestamp,
     }
