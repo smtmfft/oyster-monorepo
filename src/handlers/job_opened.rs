@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::schema::jobs;
 use crate::schema::providers;
 use alloy::hex::ToHexExt;
@@ -8,6 +10,8 @@ use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
+use bigdecimal::BigDecimal;
+use diesel::sql_types::Numeric;
 use diesel::sql_types::Text;
 use diesel::sql_types::Timestamp;
 use diesel::ExpressionMethods;
@@ -27,10 +31,10 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
     let provider = Address::from_word(log.topics()[3]).to_checksum(None);
     let (metadata, rate, balance, timestamp) =
         // parse rate and balance as B256 since the integer representation is not used
-        <(String, B256, B256, U256)>::abi_decode(&log.data().data, true)?;
+        <(String, U256, U256, U256)>::abi_decode(&log.data().data, true)?;
     let (rate, balance, timestamp) = (
-        rate.encode_hex_with_prefix(),
-        balance.encode_hex_with_prefix(),
+        BigDecimal::from_str(&rate.to_string())?,
+        BigDecimal::from_str(&balance.to_string())?,
         std::time::SystemTime::UNIX_EPOCH
             + std::time::Duration::from_secs(timestamp.into_limbs()[0]),
     );
@@ -40,8 +44,8 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
         owner,
         provider,
         metadata,
-        rate,
-        balance,
+        ?rate,
+        ?balance,
         ?timestamp,
         "creating job"
     );
@@ -54,8 +58,8 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
                     metadata.as_sql::<Text>(),
                     owner.as_sql::<Text>(),
                     providers::id,
-                    rate.as_sql::<Text>(),
-                    balance.as_sql::<Text>(),
+                    rate.as_sql::<Numeric>(),
+                    balance.as_sql::<Numeric>(),
                     timestamp.as_sql::<Timestamp>(),
                     timestamp.as_sql::<Timestamp>(),
                 ))
@@ -80,8 +84,8 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
         owner,
         provider,
         metadata,
-        rate,
-        balance,
+        ?rate,
+        ?balance,
         ?timestamp,
         "created job"
     );
