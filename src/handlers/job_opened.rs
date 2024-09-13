@@ -1,5 +1,8 @@
 use crate::schema::jobs;
+use alloy::hex::ToHexExt;
 use alloy::primitives::Address;
+use alloy::primitives::B256;
+use alloy::primitives::U256;
 use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
 use anyhow::Context;
@@ -15,7 +18,56 @@ use tracing::{info, instrument};
 pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!();
+    let id = log.topics()[1].encode_hex_with_prefix();
+    let owner = Address::from_word(log.topics()[2]).to_checksum(None);
+    let provider = Address::from_word(log.topics()[3]).to_checksum(None);
+    let (metadata, rate, balance, timestamp) =
+        // parse rate and balance as B256 since the integer representation is not used
+        <(String, B256, B256, U256)>::abi_decode(&log.data().data, true)?;
+    let (rate, balance, timestamp) = (
+        rate.encode_hex_with_prefix(),
+        balance.encode_hex_with_prefix(),
+        std::time::SystemTime::UNIX_EPOCH
+            + std::time::Duration::from_secs(timestamp.into_limbs()[0]),
+    );
+
+    info!(
+        id,
+        owner,
+        provider,
+        metadata,
+        rate,
+        balance,
+        ?timestamp,
+        "creating job"
+    );
+
+    diesel::insert_into(jobs::table)
+        .values((
+            jobs::id.eq(&id),
+            jobs::owner.eq(&owner),
+            jobs::provider.eq(&provider),
+            jobs::metadata.eq(&metadata),
+            jobs::rate.eq(&rate),
+            jobs::balance.eq(&balance),
+            jobs::last_settled.eq(&timestamp),
+            jobs::created.eq(&timestamp),
+        ))
+        .execute(conn)
+        .context("failed to create job")?;
+
+    info!(
+        id,
+        owner,
+        provider,
+        metadata,
+        rate,
+        balance,
+        ?timestamp,
+        "created job"
+    );
+
+    Ok(())
 }
 
 #[cfg(test)]
