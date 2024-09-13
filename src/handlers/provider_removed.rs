@@ -15,9 +15,21 @@ pub fn handle_provider_removed(conn: &mut PgConnection, log: Log) -> Result<()> 
 
     let provider = Address::from_word(log.topics()[1]).to_checksum(None);
 
+    // we want to deactivate if provider is active
+    // we want to error out if provider is not active
+
     info!(provider, "removing provider");
+
+    // target sql:
+    // UPDATE providers
+    // SET is_active = false
+    // WHERE id = "<id>"
+    // AND is_active = true;
     let count = diesel::update(providers::table)
         .filter(providers::id.eq(&provider))
+        // we want to detect if provider is already inactive
+        // we do it by only updating rows where is_active is true
+        // and later checking if any rows were updated
         .filter(providers::is_active.eq(true))
         .set(providers::is_active.eq(false))
         .execute(conn)
