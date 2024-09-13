@@ -29,6 +29,7 @@ pub fn handle_job_settled(conn: &mut PgConnection, log: Log) -> Result<()> {
 mod tests {
     use alloy::{primitives::LogData, rpc::types::Log};
     use anyhow::Result;
+    use bigdecimal::BigDecimal;
     use diesel::QueryDsl;
     use ethp::{event, keccak256};
 
@@ -75,8 +76,8 @@ mod tests {
                 jobs::owner.eq("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"),
                 jobs::provider.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
                 jobs::metadata.eq("some metadata"),
-                jobs::rate.eq(1.eip712_data_word().to_string()),
-                jobs::balance.eq(20.eip712_data_word().to_string()),
+                jobs::rate.eq(BigDecimal::from(1)),
+                jobs::balance.eq(BigDecimal::from(20)),
                 jobs::last_settled.eq(&now),
                 jobs::created.eq(&now),
             ))
@@ -91,8 +92,8 @@ mod tests {
                 "some metadata".to_owned(),
                 "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
                 "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                1.eip712_data_word().to_string(),
-                20.eip712_data_word().to_string(),
+                BigDecimal::from(1),
+                BigDecimal::from(20),
                 now,
                 now,
             ))
@@ -136,8 +137,8 @@ mod tests {
                 "some metadata".to_owned(),
                 "0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB".to_owned(),
                 "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                1.eip712_data_word().to_string(),
-                15.eip712_data_word().to_string(),
+                BigDecimal::from(1),
+                BigDecimal::from(15),
                 now,
                 now,
             ))
