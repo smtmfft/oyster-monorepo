@@ -125,7 +125,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_new_provider_when_it_already_exists() -> Result<()> {
+    fn test_add_new_provider_in_populated_db() -> Result<()> {
         // setup
         let mut db = TestDb::new();
         let conn = &mut db.conn;
@@ -134,7 +134,7 @@ mod tests {
 
         diesel::insert_into(providers::table)
             .values((
-                providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
+                providers::id.eq("0x7777777777777777777777777777777777777777"),
                 providers::cp.eq("some other cp"),
                 providers::is_active.eq(true),
             ))
@@ -144,10 +144,104 @@ mod tests {
         assert_eq!(
             providers::table.select(providers::all_columns).first(conn),
             Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                "0x7777777777777777777777777777777777777777".to_owned(),
                 "some other cp".to_owned(),
                 true
             ))
+        );
+
+        // log under test
+        let log = Log {
+            block_hash: Some(keccak256!("some block").into()),
+            block_number: Some(42),
+            block_timestamp: None,
+            log_index: Some(69),
+            transaction_hash: Some(keccak256!("some tx").into()),
+            transaction_index: Some(420),
+            removed: false,
+            inner: alloy::primitives::Log {
+                address: contract,
+                data: LogData::new(
+                    vec![
+                        event!("ProviderAdded(address,string)").into(),
+                        "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"
+                            .parse::<Address>()?
+                            .into_word(),
+                    ],
+                    "some cp".abi_encode().into(),
+                )
+                .unwrap(),
+            },
+        };
+
+        // use handle_log instead of concrete handler to test dispatch
+        handle_log(conn, log)?;
+
+        // checks
+        assert_eq!(providers::table.count().get_result(conn), Ok(2));
+        assert_eq!(
+            providers::table
+                .select(providers::all_columns)
+                .order_by(providers::id)
+                .load(conn),
+            Ok(vec![
+                (
+                    "0x7777777777777777777777777777777777777777".to_owned(),
+                    "some other cp".to_owned(),
+                    true,
+                ),
+                (
+                    "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                    "some cp".to_owned(),
+                    true,
+                )
+            ])
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_new_provider_when_it_already_exists() -> Result<()> {
+        // setup
+        let mut db = TestDb::new();
+        let conn = &mut db.conn;
+
+        let contract = "0x1111111111111111111111111111111111111111".parse()?;
+
+        diesel::insert_into(providers::table)
+            .values((
+                providers::id.eq("0x7777777777777777777777777777777777777777"),
+                providers::cp.eq("some other cp"),
+                providers::is_active.eq(true),
+            ))
+            .execute(conn)?;
+        diesel::insert_into(providers::table)
+            .values((
+                providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
+                providers::cp.eq("some cp"),
+                providers::is_active.eq(true),
+            ))
+            .execute(conn)?;
+
+        assert_eq!(providers::table.count().get_result(conn), Ok(2));
+        assert_eq!(
+            providers::table
+                .select(providers::all_columns)
+                .order_by(providers::id)
+                .load(conn),
+            Ok(vec![
+                (
+                    "0x7777777777777777777777777777777777777777".to_owned(),
+                    "some other cp".to_owned(),
+                    true,
+                ),
+                (
+                    "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                    "some cp".to_owned(),
+                    true,
+                )
+            ])
         );
 
         // log under test
@@ -182,6 +276,25 @@ mod tests {
             format!("{:?}", res.unwrap_err()),
             "did not expect to find existing provider"
         );
+        assert_eq!(providers::table.count().get_result(conn), Ok(2));
+        assert_eq!(
+            providers::table
+                .select(providers::all_columns)
+                .order_by(providers::id)
+                .load(conn),
+            Ok(vec![
+                (
+                    "0x7777777777777777777777777777777777777777".to_owned(),
+                    "some other cp".to_owned(),
+                    true,
+                ),
+                (
+                    "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                    "some cp".to_owned(),
+                    true,
+                )
+            ])
+        );
 
         Ok(())
     }
@@ -196,20 +309,37 @@ mod tests {
 
         diesel::insert_into(providers::table)
             .values((
-                providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
+                providers::id.eq("0x7777777777777777777777777777777777777777"),
                 providers::cp.eq("some other cp"),
+                providers::is_active.eq(true),
+            ))
+            .execute(conn)?;
+        diesel::insert_into(providers::table)
+            .values((
+                providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
+                providers::cp.eq("some cp"),
                 providers::is_active.eq(false),
             ))
             .execute(conn)?;
 
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
+        assert_eq!(providers::table.count().get_result(conn), Ok(2));
         assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some other cp".to_owned(),
-                false
-            ))
+            providers::table
+                .select(providers::all_columns)
+                .order_by(providers::id)
+                .load(conn),
+            Ok(vec![
+                (
+                    "0x7777777777777777777777777777777777777777".to_owned(),
+                    "some other cp".to_owned(),
+                    true,
+                ),
+                (
+                    "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                    "some cp".to_owned(),
+                    false,
+                )
+            ])
         );
 
         // log under test
@@ -230,7 +360,7 @@ mod tests {
                             .parse::<Address>()?
                             .into_word(),
                     ],
-                    "some cp".abi_encode().into(),
+                    "some random cp".abi_encode().into(),
                 )
                 .unwrap(),
             },
@@ -240,14 +370,24 @@ mod tests {
         handle_log(conn, log)?;
 
         // checks
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
+        assert_eq!(providers::table.count().get_result(conn), Ok(2));
         assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
-            ))
+            providers::table
+                .select(providers::all_columns)
+                .order_by(providers::id)
+                .load(conn),
+            Ok(vec![
+                (
+                    "0x7777777777777777777777777777777777777777".to_owned(),
+                    "some other cp".to_owned(),
+                    true,
+                ),
+                (
+                    "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
+                    "some random cp".to_owned(),
+                    true,
+                )
+            ])
         );
 
         Ok(())
