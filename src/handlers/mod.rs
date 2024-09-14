@@ -76,6 +76,8 @@ pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
         handle_job_settled(conn, log)
     } else if log_type == JOB_CLOSED {
         handle_job_closed(conn, log)
+    } else if log_type == JOB_DEPOSITED {
+        handle_job_deposited(conn, log)
     } else if log_type == UPGRADED
         || log_type == LOCK_WAIT_TIME_UPDATED
         || log_type == ROLE_GRANTED
