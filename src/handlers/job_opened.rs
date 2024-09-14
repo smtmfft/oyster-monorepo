@@ -4,7 +4,6 @@ use crate::schema::jobs;
 use crate::schema::providers;
 use alloy::hex::ToHexExt;
 use alloy::primitives::Address;
-use alloy::primitives::B256;
 use alloy::primitives::U256;
 use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;

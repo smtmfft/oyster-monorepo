@@ -2,22 +2,15 @@ use std::ops::Sub;
 use std::str::FromStr;
 
 use crate::schema::jobs;
-use crate::schema::providers;
 use alloy::hex::ToHexExt;
-use alloy::primitives::Address;
-use alloy::primitives::B256;
 use alloy::primitives::U256;
 use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
 use bigdecimal::BigDecimal;
-use diesel::sql_types::Text;
-use diesel::sql_types::Timestamp;
 use diesel::ExpressionMethods;
-use diesel::IntoSql;
 use diesel::PgConnection;
-use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use tracing::warn;
 use tracing::{info, instrument};
@@ -475,7 +468,7 @@ mod tests {
         // log under test
         let timestamp = original_timestamp + 5;
         // we do this after the timestamp to truncate beyond seconds
-        let now = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(timestamp);
+        let _now = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(timestamp);
         let log = Log {
             block_hash: Some(keccak256!("some block").into()),
             block_number: Some(42),
