@@ -24,6 +24,9 @@ use job_settled::handle_job_settled;
 mod job_closed;
 use job_closed::handle_job_closed;
 
+mod job_deposited;
+use job_deposited::handle_job_deposited;
+
 // provider logs
 static PROVIDER_ADDED: [u8; 32] = event!("ProviderAdded(address,string)");
 static PROVIDER_REMOVED: [u8; 32] = event!("ProviderRemoved(address)");
