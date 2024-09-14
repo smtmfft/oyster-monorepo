@@ -36,7 +36,7 @@ pub fn handle_job_settled(conn: &mut PgConnection, log: Log) -> Result<()> {
 
     info!(id, ?amount, ?timestamp, "settling job");
 
-    diesel::update(jobs::table)
+    let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
         .set((
             jobs::balance.eq(jobs::balance.sub(&amount)),
@@ -44,6 +44,14 @@ pub fn handle_job_settled(conn: &mut PgConnection, log: Log) -> Result<()> {
         ))
         .execute(conn)
         .context("failed to update provider")?;
+
+    if count != 1 {
+        // !!! should never happen
+        // we have failed to make any changes
+        // the only real condition is when the job does not exist
+        // we error out for now, can consider just moving on
+        return Err(anyhow::anyhow!("could not find job"));
+    }
 
     info!(id, ?amount, ?timestamp, "created job");
 
