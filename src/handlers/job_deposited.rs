@@ -24,8 +24,15 @@ pub fn handle_job_deposited(conn: &mut PgConnection, log: Log) -> Result<()> {
     let amount = U256::abi_decode(&log.data().data, true)?;
     let amount = BigDecimal::from_str(&amount.to_string())?;
 
+    // we want to update if job exists
+    // we want to error out if job does not exist
+
     info!(id, ?amount, "depositing into job");
 
+    // target sql:
+    // UPDATE jobs
+    // SET balance = balance + <amount>
+    // WHERE id = "<id>";
     let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
         .set(jobs::balance.eq(jobs::balance.add(&amount)))
@@ -33,6 +40,10 @@ pub fn handle_job_deposited(conn: &mut PgConnection, log: Log) -> Result<()> {
         .context("failed to update job")?;
 
     if count != 1 {
+        // !!! should never happen
+        // we have failed to make any changes
+        // the only real condition is when the job does not exist
+        // we error out for now, can consider just moving on
         return Err(anyhow::anyhow!("could not find job"));
     }
 
