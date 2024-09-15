@@ -45,7 +45,7 @@ pub fn handle_job_settled(conn: &mut PgConnection, log: Log) -> Result<()> {
             jobs::last_settled.eq(&timestamp),
         ))
         .execute(conn)
-        .context("failed to update provider")?;
+        .context("failed to update job")?;
 
     if count != 1 {
         // !!! should never happen
