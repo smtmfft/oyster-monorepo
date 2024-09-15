@@ -86,6 +86,8 @@ pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
         handle_job_deposited(conn, log)
     } else if log_type == JOB_WITHDREW {
         handle_job_withdrew(conn, log)
+    } else if log_type == JOB_REVISE_RATE_INITIATED {
+        handle_job_revise_rate_initiated(conn, log)
     } else if log_type == UPGRADED
         || log_type == LOCK_WAIT_TIME_UPDATED
         || log_type == ROLE_GRANTED
