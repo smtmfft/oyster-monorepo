@@ -20,7 +20,21 @@ use tracing::{info, instrument};
 pub fn handle_job_withdrew(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!()
+    let id = log.topics()[1].encode_hex_with_prefix();
+    let amount = U256::abi_decode(&log.data().data, true)?;
+    let amount = BigDecimal::from_str(&amount.to_string())?;
+
+    info!(id, ?amount, "withdrawing from job");
+
+    diesel::update(jobs::table)
+        .filter(jobs::id.eq(&id))
+        .set(jobs::balance.eq(jobs::balance.sub(&amount)))
+        .execute(conn)
+        .context("failed to update job")?;
+
+    info!(id, ?amount, "withdrew from job");
+
+    Ok(())
 }
 
 #[cfg(test)]
