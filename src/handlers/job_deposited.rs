@@ -26,11 +26,15 @@ pub fn handle_job_deposited(conn: &mut PgConnection, log: Log) -> Result<()> {
 
     info!(id, ?amount, "depositing into job");
 
-    diesel::update(jobs::table)
+    let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
         .set(jobs::balance.eq(jobs::balance.add(&amount)))
         .execute(conn)
         .context("failed to update job")?;
+
+    if count != 1 {
+        return Err(anyhow::anyhow!("could not find job"));
+    }
 
     info!(id, ?amount, "deposited into job");
 
