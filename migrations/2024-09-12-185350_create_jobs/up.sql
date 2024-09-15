@@ -5,8 +5,8 @@ CREATE TABLE jobs (
   provider CHAR(42) NOT NULL REFERENCES providers (id),
   rate NUMERIC NOT NULL,
   balance NUMERIC NOT NULL,
-  last_settled timestamp NOT NULL,
-  created timestamp NOT NULL
+  last_settled TIMESTAMP NOT NULL,
+  created TIMESTAMP NOT NULL
 );
 
 CREATE INDEX jobs_owner_idx ON jobs (owner);
