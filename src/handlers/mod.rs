@@ -27,6 +27,9 @@ use job_closed::handle_job_closed;
 mod job_deposited;
 use job_deposited::handle_job_deposited;
 
+mod job_withdrew;
+use job_withdrew::handle_job_withdrew;
+
 // provider logs
 static PROVIDER_ADDED: [u8; 32] = event!("ProviderAdded(address,string)");
 static PROVIDER_REMOVED: [u8; 32] = event!("ProviderRemoved(address)");
