@@ -1,3 +1,4 @@
+use std::ops::Add;
 use std::ops::Sub;
 use std::str::FromStr;
 
@@ -19,7 +20,21 @@ use tracing::{info, instrument};
 pub fn handle_job_deposited(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!()
+    let id = log.topics()[1].encode_hex_with_prefix();
+    let amount = U256::abi_decode(&log.data().data, true)?;
+    let amount = BigDecimal::from_str(&amount.to_string())?;
+
+    info!(id, ?amount, "depositing into job");
+
+    diesel::update(jobs::table)
+        .filter(jobs::id.eq(&id))
+        .set(jobs::balance.eq(jobs::balance.add(&amount)))
+        .execute(conn)
+        .context("failed to update job")?;
+
+    info!(id, ?amount, "deposited into job");
+
+    Ok(())
 }
 
 #[cfg(test)]
