@@ -63,7 +63,29 @@ impl FromSql<RequestStatus, Pg> for Status {
 pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!()
+    let id = log.topics()[2].encode_hex_with_prefix();
+    let (value, timestamp) = <(U256, U256)>::abi_decode_sequence(&log.data().data, true)?;
+    let (value, timestamp) = (
+        BigDecimal::from_str(&value.to_string())?,
+        std::time::SystemTime::UNIX_EPOCH
+            + std::time::Duration::from_secs(timestamp.into_limbs()[0]),
+    );
+
+    info!(id, ?value, ?timestamp, "creating revise rate request");
+
+    diesel::insert_into(revise_rate_requests::table)
+        .values((
+            revise_rate_requests::id.eq(&id),
+            revise_rate_requests::value.eq(&value),
+            revise_rate_requests::updates_at.eq(&timestamp),
+            revise_rate_requests::status.eq(&Status::InProgress),
+        ))
+        .execute(conn)
+        .context("failed to create revise rate request")?;
+
+    info!(id, ?value, ?timestamp, "created revise rate request");
+
+    Ok(())
 }
 
 #[cfg(test)]
