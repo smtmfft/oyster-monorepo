@@ -1,0 +1,8 @@
+CREATE TYPE request_status AS ENUM ('IN_PROGRESS', 'CANCELLED', 'COMPLETED');
+
+CREATE TABLE revise_rate_requests (
+  id CHAR(66) PRIMARY KEY,
+  value NUMERIC NOT NULL,
+  updates_at TIMESTAMP NOT NULL,
+  status REQUEST_STATUS NOT NULL
+)
