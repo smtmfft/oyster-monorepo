@@ -12,8 +12,11 @@ use bigdecimal::BigDecimal;
 use diesel::ExpressionMethods;
 use diesel::PgConnection;
 use diesel::RunQueryDsl;
+use ethp::keccak256;
 use tracing::warn;
 use tracing::{info, instrument};
+
+static RATE_LOCK_SELECTOR: [u8; 32] = keccak256!("RATE_LOCK");
 
 #[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
 pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
