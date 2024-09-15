@@ -30,6 +30,9 @@ use job_deposited::handle_job_deposited;
 mod job_withdrew;
 use job_withdrew::handle_job_withdrew;
 
+mod job_revise_rate_initiated;
+use job_revise_rate_initiated::handle_job_revise_rate_initiated;
+
 // provider logs
 static PROVIDER_ADDED: [u8; 32] = event!("ProviderAdded(address,string)");
 static PROVIDER_REMOVED: [u8; 32] = event!("ProviderRemoved(address)");
