@@ -63,6 +63,12 @@ impl FromSql<RequestStatus, Pg> for Status {
 pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
+    let selector = log.topics()[1];
+    if selector != RATE_LOCK_SELECTOR {
+        info!(?selector, "unknown selector, skipping");
+        return Ok(());
+    }
+
     let id = log.topics()[2].encode_hex_with_prefix();
     let (value, timestamp) = <(U256, U256)>::abi_decode_sequence(&log.data().data, true)?;
     let (value, timestamp) = (
