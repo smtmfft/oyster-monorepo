@@ -25,7 +25,18 @@ static RATE_LOCK_SELECTOR: [u8; 32] = keccak256!("RATE_LOCK");
 pub fn handle_lock_deleted(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!()
+    let id = log.topics()[2].encode_hex_with_prefix();
+
+    info!(id, "deleting revise rate request");
+
+    diesel::delete(revise_rate_requests::table)
+        .filter(revise_rate_requests::id.eq(&id))
+        .execute(conn)
+        .context("failed to create revise rate request")?;
+
+    info!(id, "deleted revise rate request");
+
+    Ok(())
 }
 
 #[cfg(test)]
