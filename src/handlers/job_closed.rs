@@ -25,6 +25,7 @@ pub fn handle_job_closed(conn: &mut PgConnection, log: Log) -> Result<()> {
 
     let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
+        .filter(jobs::is_closed.eq(false))
         .set(jobs::is_closed.eq(true))
         .execute(conn)
         .context("failed to update job")?;
