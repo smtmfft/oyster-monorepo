@@ -27,6 +27,7 @@ pub fn handle_job_revise_rate_cancelled(conn: &mut PgConnection, log: Log) -> Re
     info!(id, "cancelling revise rate request");
 
     diesel::update(revise_rate_requests::table)
+        .filter(revise_rate_requests::id.eq(&id))
         .set(revise_rate_requests::status.eq(Status::Cancelled))
         .execute(conn)
         .context("failed to update job")?;
