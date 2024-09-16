@@ -10,6 +10,7 @@ use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
 use bigdecimal::BigDecimal;
+use diesel::sql_types::Bool;
 use diesel::sql_types::Numeric;
 use diesel::sql_types::Text;
 use diesel::sql_types::Timestamp;
@@ -54,7 +55,7 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
 
     // target sql:
     // INSERT INTO jobs (id, metadata, owner, provider, rate, balance, last_settled, created)
-    // SELECT "<id>", "<metadata>", "<owner>", id, "<rate>", "<balance>", "<last_settled>", "<created>"
+    // SELECT "<id>", "<metadata>", "<owner>", id, "<rate>", "<balance>", "<last_settled>", "<created>", false
     // FROM providers
     // WHERE providers.is_active = true
     // AND id = "<provider>";
@@ -75,6 +76,7 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
                     balance.as_sql::<Numeric>(),
                     timestamp.as_sql::<Timestamp>(),
                     timestamp.as_sql::<Timestamp>(),
+                    false.as_sql::<Bool>(),
                 ))
                 .filter(providers::is_active.eq(true))
                 .filter(providers::id.eq(&provider)),
