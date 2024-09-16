@@ -1,3 +1,4 @@
+DROP INDEX jobs_created_idx;
 DROP INDEX jobs_provider_idx;
 DROP INDEX jobs_owner_idx;
 
