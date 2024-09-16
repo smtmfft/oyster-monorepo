@@ -19,6 +19,7 @@ diesel::table! {
         balance -> Numeric,
         last_settled -> Timestamp,
         created -> Timestamp,
+        is_closed -> Bool,
     }
 }
 
