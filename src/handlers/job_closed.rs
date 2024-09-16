@@ -1,14 +1,8 @@
-use std::ops::Sub;
-use std::str::FromStr;
-
 use crate::schema::jobs;
 use alloy::hex::ToHexExt;
-use alloy::primitives::U256;
 use alloy::rpc::types::Log;
-use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
-use bigdecimal::BigDecimal;
 use diesel::ExpressionMethods;
 use diesel::PgConnection;
 use diesel::RunQueryDsl;
