@@ -65,6 +65,11 @@ static JOB_METADATA_UPDATED: [u8; 32] = event!("JobMetadataUpdated(bytes32,strin
 // blergh
 static LOCK_CREATED: [u8; 32] = event!("LockCreated(bytes32,bytes32,uint256,uint256)");
 
+// need to set revise rate requests to completed on both JobReviseRateFinalized and JobClosed
+// but not if JobClosed is emitted after a rate change is already finalized
+// or job is closed when rate is zero without any rate changes
+// way simpler to just use the lock event
+// blergh
 static LOCK_DELETED: [u8; 32] = event!("LockDeleted(bytes32,bytes32,uint256)");
 
 // ignored logs
