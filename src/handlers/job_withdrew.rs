@@ -23,8 +23,8 @@ pub fn handle_job_withdrew(conn: &mut PgConnection, log: Log) -> Result<()> {
     let amount = U256::abi_decode(&log.data().data, true)?;
     let amount = BigDecimal::from_str(&amount.to_string())?;
 
-    // we want to update if job exists
-    // we want to error out if job does not exist
+    // we want to update if job exists and is not closed
+    // we want to error out if job does not exist or is closed
 
     info!(id, ?amount, "withdrawing from job");
 
