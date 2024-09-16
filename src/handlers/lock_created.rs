@@ -1,4 +1,3 @@
-use std::io::Write;
 use std::str::FromStr;
 
 use crate::schema::jobs;
@@ -11,14 +10,6 @@ use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
 use bigdecimal::BigDecimal;
-use diesel::deserialize::FromSql;
-use diesel::deserialize::FromSqlRow;
-use diesel::expression::AsExpression;
-use diesel::pg::Pg;
-use diesel::pg::PgValue;
-use diesel::serialize::IsNull;
-use diesel::serialize::Output;
-use diesel::serialize::ToSql;
 use diesel::sql_types::Numeric;
 use diesel::sql_types::Timestamp;
 use diesel::ExpressionMethods;
