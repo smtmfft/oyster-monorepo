@@ -19,7 +19,19 @@ use tracing::{info, instrument};
 pub fn handle_job_closed(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!()
+    let id = log.topics()[1].encode_hex_with_prefix();
+
+    info!(id, "closing job");
+
+    diesel::update(jobs::table)
+        .filter(jobs::id.eq(&id))
+        .set(jobs::is_closed.eq(true))
+        .execute(conn)
+        .context("failed to update job")?;
+
+    info!(id, "closing job");
+
+    Ok(())
 }
 
 #[cfg(test)]
