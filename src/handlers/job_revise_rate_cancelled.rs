@@ -2,6 +2,7 @@ use std::ops::Sub;
 use std::str::FromStr;
 
 use crate::schema::jobs;
+use crate::schema::revise_rate_requests;
 use alloy::hex::ToHexExt;
 use alloy::primitives::U256;
 use alloy::rpc::types::Log;
@@ -21,7 +22,18 @@ use super::status::Status;
 pub fn handle_job_revise_rate_cancelled(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!()
+    let id = log.topics()[1].encode_hex_with_prefix();
+
+    info!(id, "cancelling revise rate request");
+
+    diesel::update(revise_rate_requests::table)
+        .set(revise_rate_requests::status.eq(Status::Cancelled))
+        .execute(conn)
+        .context("failed to update job")?;
+
+    info!(id, "cancelled revise rate request");
+
+    Ok(())
 }
 
 #[cfg(test)]
