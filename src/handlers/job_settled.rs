@@ -27,8 +27,8 @@ pub fn handle_job_settled(conn: &mut PgConnection, log: Log) -> Result<()> {
             + std::time::Duration::from_secs(timestamp.into_limbs()[0]),
     );
 
-    // we want to update if job exists
-    // we want to error out if job does not exist
+    // we want to update if job exists and is not closed
+    // we want to error out if job does not exist or is closed
 
     info!(id, ?amount, ?timestamp, "settling job");
 
