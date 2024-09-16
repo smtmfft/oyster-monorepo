@@ -1,8 +1,6 @@
 use std::io::Write;
-use std::ops::Add;
 use std::str::FromStr;
 
-use crate::schema::jobs;
 use crate::schema::revise_rate_requests;
 use crate::schema::sql_types::RequestStatus;
 use alloy::hex::ToHexExt;
@@ -96,9 +94,9 @@ pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Add;
     use std::time::Duration;
 
-    use alloy::primitives::Address;
     use alloy::{primitives::LogData, rpc::types::Log};
     use anyhow::Result;
     use bigdecimal::BigDecimal;
@@ -107,8 +105,7 @@ mod tests {
 
     use crate::handlers::handle_log;
     use crate::handlers::test_db::TestDb;
-    use crate::schema::sql_types::RequestStatus;
-    use crate::schema::{providers, revise_rate_requests};
+    use crate::schema::{jobs, providers, revise_rate_requests};
 
     use super::*;
 
@@ -567,7 +564,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)?
             .as_secs();
         // we do this after the timestamp to truncate beyond seconds
-        let creation_now =
+        let _creation_now =
             std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(creation_timestamp);
         let revise_now = original_now.add(Duration::from_secs(300));
         diesel::insert_into(revise_rate_requests::table)
