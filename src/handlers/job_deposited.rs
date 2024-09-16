@@ -98,6 +98,7 @@ mod tests {
                 jobs::balance.eq(BigDecimal::from(21)),
                 jobs::last_settled.eq(&original_now),
                 jobs::created.eq(&original_now),
+                jobs::is_closed.eq(false),
             ))
             .execute(conn)
             .context("failed to create job")?;
@@ -117,6 +118,7 @@ mod tests {
                 jobs::balance.eq(BigDecimal::from(20)),
                 jobs::last_settled.eq(&creation_now),
                 jobs::created.eq(&creation_now),
+                jobs::is_closed.eq(false),
             ))
             .execute(conn)
             .context("failed to create job")?;
@@ -147,6 +149,7 @@ mod tests {
                     BigDecimal::from(20),
                     creation_now,
                     creation_now,
+                    false,
                 ),
                 (
                     "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
@@ -157,6 +160,7 @@ mod tests {
                     BigDecimal::from(21),
                     original_now,
                     original_now,
+                    false,
                 )
             ])
         );
@@ -216,6 +220,7 @@ mod tests {
                     BigDecimal::from(25),
                     creation_now,
                     creation_now,
+                    false,
                 ),
                 (
                     "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
@@ -226,6 +231,7 @@ mod tests {
                     BigDecimal::from(21),
                     original_now,
                     original_now,
+                    false,
                 )
             ])
         );
@@ -265,6 +271,7 @@ mod tests {
                 jobs::balance.eq(BigDecimal::from(21)),
                 jobs::last_settled.eq(&original_now),
                 jobs::created.eq(&original_now),
+                jobs::is_closed.eq(false),
             ))
             .execute(conn)
             .context("failed to create job")?;
@@ -294,6 +301,7 @@ mod tests {
                 BigDecimal::from(21),
                 original_now,
                 original_now,
+                false,
             )])
         );
 
@@ -352,6 +360,7 @@ mod tests {
                 BigDecimal::from(21),
                 original_now,
                 original_now,
+                false,
             )])
         );
 
