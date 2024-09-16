@@ -109,6 +109,8 @@ pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
         handle_job_revise_rate_cancelled(conn, log)
     } else if log_type == LOCK_CREATED {
         handle_lock_created(conn, log)
+    } else if log_type == LOCK_DELETED {
+        handle_lock_deleted(conn, log)
     } else if log_type == UPGRADED
         || log_type == LOCK_WAIT_TIME_UPDATED
         || log_type == ROLE_GRANTED
