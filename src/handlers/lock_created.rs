@@ -80,9 +80,23 @@ pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
             + std::time::Duration::from_secs(timestamp.into_limbs()[0]),
     );
 
+    // we want to insert if request does not exist and job exists and is not closed
+    // we want to error out if request already exists or job does not exist or is closed
+
     info!(id, ?value, ?timestamp, "creating revise rate request");
 
+    // target sql:
+    // INSERT INTO revise_rate_requests (id, value, updates_at, status)
+    // SELECT id, "<value>", "<updates_at>", "<timestamp>"
+    // FROM jobs
+    // WHERE jobs.is_closed = false
+    // AND id = "<id>";
     let count = diesel::insert_into(revise_rate_requests::table)
+        // we want to detect if the provider exists and is active
+        // we do it by using INSERT INTO ... SELECT ... WHERE ...
+        // the INSERT happens if SELECT returns something
+        // which happens only if the WHERE conditions match
+        // the rest of the values are just piped through SELECT
         .values(
             jobs::table
                 .select((
@@ -98,6 +112,10 @@ pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
         .context("failed to create revise rate request")?;
 
     if count != 1 {
+        // !!! should never happen
+        // we have failed to make any changes
+        // the only real condition is when the job does not exist or is closed
+        // we error out for now, can consider just moving on
         return Err(anyhow::anyhow!(
             "did not expect to find a non existent or closed job"
         ));
