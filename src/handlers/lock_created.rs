@@ -708,7 +708,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", res.unwrap_err()),
-            "failed to create revise rate request\n\nCaused by:\n    insert or update on table \"revise_rate_requests\" violates foreign key constraint \"revise_rate_requests_id_fkey\""
+            "did not expect to find a non existent or closed job"
         );
         assert_eq!(revise_rate_requests::table.count().get_result(conn), Ok(1));
         assert_eq!(
@@ -922,7 +922,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", res.unwrap_err()),
-            "failed to create revise rate request\n\nCaused by:\n    insert or update on table \"revise_rate_requests\" violates foreign key constraint \"revise_rate_requests_id_fkey\""
+            "did not expect to find a non existent or closed job"
         );
         assert_eq!(revise_rate_requests::table.count().get_result(conn), Ok(1));
         assert_eq!(
