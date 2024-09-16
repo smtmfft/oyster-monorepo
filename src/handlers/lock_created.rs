@@ -1,6 +1,7 @@
 use std::io::Write;
 use std::str::FromStr;
 
+use crate::schema::jobs;
 use crate::schema::revise_rate_requests;
 use crate::schema::sql_types::RequestStatus;
 use alloy::hex::ToHexExt;
@@ -18,8 +19,12 @@ use diesel::pg::PgValue;
 use diesel::serialize::IsNull;
 use diesel::serialize::Output;
 use diesel::serialize::ToSql;
+use diesel::sql_types::Numeric;
+use diesel::sql_types::Timestamp;
 use diesel::ExpressionMethods;
+use diesel::IntoSql;
 use diesel::PgConnection;
+use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use ethp::keccak256;
 use tracing::warn;
@@ -77,15 +82,26 @@ pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
 
     info!(id, ?value, ?timestamp, "creating revise rate request");
 
-    diesel::insert_into(revise_rate_requests::table)
-        .values((
-            revise_rate_requests::id.eq(&id),
-            revise_rate_requests::value.eq(&value),
-            revise_rate_requests::updates_at.eq(&timestamp),
-            revise_rate_requests::status.eq(&Status::InProgress),
-        ))
+    let count = diesel::insert_into(revise_rate_requests::table)
+        .values(
+            jobs::table
+                .select((
+                    jobs::id,
+                    value.as_sql::<Numeric>(),
+                    timestamp.as_sql::<Timestamp>(),
+                    Status::InProgress.as_sql::<RequestStatus>(),
+                ))
+                .filter(jobs::is_closed.eq(false))
+                .filter(jobs::id.eq(&id)),
+        )
         .execute(conn)
         .context("failed to create revise rate request")?;
+
+    if count != 1 {
+        return Err(anyhow::anyhow!(
+            "did not expect to find a non existent or closed job"
+        ));
+    }
 
     info!(id, ?value, ?timestamp, "created revise rate request");
 
