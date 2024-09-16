@@ -31,9 +31,11 @@ pub fn handle_job_withdrew(conn: &mut PgConnection, log: Log) -> Result<()> {
     // target sql:
     // UPDATE jobs
     // SET balance = balance - <amount>
-    // WHERE id = "<id>";
+    // WHERE id = "<id>"
+    // AND is_closed = false;
     let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
+        .filter(jobs::is_closed.eq(false))
         .set(jobs::balance.eq(jobs::balance.sub(&amount)))
         .execute(conn)
         .context("failed to update job")?;
@@ -41,7 +43,7 @@ pub fn handle_job_withdrew(conn: &mut PgConnection, log: Log) -> Result<()> {
     if count != 1 {
         // !!! should never happen
         // we have failed to make any changes
-        // the only real condition is when the job does not exist
+        // the only real condition is when the job does not exist or is closed
         // we error out for now, can consider just moving on
         return Err(anyhow::anyhow!("could not find job"));
     }
