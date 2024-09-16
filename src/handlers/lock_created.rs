@@ -92,12 +92,12 @@ pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
     // WHERE jobs.is_closed = false
     // AND id = "<id>";
     let count = diesel::insert_into(revise_rate_requests::table)
-        // we want to detect if the provider exists and is active
-        // we do it by using INSERT INTO ... SELECT ... WHERE ...
-        // the INSERT happens if SELECT returns something
-        // which happens only if the WHERE conditions match
-        // the rest of the values are just piped through SELECT
         .values(
+            // we want to detect if the provider exists and is active
+            // we do it by using INSERT INTO ... SELECT ... WHERE ...
+            // the INSERT happens if SELECT returns something
+            // which happens only if the WHERE conditions match
+            // the rest of the values are just piped through SELECT
             jobs::table
                 .select((
                     jobs::id,
