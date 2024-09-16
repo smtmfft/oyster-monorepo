@@ -19,5 +19,7 @@ use tracing::{info, instrument};
 pub fn handle_job_revise_rate_initiated(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!()
+    info!("empty impl, supposed to be handled by LockCreated");
+
+    Ok(())
 }
