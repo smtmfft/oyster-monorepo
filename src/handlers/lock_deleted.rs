@@ -1,15 +1,8 @@
-use std::ops::Sub;
-use std::str::FromStr;
-
-use crate::schema::jobs;
 use crate::schema::revise_rate_requests;
 use alloy::hex::ToHexExt;
-use alloy::primitives::U256;
 use alloy::rpc::types::Log;
-use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
-use bigdecimal::BigDecimal;
 use diesel::ExpressionMethods;
 use diesel::PgConnection;
 use diesel::RunQueryDsl;
@@ -62,7 +55,7 @@ mod tests {
     use std::ops::Add;
     use std::time::Duration;
 
-    use alloy::primitives::Bytes;
+    use alloy::sol_types::SolValue;
     use alloy::{primitives::LogData, rpc::types::Log};
     use anyhow::Result;
     use bigdecimal::BigDecimal;
