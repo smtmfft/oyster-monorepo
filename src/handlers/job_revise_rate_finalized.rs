@@ -39,6 +39,7 @@ pub fn handle_job_revise_rate_finalized(conn: &mut PgConnection, log: Log) -> Re
 
     let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
+        .filter(jobs::is_closed.eq(false))
         .set(jobs::rate.eq(&rate))
         .execute(conn)
         .context("failed to update job")?;
