@@ -22,6 +22,10 @@ struct Args {
     /// Market contract
     #[arg(short, long)]
     contract: String,
+
+    /// Start block for log parsing
+    #[arg(short, long)]
+    start_block: u64,
 }
 
 fn run() -> Result<()> {
@@ -34,7 +38,7 @@ fn run() -> Result<()> {
         url: args.rpc.parse()?,
         contract: args.contract.parse()?,
     };
-    let is_start_set = start_from(&mut conn, 87252070)?;
+    let is_start_set = start_from(&mut conn, args.start_block)?;
     debug!("is_start_set: {}", is_start_set);
     event_loop(&mut conn, provider)
 }
