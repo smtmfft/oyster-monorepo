@@ -17,16 +17,31 @@ pub fn handle_job_metadata_updated(conn: &mut PgConnection, log: Log) -> Result<
     let id = log.topics()[1].encode_hex_with_prefix();
     let metadata = String::abi_decode(&log.data().data, true)?;
 
+    // we want to update if job exists and is not closed
+    // we want to error out if job does not exist or is closed
+
     info!(id, ?metadata, "updating job metadata");
 
+    // target sql:
+    // UPDATE jobs
+    // SET metadata = "<metadata>"
+    // WHERE id = "<id>"
+    // AND is_closed = false;
     let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
+        // we want to detect if job is closed
+        // we do it by only updating rows where is_closed is false
+        // and later checking if any rows were updated
         .filter(jobs::is_closed.eq(false))
         .set(jobs::metadata.eq(&metadata))
         .execute(conn)
         .context("failed to update job")?;
 
     if count != 1 {
+        // !!! should never happen
+        // we have failed to make any changes
+        // the only real condition is when the job does not exist or is closed
+        // we error out for now, can consider just moving on
         return Err(anyhow::anyhow!("could not find job"));
     }
 
