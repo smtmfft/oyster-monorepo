@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use crate::schema::jobs;
 use crate::schema::revise_rate_requests;
-use crate::schema::sql_types::RequestStatus;
 use alloy::hex::ToHexExt;
 use alloy::primitives::U256;
 use alloy::rpc::types::Log;
@@ -20,8 +19,6 @@ use diesel::RunQueryDsl;
 use ethp::keccak256;
 use tracing::warn;
 use tracing::{info, instrument};
-
-use super::status::Status;
 
 static RATE_LOCK_SELECTOR: [u8; 32] = keccak256!("RATE_LOCK");
 
@@ -66,7 +63,6 @@ pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
                     jobs::id,
                     value.as_sql::<Numeric>(),
                     timestamp.as_sql::<Timestamp>(),
-                    Status::InProgress.as_sql::<RequestStatus>(),
                 ))
                 .filter(jobs::is_closed.eq(false))
                 .filter(jobs::id.eq(&id)),
@@ -169,7 +165,6 @@ mod tests {
                     .eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
                 revise_rate_requests::value.eq(BigDecimal::from(2)),
                 revise_rate_requests::updates_at.eq(&revise_now),
-                revise_rate_requests::status.eq(Status::Cancelled),
             ))
             .execute(conn)
             .context("failed to create revise rate request")?;
@@ -226,7 +221,6 @@ mod tests {
                 "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                 BigDecimal::from(2),
                 revise_now,
-                Status::Cancelled,
             )])
         );
 
@@ -310,13 +304,11 @@ mod tests {
                     "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
                     BigDecimal::from(5),
                     creation_now.add(Duration::from_secs(600)),
-                    Status::InProgress,
                 ),
                 (
                     "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                     BigDecimal::from(2),
                     revise_now,
-                    Status::Cancelled,
                 )
             ])
         );
@@ -387,7 +379,6 @@ mod tests {
                     .eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
                 revise_rate_requests::value.eq(BigDecimal::from(2)),
                 revise_rate_requests::updates_at.eq(&revise_now),
-                revise_rate_requests::status.eq(Status::Cancelled),
             ))
             .execute(conn)
             .context("failed to create revise rate request")?;
@@ -397,7 +388,6 @@ mod tests {
                     .eq("0x3333333333333333333333333333333333333333333333333333333333333333"),
                 revise_rate_requests::value.eq(BigDecimal::from(5)),
                 revise_rate_requests::updates_at.eq(&creation_now.add(Duration::from_secs(600))),
-                revise_rate_requests::status.eq(Status::InProgress),
             ))
             .execute(conn)
             .context("failed to create revise rate request")?;
@@ -455,13 +445,11 @@ mod tests {
                     "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
                     BigDecimal::from(5),
                     creation_now.add(Duration::from_secs(600)),
-                    Status::InProgress,
                 ),
                 (
                     "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                     BigDecimal::from(2),
                     revise_now,
-                    Status::Cancelled,
                 )
             ])
         );
@@ -550,13 +538,11 @@ mod tests {
                     "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
                     BigDecimal::from(5),
                     creation_now.add(Duration::from_secs(600)),
-                    Status::InProgress,
                 ),
                 (
                     "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                     BigDecimal::from(2),
                     revise_now,
-                    Status::Cancelled,
                 )
             ])
         );
@@ -627,7 +613,6 @@ mod tests {
                     .eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
                 revise_rate_requests::value.eq(BigDecimal::from(2)),
                 revise_rate_requests::updates_at.eq(&revise_now),
-                revise_rate_requests::status.eq(Status::Cancelled),
             ))
             .execute(conn)
             .context("failed to create revise rate request")?;
@@ -684,7 +669,6 @@ mod tests {
                 "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                 BigDecimal::from(2),
                 revise_now,
-                Status::Cancelled,
             )])
         );
 
@@ -767,7 +751,6 @@ mod tests {
                 "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                 BigDecimal::from(2),
                 revise_now,
-                Status::Cancelled,
             )])
         );
 
@@ -823,7 +806,6 @@ mod tests {
                     .eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
                 revise_rate_requests::value.eq(BigDecimal::from(2)),
                 revise_rate_requests::updates_at.eq(&revise_now),
-                revise_rate_requests::status.eq(Status::Cancelled),
             ))
             .execute(conn)
             .context("failed to create revise rate request")?;
@@ -867,7 +849,6 @@ mod tests {
                 "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                 BigDecimal::from(2),
                 revise_now,
-                Status::Cancelled,
             )])
         );
 
@@ -941,7 +922,6 @@ mod tests {
                 "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                 BigDecimal::from(2),
                 revise_now,
-                Status::Cancelled,
             )])
         );
 
@@ -1011,7 +991,6 @@ mod tests {
                     .eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
                 revise_rate_requests::value.eq(BigDecimal::from(2)),
                 revise_rate_requests::updates_at.eq(&revise_now),
-                revise_rate_requests::status.eq(Status::Cancelled),
             ))
             .execute(conn)
             .context("failed to create revise rate request")?;
@@ -1068,7 +1047,6 @@ mod tests {
                 "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                 BigDecimal::from(2),
                 revise_now,
-                Status::Cancelled,
             )])
         );
 
@@ -1155,7 +1133,6 @@ mod tests {
                 "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                 BigDecimal::from(2),
                 revise_now,
-                Status::Cancelled,
             )])
         );
 
