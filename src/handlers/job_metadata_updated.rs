@@ -19,7 +19,20 @@ use tracing::{info, instrument};
 pub fn handle_job_metadata_updated(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!()
+    let id = log.topics()[1].encode_hex_with_prefix();
+    let metadata = String::abi_decode(&log.data().data, true)?;
+
+    info!(id, ?metadata, "updating job metadata");
+
+    diesel::update(jobs::table)
+        .filter(jobs::id.eq(&id))
+        .set(jobs::metadata.eq(&metadata))
+        .execute(conn)
+        .context("failed to update job")?;
+
+    info!(id, ?metadata, "updating job metadata");
+
+    Ok(())
 }
 
 #[cfg(test)]
