@@ -26,6 +26,7 @@ pub fn handle_job_metadata_updated(conn: &mut PgConnection, log: Log) -> Result<
 
     let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
+        .filter(jobs::is_closed.eq(false))
         .set(jobs::metadata.eq(&metadata))
         .execute(conn)
         .context("failed to update job")?;
