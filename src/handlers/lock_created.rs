@@ -73,10 +73,10 @@ pub fn handle_lock_created(conn: &mut PgConnection, log: Log) -> Result<()> {
     if count != 1 {
         // !!! should never happen
         // we have failed to make any changes
-        // the only real condition is when the job does not exist or is closed
+        // the only real condition is when the request does not exist or job does not exist or is closed
         // we error out for now, can consider just moving on
         return Err(anyhow::anyhow!(
-            "did not expect to find a non existent or closed job"
+            "did not expect to find a non existent request or closed job"
         ));
     }
 

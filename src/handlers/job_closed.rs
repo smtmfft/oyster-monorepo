@@ -46,7 +46,7 @@ pub fn handle_job_closed(conn: &mut PgConnection, log: Log) -> Result<()> {
         return Err(anyhow::anyhow!("could not find job"));
     }
 
-    info!(id, "closing job");
+    info!(id, "closed job");
 
     Ok(())
 }

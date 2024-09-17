@@ -55,7 +55,7 @@ pub fn handle_job_revise_rate_finalized(conn: &mut PgConnection, log: Log) -> Re
         return Err(anyhow::anyhow!("could not find job"));
     }
 
-    info!(id, ?rate, "finalizing job rate revision");
+    info!(id, ?rate, "finalized job rate revision");
 
     Ok(())
 }

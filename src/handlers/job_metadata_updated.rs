@@ -45,7 +45,7 @@ pub fn handle_job_metadata_updated(conn: &mut PgConnection, log: Log) -> Result<
         return Err(anyhow::anyhow!("could not find job"));
     }
 
-    info!(id, ?metadata, "updating job metadata");
+    info!(id, ?metadata, "updated job metadata");
 
     Ok(())
 }

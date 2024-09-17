@@ -27,7 +27,7 @@ pub fn handle_lock_deleted(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(id, "deleting revise rate request");
 
     // we want to delete if request exists
-    // we want to error out if request does not exist
+    // we want to silently ignore if request does not exist
 
     // target sql:
     // DELETE FROM revise_rate_requests
