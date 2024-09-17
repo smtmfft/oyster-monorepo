@@ -39,6 +39,9 @@ use job_revise_rate_cancelled::handle_job_revise_rate_cancelled;
 mod job_revise_rate_finalized;
 use job_revise_rate_finalized::handle_job_revise_rate_finalized;
 
+mod job_metadata_updated;
+use job_metadata_updated::handle_job_metadata_updated;
+
 mod lock_created;
 use lock_created::handle_lock_created;
 
