@@ -17,8 +17,6 @@ use ethp::keccak256;
 use tracing::warn;
 use tracing::{info, instrument};
 
-use super::status::Status;
-
 static RATE_LOCK_SELECTOR: [u8; 32] = keccak256!("RATE_LOCK");
 
 #[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
@@ -120,7 +118,6 @@ mod tests {
                     .eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
                 revise_rate_requests::value.eq(BigDecimal::from(2)),
                 revise_rate_requests::updates_at.eq(&revise_now),
-                revise_rate_requests::status.eq(Status::Completed),
             ))
             .execute(conn)
             .context("failed to create revise rate request")?;
@@ -130,7 +127,6 @@ mod tests {
                     .eq("0x3333333333333333333333333333333333333333333333333333333333333333"),
                 revise_rate_requests::value.eq(BigDecimal::from(5)),
                 revise_rate_requests::updates_at.eq(&creation_now.add(Duration::from_secs(600))),
-                revise_rate_requests::status.eq(Status::InProgress),
             ))
             .execute(conn)
             .context("failed to create revise rate request")?;
@@ -188,13 +184,11 @@ mod tests {
                     "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
                     BigDecimal::from(5),
                     creation_now.add(Duration::from_secs(600)),
-                    Status::InProgress,
                 ),
                 (
                     "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                     BigDecimal::from(2),
                     revise_now,
-                    Status::Completed,
                 )
             ])
         );
@@ -278,7 +272,6 @@ mod tests {
                 "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
                 BigDecimal::from(2),
                 revise_now,
-                Status::Completed,
             )])
         );
 
