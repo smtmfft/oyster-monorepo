@@ -1,14 +1,9 @@
-use std::ops::Add;
-use std::str::FromStr;
-
 use crate::schema::jobs;
 use alloy::hex::ToHexExt;
-use alloy::primitives::U256;
 use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
-use bigdecimal::BigDecimal;
 use diesel::ExpressionMethods;
 use diesel::PgConnection;
 use diesel::RunQueryDsl;
@@ -42,7 +37,6 @@ pub fn handle_job_metadata_updated(conn: &mut PgConnection, log: Log) -> Result<
 
 #[cfg(test)]
 mod tests {
-    use alloy::primitives::Address;
     use alloy::{primitives::LogData, rpc::types::Log};
     use anyhow::Result;
     use bigdecimal::BigDecimal;
