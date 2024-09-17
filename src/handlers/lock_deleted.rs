@@ -27,10 +27,14 @@ pub fn handle_lock_deleted(conn: &mut PgConnection, log: Log) -> Result<()> {
 
     info!(id, "deleting revise rate request");
 
-    diesel::delete(revise_rate_requests::table)
+    let count = diesel::delete(revise_rate_requests::table)
         .filter(revise_rate_requests::id.eq(&id))
         .execute(conn)
-        .context("failed to create revise rate request")?;
+        .context("failed to delete revise rate request")?;
+
+    if count != 1 {
+        return Err(anyhow::anyhow!("could not find request"));
+    }
 
     info!(id, "deleted revise rate request");
 
