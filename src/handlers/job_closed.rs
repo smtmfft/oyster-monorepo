@@ -18,7 +18,8 @@ pub fn handle_job_closed(conn: &mut PgConnection, log: Log) -> Result<()> {
     // we want to update if job exists and is not closed
     // we want to error out if job does not exist or is closed
     //
-    // TODO: do we not have to delete outstanding revise rate requests?
+    // do we not have to delete outstanding revise rate requests?
+    // no, it is handled by LockDeleted
 
     info!(id, "closing job");
 
