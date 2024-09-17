@@ -35,7 +35,7 @@ pub fn handle_job_revise_rate_finalized(conn: &mut PgConnection, log: Log) -> Re
     let rate = U256::abi_decode(&log.data().data, true)?;
     let rate = BigDecimal::from_str(&rate.to_string())?;
 
-    info!(id, ?rate, "depositing into job");
+    info!(id, ?rate, "finalizing job rate revision");
 
     let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
@@ -47,7 +47,7 @@ pub fn handle_job_revise_rate_finalized(conn: &mut PgConnection, log: Log) -> Re
         return Err(anyhow::anyhow!("could not find job"));
     }
 
-    info!(id, ?rate, "deposited into job");
+    info!(id, ?rate, "finalizing job rate revision");
 
     Ok(())
 }
