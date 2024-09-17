@@ -28,7 +28,7 @@ struct Args {
     start_block: u64,
 
     /// Size of block range for fetching logs
-    #[arg(short, long, default_value = "2000")]
+    #[arg(long, default_value = "2000")]
     range_size: u64,
 }
 
