@@ -32,18 +32,13 @@ pub fn handle_lock_deleted(conn: &mut PgConnection, log: Log) -> Result<()> {
     // target sql:
     // DELETE FROM revise_rate_requests
     // WHERE id = "<id>";
-    let count = diesel::delete(revise_rate_requests::table)
+    diesel::delete(revise_rate_requests::table)
         .filter(revise_rate_requests::id.eq(&id))
         .execute(conn)
         .context("failed to delete revise rate request")?;
 
-    if count != 1 {
-        // !!! should never happen
-        // we have failed to make any changes
-        // the only real condition is when the request does not exist
-        // we error out for now, can consider just moving on
-        return Err(anyhow::anyhow!("could not find request"));
-    }
+    // !!! closing a job emits _two_ LockDeleted events
+    // cannot really check count at this point
 
     info!(id, "deleted revise rate request");
 
