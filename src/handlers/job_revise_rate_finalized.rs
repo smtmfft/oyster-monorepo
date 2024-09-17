@@ -39,6 +39,9 @@ pub fn handle_job_revise_rate_finalized(conn: &mut PgConnection, log: Log) -> Re
     // AND is_closed = false;
     let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
+        // we want to detect if job is closed
+        // we do it by only updating rows where is_closed is false
+        // and later checking if any rows were updated
         .filter(jobs::is_closed.eq(false))
         .set(jobs::rate.eq(&rate))
         .execute(conn)
