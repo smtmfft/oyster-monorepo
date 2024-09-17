@@ -8,5 +8,10 @@ use tracing::{info, instrument};
 pub fn handle_job_revise_rate_finalized(_conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    todo!()
+    // while we do have enough context here to handle this properly,
+    // JobClosed makes us handle LockDeleted
+    // which also more or less handles the lock aspects of this
+    // we still need to set the new rates
+
+    Ok(())
 }
