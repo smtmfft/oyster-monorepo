@@ -16,28 +16,15 @@ use diesel::RunQueryDsl;
 use tracing::warn;
 use tracing::{info, instrument};
 
-use super::status::Status;
-
 #[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
 pub fn handle_job_revise_rate_cancelled(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
-    let id = log.topics()[1].encode_hex_with_prefix();
+    // while we do have enough context here to handle this properly,
+    // JobClosed makes us handle LockDeleted
+    // which also more or less handles this
 
-    info!(id, "cancelling revise rate request");
-
-    let count = diesel::update(revise_rate_requests::table)
-        .filter(revise_rate_requests::id.eq(&id))
-        .filter(revise_rate_requests::status.eq(Status::InProgress))
-        .set(revise_rate_requests::status.eq(Status::Cancelled))
-        .execute(conn)
-        .context("failed to update request")?;
-
-    if count != 1 {
-        return Err(anyhow::anyhow!("could not find request"));
-    }
-
-    info!(id, "cancelled revise rate request");
+    info!("empty impl, supposed to be handled by LockDeleted");
 
     Ok(())
 }
