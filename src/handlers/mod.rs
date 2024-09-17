@@ -113,6 +113,8 @@ pub fn handle_log(conn: &mut PgConnection, log: Log) -> Result<()> {
         handle_job_revise_rate_initiated(conn, log)
     } else if log_type == JOB_REVISE_RATE_CANCELLED {
         handle_job_revise_rate_cancelled(conn, log)
+    } else if log_type == JOB_REVISE_RATE_FINALIZED {
+        handle_job_revise_rate_finalized(conn, log)
     } else if log_type == LOCK_CREATED {
         handle_lock_created(conn, log)
     } else if log_type == LOCK_DELETED {
