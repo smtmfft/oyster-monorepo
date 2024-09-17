@@ -26,6 +26,10 @@ struct Args {
     /// Start block for log parsing
     #[arg(short, long)]
     start_block: u64,
+
+    /// Size of block range for fetching logs
+    #[arg(short, long, default_value = "2000")]
+    range_size: u64,
 }
 
 fn run() -> Result<()> {
@@ -40,7 +44,7 @@ fn run() -> Result<()> {
     };
     let is_start_set = start_from(&mut conn, args.start_block)?;
     debug!("is_start_set: {}", is_start_set);
-    event_loop(&mut conn, provider)
+    event_loop(&mut conn, provider, args.range_size)
 }
 
 fn main() -> Result<()> {

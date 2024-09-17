@@ -55,7 +55,11 @@ impl LogsProvider for AlloyProvider {
 }
 
 #[instrument(level = "info", skip_all, parent = None)]
-pub fn event_loop(conn: &mut PgConnection, mut provider: impl LogsProvider) -> Result<()> {
+pub fn event_loop(
+    conn: &mut PgConnection,
+    mut provider: impl LogsProvider,
+    range_size: u64,
+) -> Result<()> {
     // fetch last updated block from the db
     let mut last_updated = schema::sync::table
         .select(schema::sync::block)
@@ -92,9 +96,9 @@ pub fn event_loop(conn: &mut PgConnection, mut provider: impl LogsProvider) -> R
 
         // start from the next block to what has already been processed
         let start_block = last_updated + 1;
-        // cap block range to 1000000
+        // cap block range using range_size
         // might need some babysitting during initial sync
-        let end_block = std::cmp::min(start_block + 999999, latest_block);
+        let end_block = std::cmp::min(start_block + range_size - 1, latest_block);
 
         info!(start_block, end_block, "fetching range");
 
