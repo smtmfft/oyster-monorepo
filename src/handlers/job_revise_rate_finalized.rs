@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use crate::schema::jobs;
-use crate::schema::revise_rate_requests;
 use alloy::hex::ToHexExt;
 use alloy::primitives::U256;
 use alloy::rpc::types::Log;
@@ -9,18 +8,11 @@ use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
 use bigdecimal::BigDecimal;
-use diesel::sql_types::Numeric;
-use diesel::sql_types::Timestamp;
 use diesel::ExpressionMethods;
-use diesel::IntoSql;
 use diesel::PgConnection;
-use diesel::QueryDsl;
 use diesel::RunQueryDsl;
-use ethp::keccak256;
 use tracing::warn;
 use tracing::{info, instrument};
-
-static RATE_LOCK_SELECTOR: [u8; 32] = keccak256!("RATE_LOCK");
 
 #[instrument(level = "info", skip_all, parent = None, fields(block = log.block_number, idx = log.log_index))]
 pub fn handle_job_revise_rate_finalized(conn: &mut PgConnection, log: Log) -> Result<()> {
@@ -67,9 +59,6 @@ pub fn handle_job_revise_rate_finalized(conn: &mut PgConnection, log: Log) -> Re
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Add;
-    use std::time::Duration;
-
     use alloy::{primitives::LogData, rpc::types::Log};
     use anyhow::Result;
     use bigdecimal::BigDecimal;
