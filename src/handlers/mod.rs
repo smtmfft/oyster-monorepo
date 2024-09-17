@@ -6,8 +6,6 @@ use ethp::event;
 use tracing::warn;
 use tracing::{info, instrument};
 
-mod status;
-
 mod provider_added;
 use provider_added::handle_provider_added;
 
