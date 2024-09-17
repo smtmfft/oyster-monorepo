@@ -23,6 +23,12 @@ static RATE_LOCK_SELECTOR: [u8; 32] = keccak256!("RATE_LOCK");
 pub fn handle_lock_deleted(conn: &mut PgConnection, log: Log) -> Result<()> {
     info!(?log, "processing");
 
+    let selector = log.topics()[1];
+    if selector != RATE_LOCK_SELECTOR {
+        info!(?selector, "unknown selector, skipping");
+        return Ok(());
+    }
+
     let id = log.topics()[2].encode_hex_with_prefix();
 
     info!(id, "deleting revise rate request");
