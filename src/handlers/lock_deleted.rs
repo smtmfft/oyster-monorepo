@@ -291,6 +291,7 @@ mod tests {
         Ok(())
     }
 
+    // unfortunately closing a job emits two logs, ensure it works intead of erroring out
     #[test]
     fn test_delete_lock_when_it_does_not_exist() -> Result<()> {
         // setup
@@ -437,7 +438,7 @@ mod tests {
         };
 
         // use handle_log instead of concrete handler to test dispatch
-        let res = handle_log(conn, log);
+        handle_log(conn, log)?;
 
         // checks
         assert_eq!(providers::table.count().get_result(conn), Ok(1));
@@ -450,7 +451,6 @@ mod tests {
             ))
         );
 
-        assert_eq!(format!("{:?}", res.unwrap_err()), "could not find request");
         assert_eq!(jobs::table.count().get_result(conn), Ok(2));
         assert_eq!(
             jobs::table
