@@ -37,11 +37,15 @@ pub fn handle_job_revise_rate_finalized(conn: &mut PgConnection, log: Log) -> Re
 
     info!(id, ?rate, "depositing into job");
 
-    diesel::update(jobs::table)
+    let count = diesel::update(jobs::table)
         .filter(jobs::id.eq(&id))
         .set(jobs::rate.eq(&rate))
         .execute(conn)
         .context("failed to update job")?;
+
+    if count != 1 {
+        return Err(anyhow::anyhow!("could not find job"));
+    }
 
     info!(id, ?rate, "deposited into job");
 
