@@ -12,7 +12,7 @@ alloy = { version = "0.3.3", features = ["full"] }
 anyhow = "1.0.87"
 bigdecimal = "0.4.5"
 clap = { version = "4.5.17", features = ["derive"] }
-diesel = { version = "2.2.4", features = ["numeric", "postgres", "sqlite"] }
+diesel = { version = "2.2.4", features = ["numeric", "postgres"] }
 dotenvy = "0.15.7"
 ethp = "0.1.0"
 openssl = { version = "0.10", features = ["vendored"] }
