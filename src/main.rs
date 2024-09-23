@@ -71,5 +71,7 @@ fn main() -> Result<()> {
         .with_env_filter(filter)
         .init();
 
-    run().inspect_err(|e| error!(?e, "run error"))
+    let _ = run().inspect_err(|e| error!(?e, "run error"));
+
+    Ok(())
 }
