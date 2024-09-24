@@ -10,6 +10,7 @@
 #[cfg(test)]
 pub mod serverless_executor_test {
     use std::collections::HashSet;
+    use std::pin::pin;
     use std::str::FromStr;
     use std::sync::atomic::Ordering;
 
@@ -33,7 +34,9 @@ pub mod serverless_executor_test {
     use crate::cgroups::Cgroups;
     use crate::event_handler::handle_event_logs;
     use crate::node_handler::*;
-    use crate::utils::{load_abi_from_file, AppState, JobsTxnMetadata, JobsTxnType};
+    use crate::utils::{
+        load_abi_from_file, AppState, JobsTxnMetadata, JobsTxnType, EXECUTION_ENV_ID,
+    };
 
     // Testnet or Local blockchain (Hardhat) configurations
     const CHAIN_ID: u64 = 421614;
@@ -556,7 +559,7 @@ pub mod serverless_executor_test {
         let response = response.unwrap();
         assert_eq!(response.job_capacity, 20);
         assert_eq!(response.owner, valid_owner);
-        assert_eq!(response.signature.len(), 130);
+        assert_eq!(response.signature.len(), 132);
         assert_eq!(
             recover_key(
                 response.owner,
@@ -585,7 +588,7 @@ pub mod serverless_executor_test {
         let response = response.unwrap();
         assert_eq!(response.job_capacity, 20);
         assert_eq!(response.owner, valid_owner);
-        assert_eq!(response.signature.len(), 130);
+        assert_eq!(response.signature.len(), 132);
         assert_eq!(
             recover_key(
                 response.owner,
@@ -613,17 +616,15 @@ pub mod serverless_executor_test {
         .into();
 
         // Prepare the logs for JobCreated and JobResponded events accordingly
-        let mut job_logs = vec![
-            get_job_created_log(
-                1.into(),
-                0.into(),
-                code_hash,
-                code_input_bytes,
-                user_deadline,
-                app_state.enclave_address,
-            ),
-            get_job_responded_log(1.into(), 0.into()),
-        ];
+        let mut jobs_created_logs = vec![get_job_created_log(
+            1.into(),
+            0.into(),
+            EXECUTION_ENV_ID,
+            code_hash,
+            code_input_bytes,
+            user_deadline,
+            app_state.enclave_address,
+        )];
 
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({
             "num": 20
@@ -631,17 +632,15 @@ pub mod serverless_executor_test {
         .unwrap()
         .into();
 
-        job_logs.append(&mut vec![
-            get_job_created_log(
-                1.into(),
-                1.into(),
-                code_hash,
-                code_input_bytes,
-                user_deadline,
-                app_state.enclave_address,
-            ),
-            get_job_responded_log(1.into(), 1.into()),
-        ]);
+        jobs_created_logs.push(get_job_created_log(
+            1.into(),
+            1.into(),
+            EXECUTION_ENV_ID,
+            code_hash,
+            code_input_bytes,
+            user_deadline,
+            app_state.enclave_address,
+        ));
 
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({
             "num": 600
@@ -649,37 +648,43 @@ pub mod serverless_executor_test {
         .unwrap()
         .into();
 
-        job_logs.append(&mut vec![
-            get_job_created_log(
-                1.into(),
-                2.into(),
-                code_hash,
-                code_input_bytes,
-                user_deadline,
-                app_state.enclave_address,
-            ),
-            get_job_responded_log(1.into(), 2.into()),
-        ]);
+        jobs_created_logs.push(get_job_created_log(
+            1.into(),
+            2.into(),
+            EXECUTION_ENV_ID,
+            code_hash,
+            code_input_bytes,
+            user_deadline,
+            app_state.enclave_address,
+        ));
 
-        job_logs.push(Log {
-            ..Default::default()
-        });
+        let jobs_responded_logs = vec![
+            get_job_responded_log(1.into(), 0.into()),
+            get_job_responded_log(1.into(), 1.into()),
+            get_job_responded_log(1.into(), 2.into()),
+        ];
 
         let (tx, mut rx) = channel::<JobsTxnMetadata>(10);
 
         tokio::spawn(async move {
             // Introduce time interval between events to be polled
-            let jobs_stream = std::pin::pin!(tokio_stream::iter(job_logs.into_iter()).then(
+            let jobs_created_stream = pin!(tokio_stream::iter(jobs_created_logs.into_iter()).then(
                 |log| async move {
                     sleep(Duration::from_millis(user_deadline)).await;
                     log
                 }
             ));
+            let jobs_responded_stream = pin!(tokio_stream::iter(jobs_responded_logs.into_iter())
+                .then(|log| async move {
+                    sleep(Duration::from_millis(user_deadline + 1000)).await;
+                    log
+                }));
 
             // Call the event handler for the contract logs
             handle_event_logs(
-                jobs_stream,
-                std::pin::pin!(tokio_stream::empty()),
+                jobs_created_stream,
+                jobs_responded_stream,
+                pin!(tokio_stream::empty()),
                 app_state,
                 tx,
             )
@@ -710,35 +715,31 @@ pub mod serverless_executor_test {
 
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({})).unwrap().into();
 
-        let job_logs = vec![
-            get_job_created_log(
-                1.into(),
-                0.into(),
-                code_hash,
-                code_input_bytes,
-                user_deadline,
-                app_state.enclave_address,
-            ),
-            get_job_responded_log(1.into(), 0.into()),
-            Log {
-                ..Default::default()
-            },
-        ];
+        let jobs_created_logs = vec![get_job_created_log(
+            1.into(),
+            0.into(),
+            EXECUTION_ENV_ID,
+            code_hash,
+            code_input_bytes,
+            user_deadline,
+            app_state.enclave_address,
+        )];
+        let jobs_responded_logs = vec![get_job_responded_log(1.into(), 0.into())];
 
         let (tx, mut rx) = channel::<JobsTxnMetadata>(10);
 
         tokio::spawn(async move {
-            let jobs_stream = std::pin::pin!(tokio_stream::iter(job_logs.into_iter()).then(
-                |log| async move {
-                    sleep(Duration::from_millis(user_deadline)).await;
+            let jobs_responded_stream = pin!(tokio_stream::iter(jobs_responded_logs.into_iter())
+                .then(|log| async move {
+                    sleep(Duration::from_millis(user_deadline + 1000)).await;
                     log
-                }
-            ));
+                }));
 
             // Call the event handler for the contract logs
             handle_event_logs(
-                jobs_stream,
-                std::pin::pin!(tokio_stream::empty()),
+                pin!(tokio_stream::iter(jobs_created_logs)),
+                jobs_responded_stream,
+                pin!(tokio_stream::empty()),
                 app_state,
                 tx,
             )
@@ -774,50 +775,54 @@ pub mod serverless_executor_test {
         .unwrap()
         .into();
 
-        // Given transaction hash doesn't belong to the expected smart contract
-        let mut job_logs = vec![
+        let jobs_created_logs = vec![
+            // Given transaction hash doesn't belong to the expected smart contract
             get_job_created_log(
                 1.into(),
                 0.into(),
+                EXECUTION_ENV_ID,
                 "fed8ab36cc27831836f6dcb7291049158b4d8df31c0ffb05a3d36ba6555e29d7",
                 code_input_bytes.clone(),
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(1.into(), 0.into()),
-        ];
-
-        // Given transaction hash doesn't exist in the expected rpc network
-        job_logs.append(&mut vec![
+            // Given transaction hash doesn't exist in the expected rpc network
             get_job_created_log(
                 1.into(),
                 1.into(),
+                EXECUTION_ENV_ID,
                 "37b0b2d9dd58d9130781fc914da456c16ec403010e8d4c27b0ea4657a24c8546",
                 code_input_bytes,
                 user_deadline,
                 app_state.enclave_address,
             ),
-            get_job_responded_log(1.into(), 1.into()),
-        ]);
+        ];
 
-        job_logs.push(Log {
-            ..Default::default()
-        });
+        let jobs_responded_logs = vec![
+            get_job_responded_log(1.into(), 0.into()),
+            get_job_responded_log(1.into(), 1.into()),
+        ];
 
         let (tx, mut rx) = channel::<JobsTxnMetadata>(10);
 
         tokio::spawn(async move {
-            let jobs_stream = std::pin::pin!(tokio_stream::iter(job_logs.into_iter()).then(
+            let jobs_created_stream = pin!(tokio_stream::iter(jobs_created_logs.into_iter()).then(
                 |log| async move {
                     sleep(Duration::from_millis(user_deadline)).await;
                     log
                 }
             ));
+            let jobs_responded_stream = pin!(tokio_stream::iter(jobs_responded_logs.into_iter())
+                .then(|log| async move {
+                    sleep(Duration::from_millis(user_deadline + 1000)).await;
+                    log
+                }));
 
             // Call the event handler for the contract logs
             handle_event_logs(
-                jobs_stream,
-                std::pin::pin!(tokio_stream::empty()),
+                jobs_created_stream,
+                jobs_responded_stream,
+                pin!(tokio_stream::empty()),
                 app_state,
                 tx,
             )
@@ -848,35 +853,32 @@ pub mod serverless_executor_test {
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({})).unwrap().into();
 
         // Calldata corresponding to the provided transaction hash is invalid
-        let job_logs = vec![
-            get_job_created_log(
-                1.into(),
-                0.into(),
-                code_hash,
-                code_input_bytes,
-                user_deadline,
-                app_state.enclave_address,
-            ),
-            get_job_responded_log(1.into(), 0.into()),
-            Log {
-                ..Default::default()
-            },
-        ];
+        let jobs_created_logs = vec![get_job_created_log(
+            1.into(),
+            0.into(),
+            EXECUTION_ENV_ID,
+            code_hash,
+            code_input_bytes,
+            user_deadline,
+            app_state.enclave_address,
+        )];
+
+        let jobs_responded_logs = vec![get_job_responded_log(1.into(), 0.into())];
 
         let (tx, mut rx) = channel::<JobsTxnMetadata>(10);
 
         tokio::spawn(async move {
-            let jobs_stream = std::pin::pin!(tokio_stream::iter(job_logs.into_iter()).then(
-                |log| async move {
-                    sleep(Duration::from_millis(user_deadline)).await;
+            let jobs_responded_stream = pin!(tokio_stream::iter(jobs_responded_logs.into_iter())
+                .then(|log| async move {
+                    sleep(Duration::from_millis(user_deadline + 1000)).await;
                     log
-                }
-            ));
+                }));
 
             // Call the event handler for the contract logs
             handle_event_logs(
-                jobs_stream,
-                std::pin::pin!(tokio_stream::empty()),
+                pin!(tokio_stream::iter(jobs_created_logs)),
+                jobs_responded_stream,
+                pin!(tokio_stream::empty()),
                 app_state,
                 tx,
             )
@@ -906,35 +908,32 @@ pub mod serverless_executor_test {
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({})).unwrap().into();
 
         // Code corresponding to the provided transaction hash has a syntax error
-        let job_logs = vec![
-            get_job_created_log(
-                1.into(),
-                0.into(),
-                code_hash,
-                code_input_bytes,
-                user_deadline,
-                app_state.enclave_address,
-            ),
-            get_job_responded_log(1.into(), 0.into()),
-            Log {
-                ..Default::default()
-            },
-        ];
+        let jobs_created_logs = vec![get_job_created_log(
+            1.into(),
+            0.into(),
+            EXECUTION_ENV_ID,
+            code_hash,
+            code_input_bytes,
+            user_deadline,
+            app_state.enclave_address,
+        )];
+
+        let jobs_responded_logs = vec![get_job_responded_log(1.into(), 0.into())];
 
         let (tx, mut rx) = channel::<JobsTxnMetadata>(10);
 
         tokio::spawn(async move {
-            let jobs_stream = std::pin::pin!(tokio_stream::iter(job_logs.into_iter()).then(
-                |log| async move {
-                    sleep(Duration::from_millis(user_deadline)).await;
+            let jobs_responded_stream = pin!(tokio_stream::iter(jobs_responded_logs.into_iter())
+                .then(|log| async move {
+                    sleep(Duration::from_millis(user_deadline + 1000)).await;
                     log
-                }
-            ));
+                }));
 
             // Call the event handler for the contract logs
             handle_event_logs(
-                jobs_stream,
-                std::pin::pin!(tokio_stream::empty()),
+                pin!(tokio_stream::iter(jobs_created_logs)),
+                jobs_responded_stream,
+                pin!(tokio_stream::empty()),
                 app_state,
                 tx,
             )
@@ -964,35 +963,32 @@ pub mod serverless_executor_test {
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({})).unwrap().into();
 
         // User code didn't return a response in the expected period
-        let job_logs = vec![
-            get_job_created_log(
-                1.into(),
-                0.into(),
-                code_hash,
-                code_input_bytes,
-                user_deadline,
-                app_state.enclave_address,
-            ),
-            get_job_responded_log(1.into(), 0.into()),
-            Log {
-                ..Default::default()
-            },
-        ];
+        let jobs_created_logs = vec![get_job_created_log(
+            1.into(),
+            0.into(),
+            EXECUTION_ENV_ID,
+            code_hash,
+            code_input_bytes,
+            user_deadline,
+            app_state.enclave_address,
+        )];
+
+        let jobs_responded_logs = vec![get_job_responded_log(1.into(), 0.into())];
 
         let (tx, mut rx) = channel::<JobsTxnMetadata>(10);
 
         tokio::spawn(async move {
-            let jobs_stream = std::pin::pin!(tokio_stream::iter(job_logs.into_iter()).then(
-                |log| async move {
-                    sleep(Duration::from_millis(user_deadline)).await;
+            let jobs_responded_stream = pin!(tokio_stream::iter(jobs_responded_logs.into_iter())
+                .then(|log| async move {
+                    sleep(Duration::from_millis(user_deadline + 1000)).await;
                     log
-                }
-            ));
+                }));
 
             // Call the event handler for the contract logs
             handle_event_logs(
-                jobs_stream,
-                std::pin::pin!(tokio_stream::empty()),
+                pin!(tokio_stream::iter(jobs_created_logs)),
+                jobs_responded_stream,
+                pin!(tokio_stream::empty()),
                 app_state,
                 tx,
             )
@@ -1023,10 +1019,11 @@ pub mod serverless_executor_test {
         let code_input_bytes: Bytes = serde_json::to_vec(&json!({})).unwrap().into();
 
         // Add log entry to relay a job but job response event is not sent and the executor doesn't execute the job request
-        let job_logs = vec![
+        let jobs_created_logs = vec![
             get_job_created_log(
                 1.into(),
                 0.into(),
+                EXECUTION_ENV_ID,
                 code_hash,
                 code_input_bytes,
                 user_deadline,
@@ -1040,7 +1037,7 @@ pub mod serverless_executor_test {
         let (tx, mut rx) = channel::<JobsTxnMetadata>(10);
 
         tokio::spawn(async move {
-            let jobs_stream = std::pin::pin!(tokio_stream::iter(job_logs.into_iter()).then(
+            let jobs_created_stream = pin!(tokio_stream::iter(jobs_created_logs.into_iter()).then(
                 |log| async move {
                     sleep(Duration::from_millis(
                         user_deadline + execution_buffer_time * 1000 + 1000,
@@ -1052,8 +1049,9 @@ pub mod serverless_executor_test {
 
             // Call the event handler for the contract logs
             handle_event_logs(
-                jobs_stream,
-                std::pin::pin!(tokio_stream::empty()),
+                jobs_created_stream,
+                pin!(tokio_stream::empty()),
+                pin!(tokio_stream::empty()),
                 app_state,
                 tx,
             )
@@ -1083,7 +1081,7 @@ pub mod serverless_executor_test {
         let (tx, mut rx) = channel::<JobsTxnMetadata>(10);
 
         // Add log for deregistering the current executor
-        let executor_logs = vec![Log {
+        let executor_deregistered_logs = vec![Log {
             address: H160::from_str(EXECUTORS_CONTRACT_ADDR).unwrap(),
             topics: vec![
                 keccak256("ExecutorDeregistered(address)").into(),
@@ -1095,13 +1093,14 @@ pub mod serverless_executor_test {
 
         let app_state_clone = app_state.clone();
         tokio::spawn(async move {
-            let executors_stream = std::pin::pin!(
-                tokio_stream::iter(executor_logs.into_iter()).chain(tokio_stream::pending())
-            );
+            let executor_deregistered_stream =
+                pin!(tokio_stream::iter(executor_deregistered_logs.into_iter())
+                    .chain(tokio_stream::pending()));
 
             handle_event_logs(
-                std::pin::pin!(tokio_stream::pending()),
-                executors_stream,
+                pin!(tokio_stream::pending()),
+                pin!(tokio_stream::pending()),
+                executor_deregistered_stream,
                 app_state,
                 tx,
             )
@@ -1118,9 +1117,65 @@ pub mod serverless_executor_test {
         );
     }
 
+    #[actix_web::test]
+    // Test different env ID job created event
+    async fn invalid_env_id_test() {
+        let app_state = generate_app_state().await;
+
+        let code_hash = "9468bb6a8e85ed11e292c8cac0c1539df691c8d8ec62e7dbfa9f1bd7f504e46e";
+        let user_deadline = 5000;
+
+        let code_input_bytes: Bytes = serde_json::to_vec(&json!({
+            "num": 10
+        }))
+        .unwrap()
+        .into();
+
+        // Prepare the logs for JobCreated log for different env ID '2'
+        let jobs_created_logs = vec![
+            get_job_created_log(
+                1.into(),
+                0.into(),
+                2,
+                code_hash,
+                code_input_bytes,
+                user_deadline,
+                app_state.enclave_address,
+            ),
+            Log {
+                ..Default::default()
+            },
+        ];
+
+        let (tx, mut rx) = channel::<JobsTxnMetadata>(10);
+
+        tokio::spawn(async move {
+            let jobs_created_stream = pin!(tokio_stream::iter(jobs_created_logs.into_iter()).then(
+                |log| async move {
+                    sleep(Duration::from_millis(user_deadline)).await;
+                    log
+                }
+            ));
+
+            handle_event_logs(
+                jobs_created_stream,
+                pin!(tokio_stream::empty()),
+                pin!(tokio_stream::empty()),
+                app_state,
+                tx,
+            )
+            .await;
+        });
+
+        while rx.recv().await.is_some() {
+            assert!(false, "Response received for different ENV ID!");
+        }
+    }
+
     fn get_job_created_log(
         block_number: U64,
         job_id: U256,
+        env_id: u8,
         code_hash: &str,
         code_inputs: Bytes,
         user_deadline: u64,
@@ -1130,8 +1185,10 @@ pub mod serverless_executor_test {
             block_number: Some(block_number),
             address: H160::from_str(JOBS_CONTRACT_ADDR).unwrap(),
             topics: vec![
-                keccak256("JobCreated(uint256,address,bytes32,bytes,uint256,address[])").into(),
+                keccak256("JobCreated(uint256,uint8,address,bytes32,bytes,uint256,address[])")
+                    .into(),
                 H256::from_uint(&job_id),
+                H256::from_uint(&env_id.into()),
                 H256::from(H160::random()),
             ],
             data: encode(&[
@@ -1178,12 +1235,14 @@ pub mod serverless_executor_test {
             Token::FixedBytes(keccak256("marlin.oyster.Executors").to_vec()),
             Token::FixedBytes(keccak256("1").to_vec()),
         ]));
-        let register_typehash =
-            keccak256("Register(address owner,uint256 jobCapacity,uint256 signTimestamp)");
+        let register_typehash = keccak256(
+            "Register(address owner,uint256 jobCapacity,uint8 env,uint256 signTimestamp)",
+        );
         let hash_struct = keccak256(encode(&[
             Token::FixedBytes(register_typehash.to_vec()),
             Token::Address(owner),
             Token::Uint(job_capacity.into()),
+            Token::Uint(EXECUTION_ENV_ID.into()),
             Token::Uint(sign_timestamp.into()),
         ]));
         let digest = encode_packed(&[
@@ -1195,8 +1254,8 @@ pub mod serverless_executor_test {
         let digest = keccak256(digest);
 
         let signature =
-            Signature::from_slice(hex::decode(&sign[0..128]).unwrap().as_slice()).unwrap();
-        let v = RecoveryId::try_from((hex::decode(&sign[128..]).unwrap()[0]) - 27).unwrap();
+            Signature::from_slice(hex::decode(&sign[2..130]).unwrap().as_slice()).unwrap();
+        let v = RecoveryId::try_from((hex::decode(&sign[130..]).unwrap()[0]) - 27).unwrap();
         let recovered_key = VerifyingKey::recover_from_prehash(&digest, &signature, v).unwrap();
 
         return recovered_key;
