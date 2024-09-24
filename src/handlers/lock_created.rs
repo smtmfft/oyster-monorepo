@@ -910,7 +910,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", res.unwrap_err()),
-            "did not expect to find a non existent or closed job"
+            "did not expect to find a non existent request or closed job"
         );
         assert_eq!(revise_rate_requests::table.count().get_result(conn), Ok(1));
         assert_eq!(
@@ -1121,7 +1121,7 @@ mod tests {
 
         assert_eq!(
             format!("{:?}", res.unwrap_err()),
-            "did not expect to find a non existent or closed job"
+            "did not expect to find a non existent request or closed job"
         );
         assert_eq!(revise_rate_requests::table.count().get_result(conn), Ok(1));
         assert_eq!(
