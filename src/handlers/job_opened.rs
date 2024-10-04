@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use crate::schema::jobs;
-use crate::schema::providers;
 use alloy::hex::ToHexExt;
 use alloy::primitives::Address;
 use alloy::primitives::U256;
@@ -94,7 +93,6 @@ mod tests {
 
     use crate::handlers::handle_log;
     use crate::handlers::test_db::TestDb;
-    use crate::schema::providers;
 
     use super::*;
 
@@ -105,24 +103,6 @@ mod tests {
         let conn = &mut db.conn;
 
         let contract = "0x1111111111111111111111111111111111111111".parse()?;
-
-        diesel::insert_into(providers::table)
-            .values((
-                providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
-                providers::cp.eq("some cp"),
-                providers::is_active.eq(true),
-            ))
-            .execute(conn)?;
-
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
-            ))
-        );
 
         assert_eq!(jobs::table.count().get_result(conn), Ok(0));
 
@@ -167,16 +147,6 @@ mod tests {
         handle_log(conn, log)?;
 
         // checks
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
-            ))
-        );
-
         assert_eq!(jobs::table.count().get_result(conn), Ok(1));
         assert_eq!(
             jobs::table.select(jobs::all_columns).first(conn),
@@ -204,14 +174,6 @@ mod tests {
 
         let contract = "0x1111111111111111111111111111111111111111".parse()?;
 
-        diesel::insert_into(providers::table)
-            .values((
-                providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
-                providers::cp.eq("some cp"),
-                providers::is_active.eq(true),
-            ))
-            .execute(conn)?;
-
         let original_timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_secs();
@@ -232,16 +194,6 @@ mod tests {
             ))
             .execute(conn)
             .context("failed to create job")?;
-
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
-            ))
-        );
 
         assert_eq!(jobs::table.count().get_result(conn), Ok(1));
         assert_eq!(
@@ -300,16 +252,6 @@ mod tests {
         handle_log(conn, log)?;
 
         // checks
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
-            ))
-        );
-
         assert_eq!(jobs::table.count().get_result(conn), Ok(2));
         assert_eq!(
             jobs::table
@@ -353,14 +295,6 @@ mod tests {
 
         let contract = "0x1111111111111111111111111111111111111111".parse()?;
 
-        diesel::insert_into(providers::table)
-            .values((
-                providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
-                providers::cp.eq("some cp"),
-                providers::is_active.eq(true),
-            ))
-            .execute(conn)?;
-
         let original_timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_secs();
@@ -400,16 +334,6 @@ mod tests {
             ))
             .execute(conn)
             .context("failed to create job")?;
-
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
-            ))
-        );
 
         assert_eq!(jobs::table.count().get_result(conn), Ok(2));
         assert_eq!(
@@ -479,16 +403,6 @@ mod tests {
         let res = handle_log(conn, log);
 
         // checks
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
-            ))
-        );
-
         assert_eq!(
             format!("{:?}", res.unwrap_err()),
             "failed to create job\n\nCaused by:\n    duplicate key value violates unique constraint \"jobs_pkey\""
@@ -536,14 +450,6 @@ mod tests {
 
         let contract = "0x1111111111111111111111111111111111111111".parse()?;
 
-        diesel::insert_into(providers::table)
-            .values((
-                providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
-                providers::cp.eq("some cp"),
-                providers::is_active.eq(true),
-            ))
-            .execute(conn)?;
-
         let original_timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_secs();
@@ -564,16 +470,6 @@ mod tests {
             ))
             .execute(conn)
             .context("failed to create job")?;
-
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
-            ))
-        );
 
         assert_eq!(jobs::table.count().get_result(conn), Ok(1));
         assert_eq!(
@@ -636,16 +532,6 @@ mod tests {
             "did not expect to find a non existent or inactive provider"
         );
 
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                true
-            ))
-        );
-
         assert_eq!(jobs::table.count().get_result(conn), Ok(1));
         assert_eq!(
             jobs::table.select(jobs::all_columns).first(conn),
@@ -673,14 +559,6 @@ mod tests {
 
         let contract = "0x1111111111111111111111111111111111111111".parse()?;
 
-        diesel::insert_into(providers::table)
-            .values((
-                providers::id.eq("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"),
-                providers::cp.eq("some cp"),
-                providers::is_active.eq(false),
-            ))
-            .execute(conn)?;
-
         let original_timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_secs();
@@ -701,16 +579,6 @@ mod tests {
             ))
             .execute(conn)
             .context("failed to create job")?;
-
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                false
-            ))
-        );
 
         assert_eq!(jobs::table.count().get_result(conn), Ok(1));
         assert_eq!(
@@ -771,16 +639,6 @@ mod tests {
         assert_eq!(
             format!("{:?}", res.unwrap_err()),
             "did not expect to find a non existent or inactive provider"
-        );
-
-        assert_eq!(providers::table.count().get_result(conn), Ok(1));
-        assert_eq!(
-            providers::table.select(providers::all_columns).first(conn),
-            Ok((
-                "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa".to_owned(),
-                "some cp".to_owned(),
-                false
-            ))
         );
 
         assert_eq!(jobs::table.count().get_result(conn), Ok(1));
