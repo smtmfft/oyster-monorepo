@@ -54,8 +54,8 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
     );
 
     // target sql:
-    // INSERT INTO jobs (id, metadata, owner, provider, rate, balance, last_settled, created)
-    // VALUES ("<id>", "<metadata>", "<owner>", "<provider>", "<rate>", "<balance>", "<timestamp>", "<timestamp>");
+    // INSERT INTO jobs (id, metadata, owner, provider, rate, balance, last_settled, created, is_closed)
+    // VALUES ("<id>", "<metadata>", "<owner>", "<provider>", "<rate>", "<balance>", "<timestamp>", "<timestamp>", false);
     diesel::insert_into(jobs::table)
         .values((
             jobs::id.eq(&id),
@@ -66,6 +66,7 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
             jobs::balance.eq(&balance),
             jobs::last_settled.eq(&timestamp),
             jobs::created.eq(&timestamp),
+            jobs::is_closed.eq(false),
         ))
         .execute(conn)
         .context("failed to create job")?;
