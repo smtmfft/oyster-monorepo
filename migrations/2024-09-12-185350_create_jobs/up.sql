@@ -2,7 +2,7 @@ CREATE TABLE jobs (
   id CHAR(66) PRIMARY KEY,
   metadata text NOT NULL,
   owner CHAR(42) NOT NULL,
-  provider CHAR(42) NOT NULL REFERENCES providers (id),
+  provider CHAR(42) NOT NULL,
   rate NUMERIC NOT NULL,
   balance NUMERIC NOT NULL,
   last_settled TIMESTAMP NOT NULL,
