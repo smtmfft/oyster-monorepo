@@ -41,7 +41,6 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(jobs -> providers (provider));
 diesel::joinable!(revise_rate_requests -> jobs (id));
 
 diesel::allow_tables_to_appear_in_same_query!(
