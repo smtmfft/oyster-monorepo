@@ -57,7 +57,7 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
     // target sql:
     // INSERT INTO jobs (id, metadata, owner, provider, rate, balance, last_settled, created)
     // VALUES ("<id>", "<metadata>", "<owner>", "<provider>", "<rate>", "<balance>", "<timestamp>", "<timestamp>");
-    let count = diesel::insert_into(jobs::table)
+    diesel::insert_into(jobs::table)
         .values((
             jobs::id.eq(&id),
             jobs::metadata.eq(&metadata),
@@ -70,16 +70,6 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
         ))
         .execute(conn)
         .context("failed to create job")?;
-
-    if count != 1 {
-        // !!! should never happen
-        // we have failed to make any changes
-        // the only real condition is when the provider does not exist or is inactive
-        // we error out for now, can consider just moving on
-        return Err(anyhow::anyhow!(
-            "did not expect to find a non existent or inactive provider"
-        ));
-    }
 
     info!(
         id,
