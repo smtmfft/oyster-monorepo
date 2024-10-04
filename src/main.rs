@@ -13,6 +13,7 @@ use oyster_indexer::start_from;
 use oyster_indexer::AlloyProvider;
 use tracing::debug;
 use tracing::error;
+use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser, Debug)]
@@ -45,9 +46,11 @@ fn run() -> Result<()> {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
     // apply pending migrations
+    info!("Applying pending migrations");
     conn.run_pending_migrations(MIGRATIONS)
         // error is not sized, pain to handle the usual way
         .expect("failed to apply migrations");
+    info!("Applied pending migrations");
 
     let provider = AlloyProvider {
         url: args.rpc.parse()?,
