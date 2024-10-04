@@ -10,6 +10,7 @@ use alloy::sol_types::SolValue;
 use anyhow::Context;
 use anyhow::Result;
 use bigdecimal::BigDecimal;
+use diesel::serialize::ToSql;
 use diesel::sql_types::Bool;
 use diesel::sql_types::Numeric;
 use diesel::sql_types::Text;
@@ -55,32 +56,18 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
 
     // target sql:
     // INSERT INTO jobs (id, metadata, owner, provider, rate, balance, last_settled, created)
-    // SELECT "<id>", "<metadata>", "<owner>", id, "<rate>", "<balance>", "<last_settled>", "<created>", false
-    // FROM providers
-    // WHERE providers.is_active = true
-    // AND id = "<provider>";
+    // VALUES ("<id>", "<metadata>", "<owner>", "<provider>", "<rate>", "<balance>", "<timestamp>", "<timestamp>");
     let count = diesel::insert_into(jobs::table)
-        .values(
-            // we want to detect if the provider exists and is active
-            // we do it by using INSERT INTO ... SELECT ... WHERE ...
-            // the INSERT happens if SELECT returns something
-            // which happens only if the WHERE conditions match
-            // the rest of the values are just piped through SELECT
-            providers::table
-                .select((
-                    id.as_sql::<Text>(),
-                    metadata.as_sql::<Text>(),
-                    owner.as_sql::<Text>(),
-                    providers::id,
-                    rate.as_sql::<Numeric>(),
-                    balance.as_sql::<Numeric>(),
-                    timestamp.as_sql::<Timestamp>(),
-                    timestamp.as_sql::<Timestamp>(),
-                    false.as_sql::<Bool>(),
-                ))
-                .filter(providers::is_active.eq(true))
-                .filter(providers::id.eq(&provider)),
-        )
+        .values((
+            jobs::id.eq(&id),
+            jobs::metadata.eq(&metadata),
+            jobs::owner.eq(&owner),
+            jobs::provider.eq(&provider),
+            jobs::rate.eq(&rate),
+            jobs::balance.eq(&balance),
+            jobs::last_settled.eq(&timestamp),
+            jobs::created.eq(&timestamp),
+        ))
         .execute(conn)
         .context("failed to create job")?;
 
