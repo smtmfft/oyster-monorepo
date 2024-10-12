@@ -1,15 +1,18 @@
 use risc0_zkvm::guest::env;
 
+use std::io::Read;
+
 fn main() {
     // TODO: Implement your guest code here
 
-    // read the input
-    let input: Vec<u8> = env::read();
+    // read the attestation
+    let mut attestation = Vec::<u8>::new();
+    env::stdin().read_to_end(&mut attestation).unwrap();
 
-    println!("Input len: {}", input.len());
+    println!("Input len: {}", attestation.len());
 
     // TODO: do something with the input
 
     // write public output to the journal
-    env::commit(&input);
+    env::commit(&attestation.len());
 }
