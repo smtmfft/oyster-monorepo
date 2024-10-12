@@ -21,10 +21,18 @@ fn main() {
     // creates an ExecutorEnvBuilder. When you're done adding input, call
     // ExecutorEnvBuilder::build().
 
-    // For example:
-    let input: u32 = 15 * u32::pow(2, 27) + 1;
+    // Query attestation from the attestation verifier server for now
+    let attestation = ureq::get("http://13.232.36.95:1300/attestation/raw")
+        .call()
+        .unwrap()
+        .into_string()
+        .unwrap()
+        .into_bytes();
+
+    println!("Attestation size: {}", attestation.len());
+
     let env = ExecutorEnv::builder()
-        .write(&input)
+        .write(&attestation)
         .unwrap()
         .build()
         .unwrap();
