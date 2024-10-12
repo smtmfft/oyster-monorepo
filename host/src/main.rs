@@ -32,8 +32,7 @@ fn main() {
     println!("Attestation size: {}", attestation.len());
 
     let env = ExecutorEnv::builder()
-        .write(&attestation)
-        .unwrap()
+        .write_slice(&attestation)
         .build()
         .unwrap();
 
