@@ -2,8 +2,9 @@ use risc0_zkvm::guest::env;
 
 use std::io::Read;
 
-// use p384::ecdsa::signature::Verifier;
-// use p384::ecdsa::VerifyingKey;
+use p384::ecdsa::signature::hazmat::PrehashVerifier;
+use p384::ecdsa::Signature;
+use p384::ecdsa::VerifyingKey;
 use sha2::Digest;
 use x509_cert::der::Decode;
 
@@ -26,11 +27,9 @@ fn main() {
     println!("Size: {size}");
     // total size
     assert_eq!(attestation.len(), 10 + size + 98);
-    // signature size
-    assert_eq!(attestation[size + 10], 0x58);
-    assert_eq!(attestation[size + 11], 0x60);
 
     // payload should be in attestation[10..10+size]
+    // signature should be in attestation[12+size..108+size]
 
     // skip fields and simply assert length
     assert_eq!(attestation[10..12], [0xa9, 0x69]);
@@ -121,4 +120,19 @@ fn main() {
     let hash = hasher.finalize();
 
     println!("Hash: {hash:?}");
+
+    // verify signature
+    // signature size
+    assert_eq!(attestation[size + 10], 0x58);
+    assert_eq!(attestation[size + 11], 0x60);
+
+    let verifying_key = VerifyingKey::from_sec1_bytes(cert_pubkey).unwrap();
+    let r: [u8; 48] = attestation[12 + size..60 + size].try_into().unwrap();
+    let s: [u8; 48] = attestation[60 + size..108 + size].try_into().unwrap();
+    let signature = Signature::from_scalars(r, s).unwrap();
+    // let signature: [u8; 96] = attestation[12 + size..108 + size].try_into().unwrap();
+    // let signature = Signature::try_from(signature.as_slice()).unwrap();
+    println!("Verifying");
+    verifying_key.verify_prehash(&hash, &signature).unwrap();
+    println!("Verified");
 }
