@@ -106,11 +106,11 @@ fn main() {
     // array with 4 elements
     hasher.update(&[0x84]);
     // context field length
-    hasher.update(&[0x4a]);
+    hasher.update(&[0x6a]);
     // context field
     hasher.update("Signature1");
-    // empty body_protected
-    hasher.update(&[0x40]);
+    // body_protected
+    hasher.update(&[0x44, 0xa1, 0x01, 0x38, 0x22]);
     // empty aad
     hasher.update(&[0x40]);
     // payload length
