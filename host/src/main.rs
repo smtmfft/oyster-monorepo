@@ -22,12 +22,13 @@ fn main() {
     // ExecutorEnvBuilder::build().
 
     // Query attestation from the attestation verifier server for now
-    let attestation = ureq::get("http://13.232.36.95:1300/attestation/raw")
+    let mut attestation = Vec::new();
+    ureq::get("http://13.232.36.95:1300/attestation/raw")
         .call()
         .unwrap()
-        .into_string()
-        .unwrap()
-        .into_bytes();
+        .into_reader()
+        .read_to_end(&mut attestation)
+        .unwrap();
 
     println!("Attestation size: {}", attestation.len());
 
