@@ -5,6 +5,7 @@ use std::io::Read;
 // use p384::ecdsa::signature::Verifier;
 // use p384::ecdsa::VerifyingKey;
 use sha2::Digest;
+use x509_cert::der::Decode;
 
 fn main() {
     // read the attestation
@@ -85,10 +86,20 @@ fn main() {
     assert_eq!(&attestation[918..929], b"certificate");
     // certificate
     assert_eq!(attestation[929], 0x59);
-    let size = u16::from_be_bytes([attestation[930], attestation[931]]) as usize;
-    println!("Certificate size: {}", size);
+    let cert_size = u16::from_be_bytes([attestation[930], attestation[931]]) as usize;
+    println!("Certificate size: {}", cert_size);
 
-    // TODO: extract public key from certificate for signature checking
+    let cert = x509_cert::Certificate::from_der(&attestation[932..932 + cert_size]).unwrap();
+    let cert_pubkey = cert
+        .tbs_certificate
+        .subject_public_key_info
+        .subject_public_key
+        .raw_bytes();
+    println!(
+        "Certificate public key: {} bytes: {:?}",
+        cert_pubkey.len(),
+        cert_pubkey
+    );
 
     // TODO: extract and commit public key from attestation
 
