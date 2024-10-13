@@ -3,10 +3,12 @@ use risc0_zkvm::guest::env;
 use std::io::Read;
 
 use p384::ecdsa::signature::hazmat::PrehashVerifier;
-use p384::ecdsa::Signature;
-use p384::ecdsa::VerifyingKey;
+// use p384::ecdsa::Signature;
+// use p384::ecdsa::VerifyingKey;
 use sha2::Digest;
 use x509_cert::der::Decode;
+use x509_cert::der::Encode;
+use x509_verify::{Signature, VerifyInfo, VerifyingKey};
 
 fn main() {
     // read the attestation
@@ -84,24 +86,120 @@ fn main() {
     let cert_size = u16::from_be_bytes([attestation[930], attestation[931]]) as usize;
     println!("Certificate size: {}", cert_size);
 
-    // TODO: validate certificate fields
-    // Does bloat the proving, inclined to skip
+    // maybe validate certificate fields?
+    // does bloat the proving, inclined to skip
 
     let cert = x509_cert::Certificate::from_der(&attestation[932..932 + cert_size]).unwrap();
     let cert_pubkey = cert
         .tbs_certificate
         .subject_public_key_info
         .subject_public_key
-        .raw_bytes();
+        .raw_bytes()
+        .to_owned();
     println!(
         "Certificate public key: {} bytes: {:?}",
         cert_pubkey.len(),
         cert_pubkey
     );
 
-    // TODO: validate certificate chain
+    // cabundle key
+    assert_eq!(attestation[932 + cert_size], 0x68);
+    assert_eq!(
+        &attestation[932 + cert_size + 1..932 + cert_size + 9],
+        b"cabundle"
+    );
+    let chain_size = attestation[932 + cert_size + 9];
+    // just restrict chain size instead of figuring out parsing too much
+    assert!(chain_size > 0x80 && chain_size < 0x90);
+    let chain_size = chain_size - 0x80;
 
-    // TODO: commit root certificate key
+    // verify cabundle
+    {
+        // parse root cert
+        let mut next_cert_start = 932 + cert_size + 10;
+        assert_eq!(attestation[next_cert_start], 0x59);
+        let size = u16::from_be_bytes([
+            attestation[next_cert_start + 1],
+            attestation[next_cert_start + 2],
+        ]) as usize;
+
+        // cert with the pubkey
+        let mut parent_cert = x509_cert::Certificate::from_der(
+            &attestation[next_cert_start + 3..next_cert_start + 3 + size],
+        )
+        .unwrap();
+
+        // commit the root pubkey
+        let pubkey = parent_cert
+            .tbs_certificate
+            .subject_public_key_info
+            .subject_public_key
+            .raw_bytes();
+        println!(
+            "Certificate public key: {} bytes: {:?}",
+            pubkey.len(),
+            pubkey
+        );
+        env::commit_slice(pubkey);
+
+        // start of next certificate that is to be verified
+        next_cert_start = next_cert_start + 3 + size;
+
+        for _ in 0..chain_size - 1 {
+            // verify the type and length
+            assert_eq!(attestation[next_cert_start], 0x59);
+            let size = u16::from_be_bytes([
+                attestation[next_cert_start + 1],
+                attestation[next_cert_start + 2],
+            ]) as usize;
+
+            // parse the next cert and get the public key
+            let child_cert = x509_cert::Certificate::from_der(
+                &attestation[next_cert_start + 3..next_cert_start + 3 + size],
+            )
+            .unwrap();
+
+            // verify signature
+            let verify_info = VerifyInfo::new(
+                child_cert.tbs_certificate.to_der().unwrap().into(),
+                Signature::new(
+                    &child_cert.signature_algorithm,
+                    child_cert.signature.as_bytes().unwrap(),
+                ),
+            );
+
+            let key: VerifyingKey = parent_cert
+                .tbs_certificate
+                .subject_public_key_info
+                .clone()
+                .try_into()
+                .unwrap();
+
+            key.verify(verify_info).unwrap();
+
+            // set up for next iteration
+            parent_cert = child_cert;
+            next_cert_start = next_cert_start + 3 + size;
+        }
+
+        // verify the original cert with the current parent_cert
+        let verify_info = VerifyInfo::new(
+            cert.tbs_certificate.to_der().unwrap().into(),
+            Signature::new(
+                &cert.signature_algorithm,
+                cert.signature.as_bytes().unwrap(),
+            ),
+        );
+
+        let key: VerifyingKey = parent_cert
+            .tbs_certificate
+            .subject_public_key_info
+            .clone()
+            .try_into()
+            .unwrap();
+
+        key.verify(verify_info).unwrap();
+    }
 
     // TODO: extract and commit public key from attestation
 
@@ -129,10 +227,10 @@ fn main() {
     assert_eq!(attestation[size + 10], 0x58);
     assert_eq!(attestation[size + 11], 0x60);
 
-    let verifying_key = VerifyingKey::from_sec1_bytes(cert_pubkey).unwrap();
+    let verifying_key = p384::ecdsa::VerifyingKey::from_sec1_bytes(&cert_pubkey).unwrap();
     let r: [u8; 48] = attestation[12 + size..60 + size].try_into().unwrap();
     let s: [u8; 48] = attestation[60 + size..108 + size].try_into().unwrap();
-    let signature = Signature::from_scalars(r, s).unwrap();
+    let signature = p384::ecdsa::Signature::from_scalars(r, s).unwrap();
 
     println!("Verifying");
     verifying_key.verify_prehash(&hash, &signature).unwrap();
