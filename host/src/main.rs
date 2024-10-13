@@ -23,7 +23,7 @@ fn main() {
 
     // Query attestation from the attestation verifier server for now
     let mut attestation = Vec::new();
-    ureq::get("http://13.232.36.95:1300/attestation/raw")
+    ureq::get("http://13.201.207.60:1300/attestation/raw")
         .call()
         .unwrap()
         .into_reader()
