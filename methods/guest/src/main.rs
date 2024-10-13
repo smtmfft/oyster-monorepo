@@ -84,6 +84,9 @@ fn main() {
     let cert_size = u16::from_be_bytes([attestation[930], attestation[931]]) as usize;
     println!("Certificate size: {}", cert_size);
 
+    // TODO: validate certificate fields
+    // Does bloat the proving, inclined to skip
+
     let cert = x509_cert::Certificate::from_der(&attestation[932..932 + cert_size]).unwrap();
     let cert_pubkey = cert
         .tbs_certificate
@@ -95,6 +98,10 @@ fn main() {
         cert_pubkey.len(),
         cert_pubkey
     );
+
+    // TODO: validate certificate chain
+
+    // TODO: commit root certificate key
 
     // TODO: extract and commit public key from attestation
 
