@@ -43,7 +43,7 @@ fn main() {
     // commit the timestamp value
     assert_eq!(attestation[86], 0x1b);
     println!("Timestamp: {:?}", &attestation[87..95]);
-    env::commit::<[u8; 8]>(attestation[87..95].try_into().unwrap());
+    env::commit_slice(&attestation[87..95]);
 
     // pcrs key
     assert_eq!(attestation[95], 0x64);
@@ -52,17 +52,13 @@ fn main() {
     assert_eq!(attestation[100], 0xb0);
     assert_eq!(attestation[101..104], [0x00, 0x58, 0x30]);
     println!("pcr0: {:?}", &attestation[104..152]);
-    // commit in 2 parts coz serde does not work for arrays over 32 length
-    env::commit::<[u8; 32]>(attestation[104..136].try_into().unwrap());
-    env::commit::<[u8; 16]>(attestation[136..152].try_into().unwrap());
+    env::commit_slice(&attestation[104..152]);
     assert_eq!(attestation[152..155], [0x01, 0x58, 0x30]);
     println!("pcr1: {:?}", &attestation[155..203]);
-    env::commit::<[u8; 32]>(attestation[155..187].try_into().unwrap());
-    env::commit::<[u8; 16]>(attestation[187..203].try_into().unwrap());
+    env::commit_slice(&attestation[155..203]);
     assert_eq!(attestation[203..206], [0x02, 0x58, 0x30]);
     println!("pcr2: {:?}", &attestation[206..254]);
-    env::commit::<[u8; 32]>(attestation[206..238].try_into().unwrap());
-    env::commit::<[u8; 16]>(attestation[238..254].try_into().unwrap());
+    env::commit_slice(&attestation[206..254]);
 
     // skip rest of the pcrs
     assert_eq!(attestation[254..257], [0x03, 0x58, 0x30]);
