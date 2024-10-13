@@ -114,9 +114,9 @@ fn main() {
     let chain_size = chain_size - 0x80;
 
     // verify cabundle
+    let mut next_cert_start = 932 + cert_size + 10;
     {
         // parse root cert
-        let mut next_cert_start = 932 + cert_size + 10;
         assert_eq!(attestation[next_cert_start], 0x59);
         let size = u16::from_be_bytes([
             attestation[next_cert_start + 1],
@@ -201,7 +201,16 @@ fn main() {
         key.verify(verify_info).unwrap();
     }
 
-    // TODO: extract and commit public key from attestation
+    // public key key
+    assert_eq!(attestation[next_cert_start], 0x6a);
+    assert_eq!(
+        &attestation[next_cert_start + 1..next_cert_start + 11],
+        b"public_key"
+    );
+    // commit public key
+    assert_eq!(attestation[next_cert_start + 11], 0x58);
+    assert_eq!(attestation[next_cert_start + 12], 0x20);
+    env::commit_slice(&attestation[next_cert_start + 13..next_cert_start + 45]);
 
     let mut hasher = sha2::Sha384::new();
     // array with 4 elements
