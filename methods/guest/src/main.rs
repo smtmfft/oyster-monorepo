@@ -126,8 +126,7 @@ fn main() {
     let r: [u8; 48] = attestation[12 + size..60 + size].try_into().unwrap();
     let s: [u8; 48] = attestation[60 + size..108 + size].try_into().unwrap();
     let signature = Signature::from_scalars(r, s).unwrap();
-    // let signature: [u8; 96] = attestation[12 + size..108 + size].try_into().unwrap();
-    // let signature = Signature::try_from(signature.as_slice()).unwrap();
+
     println!("Verifying");
     verifying_key.verify_prehash(&hash, &signature).unwrap();
     println!("Verified");
