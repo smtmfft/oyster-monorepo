@@ -209,8 +209,8 @@ fn main() {
     );
     // commit public key
     assert_eq!(attestation[next_cert_start + 11], 0x58);
-    assert_eq!(attestation[next_cert_start + 12], 0x20);
-    env::commit_slice(&attestation[next_cert_start + 13..next_cert_start + 45]);
+    assert_eq!(attestation[next_cert_start + 12], 0x40);
+    env::commit_slice(&attestation[next_cert_start + 13..next_cert_start + 77]);
 
     let mut hasher = sha2::Sha384::new();
     // array with 4 elements
