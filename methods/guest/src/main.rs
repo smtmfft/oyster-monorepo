@@ -232,6 +232,7 @@ fn main() {
         )
     } else {
         // only allow 2 byte lengths as max
+        // technically, this is already enforced by COSE doc size parsing
         assert_eq!(attestation[next_cert_start + 87], 0x59);
 
         let size = u16::from_be_bytes([
