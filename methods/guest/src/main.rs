@@ -212,6 +212,42 @@ fn main() {
     assert_eq!(attestation[next_cert_start + 12], 0x40);
     env::commit_slice(&attestation[next_cert_start + 13..next_cert_start + 77]);
 
+    // user data key
+    assert_eq!(attestation[next_cert_start + 77], 0x69);
+    assert_eq!(
+        &attestation[next_cert_start + 78..next_cert_start + 87],
+        b"user_data"
+    );
+    // commit user data
+    let (user_data_size, user_data) = if attestation[next_cert_start + 87] == 0xf6 {
+        // empty
+        (0, [].as_slice())
+    } else if attestation[next_cert_start + 87] == 0x58 {
+        // one byte length follows
+        let size = attestation[next_cert_start + 88] as u16;
+
+        (
+            size,
+            &attestation[next_cert_start + 89..next_cert_start + 89 + size as usize],
+        )
+    } else {
+        // only allow 2 byte lengths as max
+        assert_eq!(attestation[next_cert_start + 87], 0x59);
+
+        let size = u16::from_be_bytes([
+            attestation[next_cert_start + 88],
+            attestation[next_cert_start + 89],
+        ]);
+
+        (
+            size,
+            &attestation[next_cert_start + 90..next_cert_start + 90 + size as usize],
+        )
+    };
+    println!("User data: {} bytes: {:?}", user_data_size, user_data);
+    env::commit_slice(&user_data_size.to_be_bytes());
+    env::commit_slice(user_data);
+
     let mut hasher = sha2::Sha384::new();
     // array with 4 elements
     hasher.update(&[0x84]);
