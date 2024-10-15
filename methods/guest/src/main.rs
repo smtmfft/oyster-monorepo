@@ -206,6 +206,7 @@ fn main() {
         }
 
         // verify the leaf cert with the last cert in the chain
+        // TODO: the tbs cert is already available in DER form in the attestation, use that
         let msg = leaf_cert.tbs_certificate.to_der().unwrap();
         let sig = Signature::from_der(&leaf_cert.signature.raw_bytes()).unwrap();
         let pubkey = parent_cert
