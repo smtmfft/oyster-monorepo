@@ -3,12 +3,12 @@ use risc0_zkvm::guest::env;
 use std::io::Read;
 
 use p384::ecdsa::signature::hazmat::PrehashVerifier;
-// use p384::ecdsa::Signature;
-// use p384::ecdsa::VerifyingKey;
+use p384::ecdsa::signature::Verifier;
+use p384::ecdsa::Signature;
+use p384::ecdsa::VerifyingKey;
 use sha2::Digest;
 use x509_cert::der::Decode;
 use x509_cert::der::Encode;
-use x509_verify::{Signature, VerifyInfo, VerifyingKey};
 
 // Design notes:
 // Generally, it asserts a specific structure instead of parsing everything in a generic fashion.
@@ -189,22 +189,15 @@ fn main() {
             .unwrap();
 
             // verify signature
-            let verify_info = VerifyInfo::new(
-                child_cert.tbs_certificate.to_der().unwrap().into(),
-                Signature::new(
-                    &child_cert.signature_algorithm,
-                    child_cert.signature.as_bytes().unwrap(),
-                ),
-            );
-
-            let key: VerifyingKey = parent_cert
+            let msg = child_cert.tbs_certificate.to_der().unwrap();
+            let sig = Signature::from_der(&child_cert.signature.raw_bytes()).unwrap();
+            let pubkey = parent_cert
                 .tbs_certificate
                 .subject_public_key_info
-                .clone()
-                .try_into()
-                .unwrap();
-
-            key.verify(verify_info).unwrap();
+                .subject_public_key
+                .raw_bytes();
+            let vkey = VerifyingKey::from_sec1_bytes(&pubkey).unwrap();
+            vkey.verify(&msg, &sig).unwrap();
 
             // set up for next iteration
             parent_cert = child_cert;
@@ -212,22 +205,15 @@ fn main() {
         }
 
         // verify the leaf cert with the last cert in the chain
-        let verify_info = VerifyInfo::new(
-            leaf_cert.tbs_certificate.to_der().unwrap().into(),
-            Signature::new(
-                &leaf_cert.signature_algorithm,
-                leaf_cert.signature.as_bytes().unwrap(),
-            ),
-        );
-
-        let key: VerifyingKey = parent_cert
+        let msg = leaf_cert.tbs_certificate.to_der().unwrap();
+        let sig = Signature::from_der(&leaf_cert.signature.raw_bytes()).unwrap();
+        let pubkey = parent_cert
             .tbs_certificate
             .subject_public_key_info
-            .clone()
-            .try_into()
-            .unwrap();
-
-        key.verify(verify_info).unwrap();
+            .subject_public_key
+            .raw_bytes();
+        let vkey = VerifyingKey::from_sec1_bytes(&pubkey).unwrap();
+        vkey.verify(&msg, &sig).unwrap();
     }
 
     // assert public_key key
@@ -309,14 +295,14 @@ fn main() {
         .subject_public_key
         .raw_bytes()
         .to_owned();
-    let verifying_key = p384::ecdsa::VerifyingKey::from_sec1_bytes(&leaf_cert_pubkey).unwrap();
+    let verifying_key = VerifyingKey::from_sec1_bytes(&leaf_cert_pubkey).unwrap();
     let r: [u8; 48] = attestation[12 + payload_size..60 + payload_size]
         .try_into()
         .unwrap();
     let s: [u8; 48] = attestation[60 + payload_size..108 + payload_size]
         .try_into()
         .unwrap();
-    let signature = p384::ecdsa::Signature::from_scalars(r, s).unwrap();
+    let signature = Signature::from_scalars(r, s).unwrap();
 
     verifying_key.verify_prehash(&hash, &signature).unwrap();
 
