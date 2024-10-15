@@ -189,6 +189,7 @@ fn main() {
             .unwrap();
 
             // verify signature
+            // TODO: the tbs cert is already available in DER form in the attestation, use that
             let msg = child_cert.tbs_certificate.to_der().unwrap();
             let sig = Signature::from_der(&child_cert.signature.raw_bytes()).unwrap();
             let pubkey = parent_cert
