@@ -142,6 +142,7 @@ fn main() {
     assert_eq!(attestation[offset + 12], 0x59); // bytes where two byte length follows
     let leaf_cert_size =
         u16::from_be_bytes([attestation[offset + 13], attestation[offset + 14]]) as usize;
+    let leaf_cert_offset = offset + 15;
     let leaf_cert =
         x509_cert::Certificate::from_der(&attestation[offset + 15..offset + 15 + leaf_cert_size])
             .unwrap();
@@ -241,8 +242,14 @@ fn main() {
             );
 
             // verify signature
-            // TODO: the tbs cert is already available in DER form in the attestation, use that
-            let msg = child_cert.tbs_certificate.to_der().unwrap();
+            // the tbs cert is already available in DER form in the attestation, use that
+            assert_eq!(attestation[offset + 3], 0x30); // ASN.1 Sequence
+            assert_eq!(attestation[offset + 4], 0x82); // two byte length follows
+            assert_eq!(attestation[offset + 7], 0x30); // ASN.1 Sequence
+            assert_eq!(attestation[offset + 8], 0x82); // two byte length follows
+            let cert_size =
+                u16::from_be_bytes([attestation[offset + 9], attestation[offset + 10]]) as usize;
+            let msg = &attestation[offset + 7..offset + 11 + cert_size];
             let sig = Signature::from_der(&child_cert.signature.raw_bytes()).unwrap();
             let pubkey = parent_cert
                 .tbs_certificate
@@ -257,8 +264,6 @@ fn main() {
             offset = offset + 3 + size;
         }
 
-        // verify the leaf cert with the last cert in the chain
-        // TODO: the tbs cert is already available in DER form in the attestation, use that
         // assert leaf cert expiry
         assert!(
             leaf_cert
@@ -278,7 +283,18 @@ fn main() {
                 .as_secs()
                 > timestamp
         );
-        let msg = leaf_cert.tbs_certificate.to_der().unwrap();
+
+        // verify the leaf cert with the last cert in the chain
+        // the tbs cert is already available in DER form in the attestation, use that
+        assert_eq!(attestation[leaf_cert_offset], 0x30); // ASN.1 Sequence
+        assert_eq!(attestation[leaf_cert_offset + 1], 0x82); // two byte length follows
+        assert_eq!(attestation[leaf_cert_offset + 4], 0x30); // ASN.1 Sequence
+        assert_eq!(attestation[leaf_cert_offset + 5], 0x82); // two byte length follows
+        let cert_size = u16::from_be_bytes([
+            attestation[leaf_cert_offset + 6],
+            attestation[leaf_cert_offset + 7],
+        ]) as usize;
+        let msg = &attestation[leaf_cert_offset + 4..leaf_cert_offset + 8 + cert_size];
         let sig = Signature::from_der(&leaf_cert.signature.raw_bytes()).unwrap();
         let pubkey = parent_cert
             .tbs_certificate
