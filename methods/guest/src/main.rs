@@ -13,7 +13,7 @@ use x509_cert::der::Encode;
 // Design notes:
 // Generally, it asserts a specific structure instead of parsing everything in a generic fashion.
 // Helps keep the proving time low at the cost of being less flexible towards structure changes.
-// Skips processing certificate extensions. Verifies only signatures, expiry and subject/issuer.
+// Skips processing certificate extensions and subject/issuers. Verifies only signatures, expiry.
 
 fn main() {
     // read the attestation
