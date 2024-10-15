@@ -234,6 +234,7 @@ fn main() {
     // commit public key, expected length of 64 since it is a secp256k1 key
     assert_eq!(attestation[offset + 11], 0x58); // bytes where one byte length follows
     assert_eq!(attestation[offset + 12], 0x40); // 64 length
+    println!("Public key: {:?}", &attestation[offset + 13..offset + 77]);
     env::commit_slice(&attestation[offset + 13..offset + 77]);
 
     // assert user_data key
