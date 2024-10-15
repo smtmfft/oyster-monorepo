@@ -8,7 +8,6 @@ use p384::ecdsa::Signature;
 use p384::ecdsa::VerifyingKey;
 use sha2::Digest;
 use x509_cert::der::Decode;
-use x509_cert::der::Encode;
 
 // Design notes:
 // Generally, it asserts a specific structure instead of parsing everything in a generic fashion.
