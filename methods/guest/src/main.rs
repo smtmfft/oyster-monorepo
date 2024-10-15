@@ -73,6 +73,10 @@ fn main() {
     println!("Timestamp: {:?}", &attestation[offset + 25..offset + 33]);
     env::commit_slice(&attestation[offset + 25..offset + 33]);
 
+    // extract timestamp for expiry checks, convert from milliseconds to seconds
+    let timestamp =
+        u64::from_be_bytes(attestation[offset + 25..offset + 33].try_into().unwrap()) / 1000;
+
     // assert pcrs key
     assert_eq!(attestation[offset + 33], 0x64); // text of size 4
     assert_eq!(&attestation[offset + 34..offset + 38], b"pcrs");
@@ -170,6 +174,25 @@ fn main() {
         // cert with the pubkey, start with the root
         let mut parent_cert =
             x509_cert::Certificate::from_der(&attestation[offset + 3..offset + 3 + size]).unwrap();
+        // assert parent cert expiry
+        assert!(
+            parent_cert
+                .tbs_certificate
+                .validity
+                .not_before
+                .to_unix_duration()
+                .as_secs()
+                < timestamp
+        );
+        assert!(
+            parent_cert
+                .tbs_certificate
+                .validity
+                .not_after
+                .to_unix_duration()
+                .as_secs()
+                > timestamp
+        );
 
         // commit the root pubkey
         let pubkey = parent_cert
@@ -197,6 +220,25 @@ fn main() {
             let child_cert =
                 x509_cert::Certificate::from_der(&attestation[offset + 3..offset + 3 + size])
                     .unwrap();
+            // assert cert expiry
+            assert!(
+                child_cert
+                    .tbs_certificate
+                    .validity
+                    .not_before
+                    .to_unix_duration()
+                    .as_secs()
+                    < timestamp
+            );
+            assert!(
+                child_cert
+                    .tbs_certificate
+                    .validity
+                    .not_after
+                    .to_unix_duration()
+                    .as_secs()
+                    > timestamp
+            );
 
             // verify signature
             // TODO: the tbs cert is already available in DER form in the attestation, use that
@@ -217,6 +259,25 @@ fn main() {
 
         // verify the leaf cert with the last cert in the chain
         // TODO: the tbs cert is already available in DER form in the attestation, use that
+        // assert leaf cert expiry
+        assert!(
+            leaf_cert
+                .tbs_certificate
+                .validity
+                .not_before
+                .to_unix_duration()
+                .as_secs()
+                < timestamp
+        );
+        assert!(
+            leaf_cert
+                .tbs_certificate
+                .validity
+                .not_after
+                .to_unix_duration()
+                .as_secs()
+                > timestamp
+        );
         let msg = leaf_cert.tbs_certificate.to_der().unwrap();
         let sig = Signature::from_der(&leaf_cert.signature.raw_bytes()).unwrap();
         let pubkey = parent_cert
