@@ -121,17 +121,6 @@ fn main() {
     let leaf_cert_size = u16::from_be_bytes([attestation[930], attestation[931]]) as usize;
     let leaf_cert =
         x509_cert::Certificate::from_der(&attestation[932..932 + leaf_cert_size]).unwrap();
-    let leaf_cert_pubkey = leaf_cert
-        .tbs_certificate
-        .subject_public_key_info
-        .subject_public_key
-        .raw_bytes()
-        .to_owned();
-    println!(
-        "Leaf certificate public key: {} bytes: {:?}",
-        leaf_cert_pubkey.len(),
-        leaf_cert_pubkey
-    );
 
     // assert cabundle key
     assert_eq!(attestation[932 + leaf_cert_size], 0x68); // text of length 8
@@ -314,6 +303,12 @@ fn main() {
     assert_eq!(attestation[payload_size + 10], 0x58); // bytes where one byte length follows
     assert_eq!(attestation[payload_size + 11], 0x60); // 96 length
 
+    let leaf_cert_pubkey = leaf_cert
+        .tbs_certificate
+        .subject_public_key_info
+        .subject_public_key
+        .raw_bytes()
+        .to_owned();
     let verifying_key = p384::ecdsa::VerifyingKey::from_sec1_bytes(&leaf_cert_pubkey).unwrap();
     let r: [u8; 48] = attestation[12 + payload_size..60 + payload_size]
         .try_into()
