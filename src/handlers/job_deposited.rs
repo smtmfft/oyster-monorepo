@@ -2,6 +2,7 @@ use std::ops::Add;
 use std::str::FromStr;
 
 use crate::schema::jobs;
+use crate::schema::transactions;
 use alloy::hex::ToHexExt;
 use alloy::primitives::U256;
 use alloy::rpc::types::Log;
@@ -128,6 +129,18 @@ mod tests {
             .execute(conn)
             .context("failed to create job")?;
 
+        diesel::insert_into(transactions::table)
+            .values((
+                transactions::block.eq(123),
+                transactions::idx.eq(5),
+                transactions::job
+                    .eq("0x3333333333333333333333333333333333333333333333333333333333333333"),
+                transactions::amount.eq(BigDecimal::from(10)),
+                transactions::is_deposit.eq(false),
+            ))
+            .execute(conn)
+            .context("failed to create job")?;
+
         assert_eq!(providers::table.count().get_result(conn), Ok(1));
         assert_eq!(
             providers::table.select(providers::all_columns).first(conn),
@@ -168,6 +181,20 @@ mod tests {
                     false,
                 )
             ])
+        );
+
+        assert_eq!(transactions::table.count().get_result(conn), Ok(1));
+        assert_eq!(
+            transactions::table
+                .select(transactions::all_columns)
+                .first(conn),
+            Ok((
+                123i64,
+                5i64,
+                "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
+                BigDecimal::from(10),
+                false,
+            ))
         );
 
         let log = Log {
@@ -236,6 +263,30 @@ mod tests {
                     BigDecimal::from(21),
                     original_now,
                     original_now,
+                    false,
+                )
+            ])
+        );
+
+        assert_eq!(transactions::table.count().get_result(conn), Ok(2));
+        assert_eq!(
+            transactions::table
+                .select(transactions::all_columns)
+                .order_by((transactions::block, transactions::idx))
+                .load(conn),
+            Ok(vec![
+                (
+                    42i64,
+                    69i64,
+                    "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
+                    BigDecimal::from(5),
+                    true,
+                ),
+                (
+                    123i64,
+                    5i64,
+                    "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
+                    BigDecimal::from(10),
                     false,
                 )
             ])
