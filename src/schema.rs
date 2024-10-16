@@ -46,7 +46,7 @@ diesel::table! {
         block -> Int8,
         idx -> Int8,
         #[max_length = 66]
-        job -> Nullable<Bpchar>,
+        job -> Bpchar,
         amount -> Numeric,
         is_deposit -> Bool,
     }
