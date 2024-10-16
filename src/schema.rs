@@ -46,6 +46,8 @@ diesel::table! {
         block -> Int8,
         idx -> Int8,
         #[max_length = 66]
+        tx_hash -> Bpchar,
+        #[max_length = 66]
         job -> Bpchar,
         amount -> Numeric,
         is_deposit -> Bool,
