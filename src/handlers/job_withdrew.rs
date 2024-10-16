@@ -7,6 +7,7 @@ use alloy::hex::ToHexExt;
 use alloy::primitives::U256;
 use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
+use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use bigdecimal::BigDecimal;
@@ -23,6 +24,11 @@ pub fn handle_job_withdrew(conn: &mut PgConnection, log: Log) -> Result<()> {
     let id = log.topics()[1].encode_hex_with_prefix();
     let amount = U256::abi_decode(&log.data().data, true)?;
     let amount = BigDecimal::from_str(&amount.to_string())?;
+
+    let block = log
+        .block_number
+        .ok_or(anyhow!("did not get block from log"))?;
+    let idx = log.log_index.ok_or(anyhow!("did not get index from log"))?;
 
     // we want to update if job exists and is not closed
     // we want to error out if job does not exist or is closed
@@ -51,6 +57,20 @@ pub fn handle_job_withdrew(conn: &mut PgConnection, log: Log) -> Result<()> {
         // we error out for now, can consider just moving on
         return Err(anyhow::anyhow!("could not find job"));
     }
+
+    // target sql:
+    // INSERT INTO transactions (block, idx, job, value, is_deposit)
+    // VALUES (block, idx, "<job>", "<value>", false);
+    diesel::insert_into(transactions::table)
+        .values((
+            transactions::block.eq(block as i64),
+            transactions::idx.eq(idx as i64),
+            transactions::job.eq(&id),
+            transactions::amount.eq(&amount),
+            transactions::is_deposit.eq(false),
+        ))
+        .execute(conn)
+        .context("failed to create withdraw")?;
 
     info!(id, ?amount, "withdrew from job");
 
