@@ -332,6 +332,18 @@ mod tests {
             .execute(conn)
             .context("failed to create job")?;
 
+        diesel::insert_into(transactions::table)
+            .values((
+                transactions::block.eq(123),
+                transactions::idx.eq(5),
+                transactions::job
+                    .eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
+                transactions::amount.eq(BigDecimal::from(10)),
+                transactions::is_deposit.eq(false),
+            ))
+            .execute(conn)
+            .context("failed to create job")?;
+
         assert_eq!(providers::table.count().get_result(conn), Ok(1));
         assert_eq!(
             providers::table.select(providers::all_columns).first(conn),
@@ -359,6 +371,20 @@ mod tests {
                 original_now,
                 false,
             )])
+        );
+
+        assert_eq!(transactions::table.count().get_result(conn), Ok(1));
+        assert_eq!(
+            transactions::table
+                .select(transactions::all_columns)
+                .first(conn),
+            Ok((
+                123i64,
+                5i64,
+                "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
+                BigDecimal::from(10),
+                false,
+            ))
         );
 
         let log = Log {
@@ -418,6 +444,20 @@ mod tests {
                 original_now,
                 false,
             )])
+        );
+
+        assert_eq!(transactions::table.count().get_result(conn), Ok(1));
+        assert_eq!(
+            transactions::table
+                .select(transactions::all_columns)
+                .first(conn),
+            Ok((
+                123i64,
+                5i64,
+                "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
+                BigDecimal::from(10),
+                false,
+            ))
         );
 
         Ok(())
