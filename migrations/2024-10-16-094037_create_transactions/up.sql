@@ -8,4 +8,5 @@ CREATE TABLE transactions (
   PRIMARY KEY(block, idx)
 );
 
-CREATE INDEX transactions_block_idx_idx ON transactions(block, idx);
+CREATE INDEX transactions_block_idx_idx ON transactions (block, idx);
+CREATE INDEX transactions_job_idx ON transactions (job);
