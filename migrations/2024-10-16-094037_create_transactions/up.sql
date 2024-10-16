@@ -1,7 +1,7 @@
 CREATE TABLE transactions (
   block BIGINT NOT NULL,
   idx BIGINT NOT NULL,
-  job CHAR(66) REFERENCES jobs (id),
+  job CHAR(66) NOT NULL REFERENCES jobs (id),
   amount NUMERIC NOT NULL,
   is_deposit BOOL NOT NULL,
   PRIMARY KEY(block, idx)
