@@ -29,6 +29,10 @@ pub fn handle_job_withdrew(conn: &mut PgConnection, log: Log) -> Result<()> {
         .block_number
         .ok_or(anyhow!("did not get block from log"))?;
     let idx = log.log_index.ok_or(anyhow!("did not get index from log"))?;
+    let tx_hash = log
+        .transaction_hash
+        .ok_or(anyhow!("did not get tx hash from log"))?
+        .encode_hex_with_prefix();
 
     // we want to update if job exists and is not closed
     // we want to error out if job does not exist or is closed
@@ -65,6 +69,7 @@ pub fn handle_job_withdrew(conn: &mut PgConnection, log: Log) -> Result<()> {
         .values((
             transactions::block.eq(block as i64),
             transactions::idx.eq(idx as i64),
+            transactions::tx_hash.eq(tx_hash),
             transactions::job.eq(&id),
             transactions::amount.eq(&amount),
             transactions::is_deposit.eq(false),
