@@ -7,6 +7,7 @@ use alloy::primitives::Address;
 use alloy::primitives::U256;
 use alloy::rpc::types::Log;
 use alloy::sol_types::SolValue;
+use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use bigdecimal::BigDecimal;
@@ -32,6 +33,15 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
         std::time::SystemTime::UNIX_EPOCH
             + std::time::Duration::from_secs(timestamp.into_limbs()[0]),
     );
+
+    let block = log
+        .block_number
+        .ok_or(anyhow!("did not get block from log"))?;
+    let idx = log.log_index.ok_or(anyhow!("did not get index from log"))?;
+    let tx_hash = log
+        .transaction_hash
+        .ok_or(anyhow!("did not get tx hash from log"))?
+        .encode_hex_with_prefix();
 
     // we want to insert if job does not exist and provider exists and is active
     // we want to error out if job already exists or provider does not exist or is inactive
@@ -64,6 +74,21 @@ pub fn handle_job_opened(conn: &mut PgConnection, log: Log) -> Result<()> {
         ))
         .execute(conn)
         .context("failed to create job")?;
+
+    // target sql:
+    // INSERT INTO transactions (block, idx, job, value, is_deposit)
+    // VALUES (block, idx, "<job>", "<value>", true);
+    diesel::insert_into(transactions::table)
+        .values((
+            transactions::block.eq(block as i64),
+            transactions::idx.eq(idx as i64),
+            transactions::tx_hash.eq(tx_hash),
+            transactions::job.eq(&id),
+            transactions::amount.eq(&balance),
+            transactions::is_deposit.eq(true),
+        ))
+        .execute(conn)
+        .context("failed to create deposit")?;
 
     info!(
         id,
