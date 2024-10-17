@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use crate::schema::jobs;
+use crate::schema::transactions;
 use alloy::hex::ToHexExt;
 use alloy::primitives::Address;
 use alloy::primitives::U256;
@@ -157,6 +158,21 @@ mod tests {
             ))
         );
 
+        assert_eq!(transactions::table.count().get_result(conn), Ok(1));
+        assert_eq!(
+            transactions::table
+                .select(transactions::all_columns)
+                .first(conn),
+            Ok((
+                42i64,
+                69i64,
+                keccak256!("some tx").encode_hex_with_prefix(),
+                "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
+                BigDecimal::from(2),
+                true,
+            ))
+        );
+
         Ok(())
     }
 
@@ -189,6 +205,20 @@ mod tests {
             .execute(conn)
             .context("failed to create job")?;
 
+        diesel::insert_into(transactions::table)
+            .values((
+                transactions::block.eq(123),
+                transactions::idx.eq(5),
+                transactions::tx_hash
+                    .eq("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+                transactions::job
+                    .eq("0x4444444444444444444444444444444444444444444444444444444444444444"),
+                transactions::amount.eq(BigDecimal::from(10)),
+                transactions::is_deposit.eq(false),
+            ))
+            .execute(conn)
+            .context("failed to create job")?;
+
         assert_eq!(jobs::table.count().get_result(conn), Ok(1));
         assert_eq!(
             jobs::table.select(jobs::all_columns).first(conn),
@@ -201,6 +231,21 @@ mod tests {
                 BigDecimal::from(21),
                 original_now,
                 original_now,
+                false,
+            ))
+        );
+
+        assert_eq!(transactions::table.count().get_result(conn), Ok(1));
+        assert_eq!(
+            transactions::table
+                .select(transactions::all_columns)
+                .first(conn),
+            Ok((
+                123i64,
+                5i64,
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+                "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
+                BigDecimal::from(10),
                 false,
             ))
         );
@@ -278,6 +323,32 @@ mod tests {
             ])
         );
 
+        assert_eq!(transactions::table.count().get_result(conn), Ok(2));
+        assert_eq!(
+            transactions::table
+                .select(transactions::all_columns)
+                .order_by((transactions::block, transactions::idx))
+                .load(conn),
+            Ok(vec![
+                (
+                    42i64,
+                    69i64,
+                    keccak256!("some tx").encode_hex_with_prefix(),
+                    "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
+                    BigDecimal::from(2),
+                    true,
+                ),
+                (
+                    123i64,
+                    5i64,
+                    "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+                    "0x4444444444444444444444444444444444444444444444444444444444444444".to_owned(),
+                    BigDecimal::from(10),
+                    false,
+                )
+            ])
+        );
+
         Ok(())
     }
 
@@ -329,6 +400,20 @@ mod tests {
             .execute(conn)
             .context("failed to create job")?;
 
+        diesel::insert_into(transactions::table)
+            .values((
+                transactions::block.eq(123),
+                transactions::idx.eq(5),
+                transactions::tx_hash
+                    .eq("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+                transactions::job
+                    .eq("0x3333333333333333333333333333333333333333333333333333333333333333"),
+                transactions::amount.eq(BigDecimal::from(10)),
+                transactions::is_deposit.eq(false),
+            ))
+            .execute(conn)
+            .context("failed to create job")?;
+
         assert_eq!(jobs::table.count().get_result(conn), Ok(2));
         assert_eq!(
             jobs::table
@@ -359,6 +444,21 @@ mod tests {
                     false,
                 )
             ])
+        );
+
+        assert_eq!(transactions::table.count().get_result(conn), Ok(1));
+        assert_eq!(
+            transactions::table
+                .select(transactions::all_columns)
+                .first(conn),
+            Ok((
+                123i64,
+                5i64,
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+                "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
+                BigDecimal::from(10),
+                false,
+            ))
         );
 
         // log under test
@@ -431,6 +531,21 @@ mod tests {
                     false,
                 )
             ])
+        );
+
+        assert_eq!(transactions::table.count().get_result(conn), Ok(1));
+        assert_eq!(
+            transactions::table
+                .select(transactions::all_columns)
+                .first(conn),
+            Ok((
+                123i64,
+                5i64,
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_owned(),
+                "0x3333333333333333333333333333333333333333333333333333333333333333".to_owned(),
+                BigDecimal::from(10),
+                false,
+            ))
         );
 
         Ok(())
