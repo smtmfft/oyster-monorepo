@@ -29,6 +29,8 @@ fn main() {
     // creates an ExecutorEnvBuilder. When you're done adding input, call
     // ExecutorEnvBuilder::build().
 
+    println!("GUEST: {:?}", GUEST_ID.map(u32::to_le_bytes).as_flattened());
+
     // Parse command line arguments
     let args = Args::parse();
 
