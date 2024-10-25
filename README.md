@@ -1,81 +1,66 @@
-# RISC Zero Rust Starter Template
+![Marlin Oyster Logo](./logo.svg)
 
-Welcome to the RISC Zero Rust Starter Template! This template is intended to
-give you a starting point for building a project using the RISC Zero zkVM.
-Throughout the template (including in this README), you'll find comments
-labelled `TODO` in places where you'll need to make changes. To better
-understand the concepts behind this template, check out the [zkVM
-Overview][zkvm-overview].
+# Attestation Verifier - RiscZero
 
-## Quick Start
+This repository implements a RiscZero based AWS Nitro Enclave attestation verifier.
 
-First, make sure [rustup] is installed. The
-[`rust-toolchain.toml`][rust-toolchain] file will be used by `cargo` to
-automatically install the correct version.
+While it produces zero false positives, it does not aim to produce zero false negatives, i.e. it could reject _theoretically_ valid attestations. Instead, it asserts specific attestation formats that are _actually_ used in order to optimize proving time. It also does not verify any extensions in the certificates as it was deemed unnecessary.
 
-To build all methods and execute the method within the zkVM, run the following
-command:
+## Build
+
+Install the RiscZero tooling before proceeding further.
+
+Note: Requires CUDA by default. It is possible to disable CUDA by disabling the relevant feature in `host/Cargo.toml`, but the proof generation process could take hours on a CPU. 
 
 ```bash
-cargo run
+cargo build --release
 ```
 
-This is an empty template, and so there is no expected output (until you modify
-the code).
+### Reproducible builds
 
-### Executing the Project Locally in Development Mode
+Reproducible builds are enabled for the guest to produce a consistent GUEST_ID.
 
-During development, faster iteration upon code changes can be achieved by leveraging [dev-mode], we strongly suggest activating it during your early development phase. Furthermore, you might want to get insights into the execution statistics of your project, and this can be achieved by specifying the environment variable `RUST_LOG="[executor]=info"` before running your project.
+Expected GUEST_ID: 0x541487c38ab4802160c0e4058c4e0d66c247ed89d373685fd7171c7836e59629
 
-Put together, the command to run your project in development mode while getting execution statistics is:
+## Usage
 
 ```bash
-RUST_LOG="[executor]=info" RISC0_DEV_MODE=1 cargo run
+$ ./target/release/host --help
+GUEST: [84, 20, 135, 195, 138, 180, 128, 33, 96, 192, 228, 5, 140, 78, 13, 102, 194, 71, 237, 137, 211, 115, 104, 95, 215, 23, 28, 120, 54, 229, 150, 41]
+Usage: host --url <URL>
+
+Options:
+  -u, --url <URL>  
+  -h, --help       Print help
+  -V, --version    Print version
 ```
 
-### Running Proofs Remotely on Bonsai
+It takes in a URL to an attestation server producing binary attestations. The attestation server should include a 64 byte public key in the attestation.
 
-_Note: The Bonsai proving service is still in early Alpha; an API key is
-required for access. [Click here to request access][bonsai access]._
+## Journal format
 
-If you have access to the URL and API key to Bonsai you can run your proofs
-remotely. To prove in Bonsai mode, invoke `cargo run` with two additional
-environment variables:
-
-```bash
-BONSAI_API_KEY="YOUR_API_KEY" BONSAI_API_URL="BONSAI_URL" cargo run
-```
-
-## How to Create a Project Based on This Template
-
-Search this template for the string `TODO`, and make the necessary changes to
-implement the required feature described by the `TODO` comment. Some of these
-changes will be complex, and so we have a number of instructional resources to
-assist you in learning how to write your own code for the RISC Zero zkVM:
-
-- The [RISC Zero Developer Docs][dev-docs] is a great place to get started.
-- Example projects are available in the [examples folder][examples] of
-  [`risc0`][risc0-repo] repository.
-- Reference documentation is available at [https://docs.rs][docs.rs], including
-  [`risc0-zkvm`][risc0-zkvm], [`cargo-risczero`][cargo-risczero],
-  [`risc0-build`][risc0-build], and [others][crates].
+The journal contains bytes in the following order:
+- 8 byte timestamp in milliseconds from the attestation
+- 48 byte PCR0
+- 48 byte PCR1
+- 48 byte PCR2
+- 48 byte public key from the root certificate
+- 64 byte public key from the attestation
+- 2 byte length of the user data
+- N byte user data
 
 ## Directory Structure
-
-It is possible to organize the files for these components in various ways.
-However, in this starter template we use a standard directory structure for zkVM
-applications, which we think is a good starting point for your applications.
 
 ```text
 project_name
 ├── Cargo.toml
 ├── host
-│   ├── Cargo.toml
+│   ├── Cargo.toml                     <-- [Disable CUDA here]
 │   └── src
 │       └── main.rs                    <-- [Host code goes here]
 └── methods
     ├── Cargo.toml
-    ├── build.rs
+    ├── build.rs                       <-- [Reproducible guest builds stuff here]
     ├── guest
     │   ├── Cargo.toml
     │   └── src
@@ -83,29 +68,3 @@ project_name
     └── src
         └── lib.rs
 ```
-
-## Video Tutorial
-
-For a walk-through of how to build with this template, check out this [excerpt
-from our workshop at ZK HACK III][zkhack-iii].
-
-## Questions, Feedback, and Collaborations
-
-We'd love to hear from you on [Discord][discord] or [Twitter][twitter].
-
-[bonsai access]: https://bonsai.xyz/apply
-[cargo-risczero]: https://docs.rs/cargo-risczero
-[crates]: https://github.com/risc0/risc0/blob/main/README.md#rust-binaries
-[dev-docs]: https://dev.risczero.com
-[dev-mode]: https://dev.risczero.com/api/generating-proofs/dev-mode
-[discord]: https://discord.gg/risczero
-[docs.rs]: https://docs.rs/releases/search?query=risc0
-[examples]: https://github.com/risc0/risc0/tree/main/examples
-[risc0-build]: https://docs.rs/risc0-build
-[risc0-repo]: https://www.github.com/risc0/risc0
-[risc0-zkvm]: https://docs.rs/risc0-zkvm
-[rust-toolchain]: rust-toolchain.toml
-[rustup]: https://rustup.rs
-[twitter]: https://twitter.com/risczero
-[zkhack-iii]: https://www.youtube.com/watch?v=Yg_BGqj_6lg&list=PLcPzhUaCxlCgig7ofeARMPwQ8vbuD6hC5&index=5
-[zkvm-overview]: https://dev.risczero.com/zkvm
