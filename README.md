@@ -68,3 +68,7 @@ project_name
     └── src
         └── lib.rs
 ```
+
+## License
+
+This repository is licensed under the GNU AGPLv3 or any later version. See [LICENSE.txt](./LICENSE.txt).
