@@ -20,13 +20,13 @@ cargo build --release
 
 Reproducible builds are enabled for the guest to produce a consistent GUEST_ID.
 
-Expected GUEST_ID: 0x541487c38ab4802160c0e4058c4e0d66c247ed89d373685fd7171c7836e59629
+Expected GUEST_ID: 0x7dfdac473c0b08b7acab61ef44efd663c10e68967fb35b5719770a9a324f522b
 
 ## Usage
 
 ```bash
 $ ./target/release/host --help
-GUEST: [84, 20, 135, 195, 138, 180, 128, 33, 96, 192, 228, 5, 140, 78, 13, 102, 194, 71, 237, 137, 211, 115, 104, 95, 215, 23, 28, 120, 54, 229, 150, 41]
+GUEST: [125, 253, 172, 71, 60, 11, 8, 183, 172, 171, 97, 239, 68, 239, 214, 99, 193, 14, 104, 150, 127, 179, 91, 87, 25, 119, 10, 154, 50, 79, 82, 43]
 Usage: host --url <URL>
 
 Options:
