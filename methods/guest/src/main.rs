@@ -205,8 +205,8 @@ fn main() {
             pubkey.len(),
             pubkey
         );
-        // assert that the pubkey size is 48 in case it changes later
-        assert_eq!(pubkey.len(), 48);
+        // assert that the pubkey size is 97 in case it changes later
+        assert_eq!(pubkey.len(), 97);
         env::commit_slice(pubkey);
 
         // start of next cert that is to be verified
