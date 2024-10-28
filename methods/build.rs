@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::Path;
 
 use risc0_build::{DockerOptions, GuestOptions};
 
@@ -10,7 +10,10 @@ fn main() {
         GuestOptions {
             features: vec![],
             use_docker: Some(DockerOptions {
-                root_dir: std::env::var_os("OUT_DIR/docker/").map(PathBuf::from),
+                root_dir: std::env::current_dir()
+                    .unwrap()
+                    .parent()
+                    .map(Path::to_path_buf),
             }),
         },
     );
