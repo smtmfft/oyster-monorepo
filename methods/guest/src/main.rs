@@ -319,6 +319,7 @@ fn main() {
         "Public key: {pubkey_len} bytes: {:?}",
         &attestation[offset + 13..offset + 13 + pubkey_len]
     );
+    env::commit_slice(&[attestation[offset + 12]]);
     env::commit_slice(&attestation[offset + 13..offset + 13 + pubkey_len]);
 
     offset = offset + 13 + pubkey_len;
