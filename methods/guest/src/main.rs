@@ -316,27 +316,29 @@ fn main() {
     println!("Public key: {:?}", &attestation[offset + 13..offset + 77]);
     env::commit_slice(&attestation[offset + 13..offset + 77]);
 
+    offset = offset + 77;
+
     // assert user_data key
-    assert_eq!(attestation[offset + 77], 0x69); // text of size 9
-    assert_eq!(&attestation[offset + 78..offset + 87], b"user_data");
+    assert_eq!(attestation[offset], 0x69); // text of size 9
+    assert_eq!(&attestation[offset + 1..offset + 10], b"user_data");
     // commit user data
     // handle cases up to 65536 size
-    let (user_data_size, user_data) = if attestation[offset + 87] == 0xf6 {
+    let (user_data_size, user_data) = if attestation[offset + 10] == 0xf6 {
         // empty
         (0, [].as_slice())
-    } else if attestation[offset + 87] == 0x58 {
+    } else if attestation[offset + 10] == 0x58 {
         // one byte length follows
-        let size = attestation[offset + 88] as u16;
+        let size = attestation[offset + 11] as u16;
 
-        (size, &attestation[offset + 89..offset + 89 + size as usize])
+        (size, &attestation[offset + 12..offset + 12 + size as usize])
     } else {
         // only allow 2 byte lengths as max
         // technically, this is already enforced by COSE doc size parsing
-        assert_eq!(attestation[offset + 87], 0x59);
+        assert_eq!(attestation[offset + 10], 0x59);
 
-        let size = u16::from_be_bytes([attestation[offset + 88], attestation[offset + 89]]);
+        let size = u16::from_be_bytes([attestation[offset + 11], attestation[offset + 12]]);
 
-        (size, &attestation[offset + 90..offset + 90 + size as usize])
+        (size, &attestation[offset + 13..offset + 13 + size as usize])
     };
     println!("User data: {} bytes: {:?}", user_data_size, user_data);
     // commit 2 byte length, then data
