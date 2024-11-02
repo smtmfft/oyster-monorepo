@@ -44,8 +44,9 @@ The journal contains bytes in the following order:
 - 48 byte PCR0
 - 48 byte PCR1
 - 48 byte PCR2
-- 48 byte public key from the root certificate
-- 64 byte public key from the attestation
+- 96 byte public key from the root certificate
+- 1 byte length of the public key from the attestation
+- N byte public key from the attestation
 - 2 byte length of the user data
 - N byte user data
 
