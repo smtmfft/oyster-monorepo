@@ -1,0 +1,43 @@
+[package]
+name = "control-plane"
+version = "2.4.0"
+edition = "2021"
+
+[lib]
+name = "cp"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ami"
+path = "src/ami.rs"
+
+[[bin]]
+name = "enclaver"
+path = "src/enclaver.rs"
+
+[dependencies]
+alloy = { git = "https://github.com/alloy-rs/alloy", version = "0.1.0", features = ["providers", "provider-ws", "serde", "rpc", "rpc-types-eth", "sol-types", "rand"] }
+anyhow = "1.0.81"
+aws-config = { version = "1.1.9", features = ["behavior-version-latest"] }
+aws-sdk-ec2 = "1.30.0"
+aws-types = "1.1.8"
+axum = "0.7.5"
+clap = { version = "4.5.4", features = ["derive"] }
+rand_core = { version = "0.6.4", features = ["getrandom"] }
+reqwest = { version = "0.12.2", features = ["rustls-tls"], default-features = false }
+serde = "1.0.197"
+serde_json = "1.0.115"
+ssh-key = { version = "0.6.5", features = ["ed25519"] }
+ssh2 = { version = "0.9.4", features = ["vendored-openssl"] }
+tokio = { version = "1.37.0", features = ["full", "test-util"] }
+tokio-stream = "0.1"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+whoami = "1.5.1"
+
+[dev-dependencies]
+httpc-test = "0.1.9"
+
+[profile.release]
+lto = true
+codegen-units = 1
