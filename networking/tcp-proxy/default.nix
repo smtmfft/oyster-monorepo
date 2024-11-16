@@ -17,15 +17,12 @@
     cargo = toolchain;
     rustc = toolchain;
   };
-  gccPkgs = if systemConfig.musl then pkgs.pkgsMusl else pkgs;
 in rec {
   default = naersk'.buildPackage {
     src = ./.;
     CARGO_BUILD_TARGET = target;
-    TARGET_CC = "${gccPkgs.gcc}/bin/cc";
-    buildInputs = [
-      gccPkgs.gcc
-    ];
+    TARGET_CC = "${pkgs.pkgsStatic.stdenv.cc}/bin/cc";
+    nativeBuildInputs = [ pkgs.pkgsStatic.stdenv.cc ];
   };
   compressed = pkgs.runCommand "compressed" {
     nativeBuildInputs = [ pkgs.upx ];
