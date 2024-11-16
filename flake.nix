@@ -24,6 +24,9 @@
       attestation-server = import ./attestation/server {
         inherit nixpkgs systemConfig fenix naersk;
       };
+      networking-tcp-proxy = import ./networking/tcp-proxy {
+        inherit nixpkgs systemConfig fenix naersk;
+      };
     });
   };
 }
