@@ -18,7 +18,7 @@
     rustc = toolchain;
   };
   gccPkgs = if systemConfig.musl then pkgs.pkgsMusl else pkgs;
-in {
+in rec {
   default = naersk'.buildPackage {
     src = ./.;
     CARGO_BUILD_TARGET = target;
@@ -27,4 +27,12 @@ in {
       gccPkgs.gcc
     ];
   };
+  compressed = pkgs.runCommand "compressed" {
+    nativeBuildInputs = [ pkgs.upx ];
+  } ''
+    mkdir -p $out/bin
+    cp ${default}/bin/* $out/bin/
+    chmod +w $out/bin/*
+    upx $out/bin/*
+  '';
 }
