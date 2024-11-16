@@ -21,10 +21,10 @@
     formatter =
       systems.forSystems systems.systems (systemConfig: nixpkgs.legacyPackages.${systemConfig.system}.alejandra);
     packages = systems.forSystems systems.systems (systemConfig: {
-      attestation-server = import ./attestation/server {
+      "attestation/server" = import ./attestation/server {
         inherit nixpkgs systemConfig fenix naersk;
       };
-      networking-tcp-proxy = import ./networking/tcp-proxy {
+      "networking/tcp-proxy" = import ./networking/tcp-proxy {
         inherit nixpkgs systemConfig fenix naersk;
       };
     });
