@@ -17,17 +17,19 @@
     naersk,
   }: let
     systems = import ./systems.nix;
-    systemBuilder = (systemConfig: {
+    systemBuilder = systemConfig: {
       attestation.server = import ./attestation/server {
         inherit nixpkgs systemConfig fenix naersk;
       };
       networking.tcp-proxy = import ./networking/tcp-proxy {
         inherit nixpkgs systemConfig fenix naersk;
       };
-    });
+    };
   in {
-    formatter =
-      systems.forSystems systems.systems (systemConfig: nixpkgs.legacyPackages.${systemConfig.system}.alejandra);
+    formatter = {
+      "x86_64-linux" = nixpkgs.legacyPackages."x86_64-linux".alejandra;
+      "aarch64-linux" = nixpkgs.legacyPackages."aarch64-linux".alejandra;
+    };
     packages = {
       "x86_64-linux" = rec {
         gnu = systemBuilder {
