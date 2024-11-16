@@ -17,11 +17,27 @@
     cargo = toolchain;
     rustc = toolchain;
   };
-in {
-  default = naersk'.buildPackage {
+  cc =
+    if systemConfig.static
+    then pkgs.pkgsStatic.stdenv.cc
+    else pkgs.stdenv.cc;
+in rec {
+  uncompressed = naersk'.buildPackage {
     src = ./.;
     CARGO_BUILD_TARGET = target;
-    TARGET_CC = "${gccPkgs.gcc}/bin/cc";
-    nativeBuildInputs = [ pkgs.pkgsStatic.stdenv.cc ];
+    TARGET_CC = "${cc}/bin/cc";
+    nativeBuildInputs = [cc];
   };
+
+  compressed =
+    pkgs.runCommand "compressed" {
+      nativeBuildInputs = [pkgs.upx];
+    } ''
+      mkdir -p $out/bin
+      cp ${uncompressed}/bin/* $out/bin/
+      chmod +w $out/bin/*
+      upx $out/bin/*
+    '';
+
+  default = compressed;
 }
