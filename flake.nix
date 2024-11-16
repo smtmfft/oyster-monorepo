@@ -17,10 +17,7 @@
     naersk,
   }: let
     systems = import ./systems.nix;
-  in {
-    formatter =
-      systems.forSystems systems.systems (systemConfig: nixpkgs.legacyPackages.${systemConfig.system}.alejandra);
-    packages = systems.forSystems systems.systems (systemConfig: {
+    systemBuilder = (systemConfig: {
       attestation.server = import ./attestation/server {
         inherit nixpkgs systemConfig fenix naersk;
       };
@@ -28,5 +25,36 @@
         inherit nixpkgs systemConfig fenix naersk;
       };
     });
+  in {
+    formatter =
+      systems.forSystems systems.systems (systemConfig: nixpkgs.legacyPackages.${systemConfig.system}.alejandra);
+    packages = {
+      "x86_64-linux" = rec {
+        gnu = systemBuilder {
+          system = "x86_64-linux";
+          rust_target = "x86_64-unknown-linux-gnu";
+          static = false;
+        };
+        musl = systemBuilder {
+          system = "x86_64-linux";
+          rust_target = "x86_64-unknown-linux-musl";
+          static = true;
+        };
+        default = musl;
+      };
+      "aarch64-linux" = rec {
+        gnu = systemBuilder {
+          system = "aarch64-linux";
+          rust_target = "aarch64-unknown-linux-gnu";
+          static = false;
+        };
+        musl = systemBuilder {
+          system = "aarch64-linux";
+          rust_target = "aarch64-unknown-linux-musl";
+          static = true;
+        };
+        default = musl;
+      };
+    };
   };
 }
