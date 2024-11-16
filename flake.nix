@@ -16,7 +16,6 @@
     fenix,
     naersk,
   }: let
-    systems = import ./systems.nix;
     systemBuilder = systemConfig: {
       attestation.server = import ./attestation/server {
         inherit nixpkgs systemConfig fenix naersk;
