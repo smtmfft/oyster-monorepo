@@ -21,4 +21,12 @@
       musl = false;
     }
   ];
+  forSystems = systems: f:
+    builtins.listToAttrs (map (
+        system: {
+          name = system.system;
+          value = f system;
+        }
+      )
+      systems);
 }
