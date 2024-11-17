@@ -46,11 +46,13 @@
         gnu = systemBuilder {
           system = "x86_64-linux";
           rust_target = "x86_64-unknown-linux-gnu";
+          eif_arch = "x86_64";
           static = false;
         };
         musl = systemBuilder {
           system = "x86_64-linux";
           rust_target = "x86_64-unknown-linux-musl";
+          eif_arch = "x86_64";
           static = true;
         };
         default = musl;
@@ -59,11 +61,13 @@
         gnu = systemBuilder {
           system = "aarch64-linux";
           rust_target = "aarch64-unknown-linux-gnu";
+          eif_arch = "aarch64";
           static = false;
         };
         musl = systemBuilder {
           system = "aarch64-linux";
           rust_target = "aarch64-unknown-linux-musl";
+          eif_arch = "aarch64";
           static = true;
         };
         default = musl;
