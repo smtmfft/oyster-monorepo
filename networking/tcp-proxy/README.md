@@ -2,7 +2,7 @@
 
 # TCP Proxies
 
-This repository contains TCP proxies used to bridge between IP interfaces and vsock interfaces. They are primarily used in the salmon family of images. This repository contains the following proxies:
+This project contains TCP proxies used to bridge between IP interfaces and vsock interfaces. They are primarily used in the salmon family of images. This project contains the following proxies:
 - ip-to-vsock
 - vsock-to-ip
 - ip-to-vsock-transparent
@@ -17,17 +17,22 @@ cargo build --release
 
 ### Reproducible builds
 
-Reproducible builds can be done using a Rust Docker image to standardize the build environment:
+Reproducible builds can be done using Nix. The monorepo provides a Nix flake which includes this project and can be used to trigger builds:
 
 ```bash
-# For amd64
-docker run --rm -v `pwd`:/code rust@sha256:ed7795c6eaccae53be35939e883e8c3de0197b21e8eddbd9f04b0c4bc757c094 /code/build-amd64.sh
-
-# For arm64
-docker run --rm -v `pwd`:/code rust@sha256:c428882ff081342a9661fb13a1d059ecdc0b6e979ffec64b80371cf20a2088b0 /code/build-arm64.sh
+nix build -v .#<flavor>.networking.tcp-proxy.<output>
 ```
 
-The prebuilt binaries are then compressed using `upx` version 4.2.4. Expected sha256 checksums are available along with the links to the prebuilt binaries.
+Supported flavors:
+- `gnu`
+- `musl`
+
+Supported outputs:
+- `default`, same as `compressed`
+- `uncompressed`
+- `compressed`, using `upx`
+
+Expected sha256 checksums are available along with the links to the prebuilt binaries.
 
 ## ip-to-vsock
 
