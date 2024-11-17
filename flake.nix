@@ -20,6 +20,9 @@
       attestation.server = import ./attestation/server {
         inherit nixpkgs systemConfig fenix naersk;
       };
+      attestation.verifier = import ./attestation/verifier {
+        inherit nixpkgs systemConfig fenix naersk;
+      };
       initialization.keygen = import ./initialization/keygen {
         inherit nixpkgs systemConfig fenix naersk;
       };
