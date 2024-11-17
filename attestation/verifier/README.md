@@ -29,14 +29,6 @@ Supported outputs:
 - `uncompressed`
 - `compressed`, using `upx`
 
-## Prebuilt binaries
-
-amd64: https://artifacts.marlin.org/oyster/binaries/attestation-verifier_v2.1.0_linux_amd64 \
-checksum: 6f32346254fefef7934d965f6341ea340f2a06bf183fb1c8053d7b53f00e097d
-
-arm64: https://artifacts.marlin.org/oyster/binaries/attestation-verifier_v2.1.0_linux_arm64 \
-checksum: 1fb9424b8972bedc80ee2bafa2d662e8dde01f9615542beec30497a37da19cb1
-
 ## Usage
 
 ```
