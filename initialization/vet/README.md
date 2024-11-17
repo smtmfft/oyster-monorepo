@@ -27,14 +27,6 @@ Supported outputs:
 - `uncompressed`
 - `compressed`, using `upx`
 
-## Prebuilt binaries
-
-amd64: https://artifacts.marlin.org/oyster/binaries/vet_v1.0.0_linux_amd64 \
-checksum: cc232f2bbf4a808638ddf54ed19e79ebfcba558a7fb902c02d7a8f92562231a9
-
-arm64: https://artifacts.marlin.org/oyster/binaries/vet_v1.0.0_linux_arm64 \
-checksum: f052d9f257caf5212c9b65e8c7cd44bfd00fe38f2596cc7a9b6d8f06ecfeff4a
-
 ## Usage
 
 ```bash
