@@ -23,6 +23,9 @@
       initialization.keygen = import ./initialization/keygen {
         inherit nixpkgs systemConfig fenix naersk;
       };
+      initialization.vet = import ./initialization/vet {
+        inherit nixpkgs systemConfig fenix naersk;
+      };
       networking.tcp-proxy = import ./networking/tcp-proxy {
         inherit nixpkgs systemConfig fenix naersk;
       };
