@@ -17,6 +17,9 @@
     naersk,
   }: let
     systemBuilder = systemConfig: {
+      external.supervisord = import ./external/supervisord.nix {
+        inherit nixpkgs systemConfig;
+      };
       attestation.server = import ./attestation/server {
         inherit nixpkgs systemConfig fenix naersk;
       };
