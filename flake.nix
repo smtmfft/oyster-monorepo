@@ -17,6 +17,9 @@
     naersk,
   }: let
     systemBuilder = systemConfig: {
+      external.dnsproxy = import ./external/dnsproxy.nix {
+        inherit nixpkgs systemConfig;
+      };
       external.supervisord = import ./external/supervisord.nix {
         inherit nixpkgs systemConfig;
       };
