@@ -40,6 +40,9 @@
       initialization.vet = import ./initialization/vet {
         inherit nixpkgs systemConfig fenix naersk;
       };
+      kernels.vanilla = import ./kernels/vanilla.nix {
+        inherit nixpkgs systemConfig;
+      };
       networking.raw-proxy = import ./networking/raw-proxy {
         inherit nixpkgs systemConfig fenix naersk;
       };
