@@ -21,7 +21,7 @@
     naersk,
     nitro-util,
   }: let
-    systemBuilder = systemConfig: {
+    systemBuilder = systemConfig: rec {
       external.dnsproxy = import ./external/dnsproxy.nix {
         inherit nixpkgs systemConfig;
       };
@@ -48,6 +48,15 @@
       };
       networking.tcp-proxy = import ./networking/tcp-proxy {
         inherit nixpkgs systemConfig fenix naersk;
+      };
+      networking.iperf3-enclave.salmon = import ./networking/iperf3-enclave/salmon {
+        inherit nixpkgs systemConfig nitro-util;
+        supervisord = external.supervisord.compressed;
+        dnsproxy = external.dnsproxy.compressed;
+        keygen = initialization.keygen.compressed;
+        tcp-proxy = networking.tcp-proxy.compressed;
+        attestation-server = attestation.server.compressed;
+        kernels = kernels.vanilla;
       };
     };
   in {
