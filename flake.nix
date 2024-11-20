@@ -61,6 +61,16 @@
         attestation-server = attestation.server.compressed;
         kernels = kernels.vanilla;
       };
+      networking.iperf3-enclave.tuna = import ./networking/iperf3-enclave/tuna {
+        inherit nixpkgs systemConfig nitro-util;
+        supervisord = external.supervisord.compressed;
+        dnsproxy = external.dnsproxy.compressed;
+        keygen = initialization.keygen.compressed;
+        raw-proxy = networking.raw-proxy.compressed;
+        attestation-server = attestation.server.compressed;
+        vet = initialization.vet.compressed;
+        kernels = kernels.tuna;
+      };
     };
   in {
     formatter = {
