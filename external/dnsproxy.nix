@@ -15,7 +15,7 @@ in rec {
   uncompressed = pkgs.buildGoModule {
     src = src;
     name = "dnsproxy";
-    vendorHash = "sha256-tyEp0vY8hWE8jTvkxKuqQJcgeey+c50pxREpmlZWE24=";
+    vendorHash = "sha256-oINdRXLtfoCOpZ+n4HAkPtXyKen4m9VaDz1ggiEzehc=";
     ldflags = ["-s" "-w"];
     trimpath = true;
     buildMode = "pie";
