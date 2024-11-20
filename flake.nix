@@ -9,12 +9,17 @@
       url = "github:nix-community/naersk";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nitro-util = {
+      url = "github:monzo/aws-nitro-util";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = {
     self,
     nixpkgs,
     fenix,
     naersk,
+    nitro-util,
   }: let
     systemBuilder = systemConfig: {
       external.dnsproxy = import ./external/dnsproxy.nix {
