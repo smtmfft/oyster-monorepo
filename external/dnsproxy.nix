@@ -7,8 +7,8 @@
   src = pkgs.fetchFromGitHub {
     owner = "AdguardTeam";
     repo = "dnsproxy";
-    rev = "v0.73.2";
-    sha256 = "sha256-Xxi23Cwm389fsDcYa3qJ9GhDZVXwh/LiWPfiYMuG5Js=";
+    rev = "v0.71.2";
+    sha256 = "sha256-fsJWyb3YFmTeLf1qbO42RTldiEv3MeXyrySywGmIg5A=";
   };
 in rec {
   # static by default since CGO is disabled
@@ -20,7 +20,7 @@ in rec {
     trimpath = true;
     buildMode = "pie";
     tags = ["netgo" "osusergo"];
-    subPackages = [ "." ];
+    subPackages = ["."];
   };
 
   compressed =

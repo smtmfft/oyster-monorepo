@@ -20,7 +20,7 @@ in rec {
     trimpath = true;
     buildMode = "pie";
     tags = ["netgo" "osusergo"];
-    subPackages = [ "." ];
+    subPackages = ["."];
   };
 
   compressed =
