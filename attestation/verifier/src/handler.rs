@@ -154,8 +154,7 @@ fn verify(
         .serialize_compact();
 
     let sig = hex::encode(sig);
-    let recid: u8 = recid
-        .to_i32()
+    let recid: u8 = i32::from(recid)
         .try_into()
         .map_err(UserError::InvalidRecovery)?;
     let recid = hex::encode([recid + 27]);
