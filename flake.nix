@@ -52,6 +52,16 @@
       networking.tcp-proxy = import ./networking/tcp-proxy {
         inherit nixpkgs systemConfig fenix naersk;
       };
+      attestation.verifier-enclave = import ./attestation/verifier-enclave {
+        inherit nixpkgs systemConfig nitro-util;
+        supervisord = external.supervisord.compressed;
+        dnsproxy = external.dnsproxy.compressed;
+        keygen = initialization.keygen.compressed;
+        tcp-proxy = networking.tcp-proxy.compressed;
+        attestation-server = attestation.server.compressed;
+        attestation-verifier = attestation.verifier.compressed;
+        kernels = kernels.vanilla;
+      };
       networking.iperf3-enclave.salmon = import ./networking/iperf3-enclave/salmon {
         inherit nixpkgs systemConfig nitro-util;
         supervisord = external.supervisord.compressed;
