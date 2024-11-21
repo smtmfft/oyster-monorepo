@@ -26,7 +26,7 @@ in rec {
     src = ./.;
     CARGO_BUILD_TARGET = target;
     TARGET_CC = "${cc}/bin/cc";
-    nativeBuildInputs = [cc];
+    nativeBuildInputs = [cc pkgs.perl];
   };
 
   compressed =
