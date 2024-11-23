@@ -28,6 +28,7 @@
   init = kernels.init;
   setup = ./. + "/setup.sh";
   supervisorConf = ./. + "/supervisord.conf";
+  compose = ./. + "/docker-compose.yml";
   app = pkgs.runCommand "app" {} ''
 		echo Preparing the app folder
 		pwd
@@ -45,6 +46,7 @@
 		cp ${setup} $out/app/setup.sh
 		chmod +x $out/app/*
 		cp ${supervisorConf} $out/etc/supervisord.conf
+		cp ${compose} $out/app/docker-compose.yml
   '';
   # kinda hacky, my nix-fu is not great, figure out a better way
   initPerms = pkgs.runCommand "initPerms" {} ''
