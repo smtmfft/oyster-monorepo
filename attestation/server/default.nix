@@ -25,7 +25,7 @@ in rec {
   uncompressed = naersk'.buildPackage {
     src = ./.;
     CARGO_BUILD_TARGET = target;
-    TARGET_CC = "${cc}/bin/cc";
+    TARGET_CC = "${cc}/bin/${cc.targetPrefix}cc";
     nativeBuildInputs = [cc];
   };
 
