@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  memcached:
+    image: memcached@sha256:706d1761d9646b9f827f049a71fdab99457f90b920c1cca9fc295821b6df1753
+    ports:
+      - "11211:11211"
+    restart: unless-stopped
