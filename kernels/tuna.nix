@@ -25,6 +25,7 @@
 in
   if systemConfig.eif_arch == "x86_64"
   then {
+    default = outputs.all;
     kernel = "${outputs.all}/${systemConfig.eif_arch}/bzImage";
     kernelConfig = "${outputs.all}/${systemConfig.eif_arch}/bzImage.config";
     init = "${outputs.all}/${systemConfig.eif_arch}/init";
@@ -32,6 +33,7 @@ in
   }
   else if systemConfig.eif_arch == "aarch64"
   then {
+    default = outputs.all;
     kernel = "${outputs.all}/${systemConfig.eif_arch}/Image";
     kernelConfig = "${outputs.all}/${systemConfig.eif_arch}/Image.config";
     init = "${outputs.all}/${systemConfig.eif_arch}/init";

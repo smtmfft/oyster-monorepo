@@ -2,7 +2,7 @@
 
 # Init server
 
-Initialization server that is used to feed in initialization parameters to the enclave, primarily the job id and the IP of the instance. Note that the init server is fully controlled by the operator and is not guaranteed to provide accurate data, the enclave needs to be designed accordingly. Meant to be used with [vet](https://github.com/marlinprotocol/vet), a curl-like utility that works over vsocks.
+Initialization server that is used to feed in initialization parameters to the enclave, primarily the job id and the IP of the instance. Note that the init server is fully controlled by the operator and is not guaranteed to provide accurate data, the enclave needs to be designed accordingly. Meant to be used with [vet](../vet), a curl-like utility that works over vsocks.
 
 ## Build
 
@@ -10,11 +10,22 @@ Initialization server that is used to feed in initialization parameters to the e
 cargo build --release
 ```
 
-## Prebuilt binaries
+### Reproducible builds
 
-amd64: http://public.artifacts.marlin.pro/projects/enclaves/oyster-init-server_v1.0.0_linux_amd64
+Reproducible builds can be done using Nix. The monorepo provides a Nix flake which includes this project and can be used to trigger builds:
 
-arm64: http://public.artifacts.marlin.pro/projects/enclaves/oyster-init-server_v1.0.0_linux_arm64
+```bash
+nix build -v .#<flavor>.initialization.init-server.<output>
+```
+
+Supported flavors:
+- `gnu`
+- `musl`
+
+Supported outputs:
+- `default`, same as `compressed`
+- `uncompressed`
+- `compressed`, using `upx`
 
 ## Usage
 
