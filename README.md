@@ -33,7 +33,7 @@ Each project is expected to be owned, managed and licensed individually. Here's 
 
 - MUST have a README.md with detailed instructions
   - MUST cover what the project is about
-  - MUST how to build and/or use it in the context of the monorepo
+  - MUST cover how to build and/or use it in the context of the monorepo
   - SHOULD cover how to build and/or use it as an independent component outside the monorepo
 - MUST have a LICENSE.txt file with an appropriate license
 - SHOULD have a Nix build file
