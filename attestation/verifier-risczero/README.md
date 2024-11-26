@@ -2,7 +2,7 @@
 
 # Attestation Verifier - RiscZero
 
-This repository implements a RiscZero based AWS Nitro Enclave attestation verifier.
+This project implements a RiscZero based AWS Nitro Enclave attestation verifier.
 
 While it produces zero false positives, it does not aim to produce zero false negatives, i.e. it could reject _theoretically_ valid attestations. Instead, it asserts specific attestation formats that are _actually_ used in order to optimize proving time. It also does not verify any extensions in the certificates as it was deemed unnecessary.
 
@@ -72,4 +72,4 @@ project_name
 
 ## License
 
-This repository is licensed under the GNU AGPLv3 or any later version. See [LICENSE.txt](./LICENSE.txt).
+This project is licensed under the GNU AGPLv3 or any later version. See [LICENSE.txt](./LICENSE.txt).
