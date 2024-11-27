@@ -62,3 +62,33 @@ Supported outputs (path only):
 - `kernelConfig`
 - `init`
 - `nsmKo`
+
+## Serverless
+
+The serverless kernel disables cgroups setup in the init binary so it can be done later during the boot process. It is used by the serverless executors.
+
+### Patches applied
+
+- [build.patch](./build.patch): allow cross platform builds using `--system`
+- [serverless.patch](./serverless.patch): disable cgroups setup in init
+
+### Reproducible builds
+
+Reproducible builds can be done using Nix. The monorepo provides a Nix flake which includes this project and can be used to trigger builds:
+
+```bash
+nix build -v .#<flavor>.kernels.serverless.<output>
+```
+
+Supported flavors:
+- `gnu`
+- `musl`
+
+Supported outputs (derivation):
+- `default`
+
+Supported outputs (path only):
+- `kernel`
+- `kernelConfig`
+- `init`
+- `nsmKo`
