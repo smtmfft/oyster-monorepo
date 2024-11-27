@@ -53,6 +53,9 @@
       kernels.tuna = import ./kernels/tuna.nix {
         inherit nixpkgs systemConfig;
       };
+      kernels.serverless = import ./kernels/serverless.nix {
+        inherit nixpkgs systemConfig;
+      };
       networking.raw-proxy = import ./networking/raw-proxy {
         inherit nixpkgs systemConfig fenix naersk;
       };
