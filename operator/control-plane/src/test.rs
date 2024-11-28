@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hasher};
 use std::str::FromStr;
 
 use alloy::hex::ToHexExt;
@@ -73,6 +74,22 @@ pub enum TestAwsOutcome {
     UpdateEnclaveImage(UpdateEnclaveImageOutcome),
 }
 
+pub fn compute_instance_id(counter: u64) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    hasher.write_u8(0);
+    hasher.write_u64(counter);
+
+    hasher.finish()
+}
+
+pub fn compute_instance_ip(counter: u64) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    hasher.write_u8(1);
+    hasher.write_u64(counter);
+
+    hasher.finish()
+}
+
 #[cfg(test)]
 #[derive(Clone, Debug)]
 pub struct InstanceMetadata {
@@ -82,17 +99,15 @@ pub struct InstanceMetadata {
 
 #[cfg(test)]
 impl InstanceMetadata {
-    pub async fn new(instance_id: Option<String>, ip_address: Option<String>) -> Self {
-        let instance_id = "i-".to_string() + &instance_id.unwrap_or(B128::random().encode_hex());
+    pub async fn new(counter: u64) -> Self {
+        let instance_id = compute_instance_id(counter).to_string();
+        let ip_address = compute_instance_ip(counter)
+            .to_le_bytes()
+            .iter()
+            .map(|x| x.to_string())
+            .reduce(|a, b| a + "." + &b)
+            .unwrap();
 
-        let ip_address = ip_address.unwrap_or(
-            B64::random()
-                .as_slice()
-                .iter()
-                .map(|x| x.to_string())
-                .reduce(|a, b| a + "." + &b)
-                .unwrap(),
-        );
         Self {
             instance_id,
             ip_address,
@@ -107,6 +122,8 @@ pub struct TestAws {
 
     // HashMap format - (Job, InstanceMetadata)
     pub instances: HashMap<String, InstanceMetadata>,
+
+    counter: u64,
 }
 
 #[cfg(test)]
@@ -140,7 +157,9 @@ impl InfraProvider for TestAws {
             return Ok(x.1.instance_id.clone());
         }
 
-        let instance_metadata: InstanceMetadata = InstanceMetadata::new(None, None).await;
+        let instance_metadata: InstanceMetadata = InstanceMetadata::new(self.counter).await;
+        self.counter += 1;
+
         self.instances
             .insert(job.id.clone(), instance_metadata.clone());
 
