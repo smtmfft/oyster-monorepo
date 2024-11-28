@@ -34,7 +34,6 @@ pub struct JobId {
 pub trait InfraProvider {
     fn spin_up(
         &mut self,
-        eif_url: &str,
         job: &JobId,
         instance_type: &str,
         family: &str,
@@ -100,7 +99,6 @@ where
 {
     async fn spin_up(
         &mut self,
-        eif_url: &str,
         job: &JobId,
         instance_type: &str,
         family: &str,
@@ -111,7 +109,6 @@ where
     ) -> Result<String> {
         (**self)
             .spin_up(
-                eif_url,
                 job,
                 instance_type,
                 family,
@@ -733,7 +730,6 @@ impl<'a> JobState<'a> {
             info!("Launching new instance");
             let res = infra_provider
                 .spin_up(
-                    self.eif_url.as_str(),
                     &self.job_id,
                     self.instance_type.as_str(),
                     self.family.as_str(),
