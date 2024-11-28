@@ -1366,8 +1366,9 @@ fn now_timestamp() -> Duration {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+    use std::time::UNIX_EPOCH;
 
-    use alloy::hex::ToHexExt;
+    use alloy::hex::{FromHex, ToHexExt};
     use alloy::primitives::{Bytes, B256, U256};
     use alloy::rpc::types::eth::Log;
     use alloy::sol_types::SolValue;
@@ -1376,6 +1377,61 @@ mod tests {
 
     use crate::market;
     use crate::test::{self, Action, TestAws, TestAwsOutcome};
+
+    struct JobManagerParams {
+        job_id: market::JobId,
+        allowed_regions: Vec<String>,
+        address_whitelist: Vec<String>,
+        address_blacklist: Vec<String>,
+    }
+
+    struct TestResults {
+        res: i8,
+        outcomes: Vec<TestAwsOutcome>,
+    }
+
+    async fn run_test(
+        start_time: Instant,
+        logs: Vec<(u64, Action, Bytes)>,
+        job_manager_params: JobManagerParams,
+        test_results: TestResults,
+    ) {
+        let _ = market::START.set(start_time);
+
+        let job_num = B256::from_hex(&job_manager_params.job_id.id).unwrap();
+        let job_logs: Vec<(u64, Log)> = logs
+            .into_iter()
+            .map(|x| (x.0, test::get_log(x.1, Bytes::from(x.2), job_num)))
+            .collect();
+
+        // pending stream appended so job stream never ends
+        let job_stream = std::pin::pin!(tokio_stream::iter(job_logs.into_iter())
+            .then(|(moment, log)| async move {
+                let delay = start_time + Duration::from_secs(moment) - Instant::now();
+                sleep(delay).await;
+                log
+            })
+            .chain(tokio_stream::pending()));
+
+        let mut aws: TestAws = Default::default();
+        let res = market::job_manager_once(
+            job_stream,
+            &mut aws,
+            job_manager_params.job_id,
+            &job_manager_params.allowed_regions,
+            300,
+            &test::get_rates(),
+            &test::get_gb_rates(),
+            &job_manager_params.address_whitelist,
+            &job_manager_params.address_blacklist,
+        )
+        .await;
+
+        assert!(aws.instances.is_empty());
+
+        assert_eq!(res, test_results.res);
+        assert_eq!(aws.outcomes, test_results.outcomes);
+    }
 
     #[tokio::test(start_paused = true)]
     async fn test_instance_launch_after_delay_on_spin_up() {
