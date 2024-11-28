@@ -74,20 +74,28 @@ pub enum TestAwsOutcome {
     UpdateEnclaveImage(UpdateEnclaveImageOutcome),
 }
 
-pub fn compute_instance_id(counter: u64) -> u64 {
+pub fn compute_instance_id(counter: u64) -> String {
     let mut hasher = DefaultHasher::new();
     hasher.write_u8(0);
     hasher.write_u64(counter);
 
-    hasher.finish()
+    let hash = hasher.finish();
+
+    format!("{:x}", hash)
 }
 
-pub fn compute_instance_ip(counter: u64) -> u64 {
+pub fn compute_instance_ip(counter: u64) -> String {
     let mut hasher = DefaultHasher::new();
     hasher.write_u8(1);
     hasher.write_u64(counter);
 
-    hasher.finish()
+    let hash = hasher.finish();
+
+    hash.to_le_bytes()
+        .iter()
+        .map(|x| x.to_string())
+        .reduce(|a, b| a + "." + &b)
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -100,13 +108,8 @@ pub struct InstanceMetadata {
 #[cfg(test)]
 impl InstanceMetadata {
     pub async fn new(counter: u64) -> Self {
-        let instance_id = compute_instance_id(counter).to_string();
-        let ip_address = compute_instance_ip(counter)
-            .to_le_bytes()
-            .iter()
-            .map(|x| x.to_string())
-            .reduce(|a, b| a + "." + &b)
-            .unwrap();
+        let instance_id = compute_instance_id(counter);
+        let ip_address = compute_instance_ip(counter);
 
         Self {
             instance_id,
