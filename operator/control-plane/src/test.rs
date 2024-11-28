@@ -56,6 +56,7 @@ pub struct RunEnclaveOutcome {
 #[cfg(test)]
 #[derive(Clone, Debug)]
 pub struct UpdateEnclaveImageOutcome {
+    pub time: Instant,
     pub instance_id: String,
     pub region: String,
     pub eif_url: String,
@@ -238,6 +239,7 @@ impl InfraProvider for TestAws {
     ) -> Result<()> {
         self.outcomes.push(TestAwsOutcome::UpdateEnclaveImage(
             UpdateEnclaveImageOutcome {
+                time: Instant::now(),
                 instance_id: instance_id.to_owned(),
                 region: region.to_owned(),
                 eif_url: eif_url.to_owned(),
