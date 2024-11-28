@@ -14,7 +14,7 @@ use tokio_stream::StreamExt;
 use crate::market::{GBRateCard, InfraProvider, JobId, LogsProvider, RateCard, RegionalRates};
 
 #[cfg(test)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SpinUpOutcome {
     pub time: Instant,
     pub job: String,
@@ -30,7 +30,7 @@ pub struct SpinUpOutcome {
 }
 
 #[cfg(test)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SpinDownOutcome {
     pub time: Instant,
     pub job: String,
@@ -39,7 +39,7 @@ pub struct SpinDownOutcome {
 }
 
 #[cfg(test)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct RunEnclaveOutcome {
     pub time: Instant,
     pub job: String,
@@ -54,7 +54,7 @@ pub struct RunEnclaveOutcome {
 }
 
 #[cfg(test)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UpdateEnclaveImageOutcome {
     pub time: Instant,
     pub instance_id: String,
@@ -65,7 +65,7 @@ pub struct UpdateEnclaveImageOutcome {
 }
 
 #[cfg(test)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TestAwsOutcome {
     SpinUp(SpinUpOutcome),
     SpinDown(SpinDownOutcome),
