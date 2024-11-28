@@ -56,10 +56,21 @@ pub struct RunEnclaveOutcome {
 
 #[cfg(test)]
 #[derive(Clone, Debug)]
+pub struct UpdateEnclaveImageOutcome {
+    pub instance_id: String,
+    pub region: String,
+    pub eif_url: String,
+    pub req_mem: i64,
+    pub req_vcpu: i32,
+}
+
+#[cfg(test)]
+#[derive(Clone, Debug)]
 pub enum TestAwsOutcome {
     SpinUp(SpinUpOutcome),
     SpinDown(SpinDownOutcome),
     RunEnclave(RunEnclaveOutcome),
+    UpdateEnclaveImage(UpdateEnclaveImageOutcome),
 }
 
 #[cfg(test)]
@@ -229,51 +240,15 @@ impl InfraProvider for TestAws {
         req_vcpu: i32,
         req_mem: i64,
     ) -> Result<()> {
-        let job_id = self.instances.iter().find_map(|(key, val)| {
-            if val.instance_id == instance_id {
-                Some(key)
-            } else {
-                None
-            }
-        });
-        if job_id.is_none() {
-            return Err(anyhow!(
-                "Instance not found for instance_id - {instance_id}"
-            ));
-        }
-        let job_id = job_id.unwrap();
-
-        let spin_up_outcome_index =
-            self.outcomes
-                .iter()
-                .enumerate()
-                .find_map(|(i, outcome)| match outcome {
-                    TestAwsOutcome::SpinUp(spin_up) if spin_up.job == instance_id => Some(i),
-                    _ => None,
-                });
-
-        if spin_up_outcome_index.is_none() {
-            return Err(anyhow!("Spin up outcome not found for job - {}", job_id));
-        }
-
-        let spin_up_outcome_index = spin_up_outcome_index.unwrap();
-
-        if let TestAwsOutcome::SpinUp(spin_up_outcome) = &mut self.outcomes[spin_up_outcome_index] {
-            if spin_up_outcome.region != region
-                || spin_up_outcome.req_vcpu != req_vcpu
-                || spin_up_outcome.req_mem != req_mem
-            {
-                return Err(anyhow!("Can only change EIF URL"));
-            }
-
-            if spin_up_outcome.eif_url == eif_url {
-                return Err(anyhow!("Must input a different EIF URL"));
-            }
-
-            eif_url.clone_into(&mut spin_up_outcome.eif_url);
-        } else {
-            panic!("Spin up outcome not found at proper index for the job.")
-        }
+        self.outcomes.push(TestAwsOutcome::UpdateEnclaveImage(
+            UpdateEnclaveImageOutcome {
+                instance_id: instance_id.to_owned(),
+                region: region.to_owned(),
+                eif_url: eif_url.to_owned(),
+                req_mem,
+                req_vcpu,
+            },
+        ));
 
         Ok(())
     }
