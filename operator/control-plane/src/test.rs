@@ -24,7 +24,6 @@ pub struct SpinUpOutcome {
     pub req_mem: i64,
     pub req_vcpu: i32,
     pub bandwidth: u64,
-    pub eif_url: String,
     pub contract_address: String,
     pub chain_id: String,
     pub instance_id: String,
@@ -113,7 +112,6 @@ pub struct TestAws {
 impl InfraProvider for TestAws {
     async fn spin_up(
         &mut self,
-        eif_url: &str,
         job: &JobId,
         instance_type: &str,
         family: &str,
@@ -133,7 +131,6 @@ impl InfraProvider for TestAws {
                 req_mem,
                 req_vcpu,
                 bandwidth,
-                eif_url: eif_url.to_owned(),
                 contract_address: job.contract.clone(),
                 chain_id: job.chain.clone(),
                 instance_id: x.1.instance_id.clone(),
@@ -155,7 +152,6 @@ impl InfraProvider for TestAws {
             req_mem,
             req_vcpu,
             bandwidth,
-            eif_url: eif_url.to_owned(),
             contract_address: job.contract.clone(),
             chain_id: job.chain.clone(),
             instance_id: instance_metadata.instance_id.clone(),
