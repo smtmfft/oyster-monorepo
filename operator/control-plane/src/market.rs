@@ -1405,6 +1405,18 @@ mod tests {
     use crate::market;
     use crate::test::{self, compute_instance_id, Action, TestAws, TestAwsOutcome};
 
+    use super::SystemContext;
+
+    struct TestSystemContext {
+        start: Instant,
+    }
+
+    impl SystemContext for TestSystemContext {
+        fn now_timestamp(&self) -> Duration {
+            Instant::now() - self.start
+        }
+    }
+
     struct JobManagerParams {
         job_id: market::JobId,
         allowed_regions: Vec<String>,
