@@ -19,13 +19,13 @@ use tracing::{error, info, info_span, Instrument};
 
 // Trait to encapsulate behaviour that should be simulated in tests
 trait SystemContext {
-    fn now_timestamp() -> Duration;
+    fn now_timestamp(&self) -> Duration;
 }
 
 struct RealSystemContext {}
 
 impl SystemContext for RealSystemContext {
-    fn now_timestamp() -> Duration {
+    fn now_timestamp(&self) -> Duration {
         use std::time::SystemTime;
         SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
