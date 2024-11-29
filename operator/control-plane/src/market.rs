@@ -524,6 +524,9 @@ fn whitelist_blacklist_check(
 }
 
 struct JobState<'a> {
+    // NOTE: not sure if dyn is a good idea, revisit later
+    context: &'a (dyn SystemContext + Send + Sync),
+
     job_id: JobId,
     launch_delay: u64,
     allowed_regions: &'a [String],
@@ -554,15 +557,21 @@ struct JobState<'a> {
 }
 
 impl<'a> JobState<'a> {
-    fn new(job_id: JobId, launch_delay: u64, allowed_regions: &[String]) -> JobState {
+    fn new(
+        context: &'a (dyn SystemContext + Send + Sync),
+        job_id: JobId,
+        launch_delay: u64,
+        allowed_regions: &'a [String],
+    ) -> JobState<'a> {
         // solvency metrics
         // default of 60s
         JobState {
+            context,
             job_id,
             launch_delay,
             allowed_regions,
             balance: U256::from(360),
-            last_settled: now_timestamp(),
+            last_settled: context.now_timestamp(),
             rate: U256::from(1),
             original_rate: U256::from(1),
             instance_id: String::new(),
@@ -584,7 +593,7 @@ impl<'a> JobState<'a> {
     }
 
     fn insolvency_duration(&self) -> Duration {
-        let now_ts = now_timestamp();
+        let now_ts = self.context.now_timestamp();
 
         if self.rate == U256::ZERO {
             Duration::from_secs(0)
