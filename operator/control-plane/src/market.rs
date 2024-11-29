@@ -15,7 +15,12 @@ use tokio::time::{Duration, Instant};
 use tokio_stream::StreamExt;
 use tracing::{error, info, info_span, Instrument};
 
-// IMPORTANT: do not import SystemTime, use the now_timestamp helper
+// IMPORTANT: do not import SystemTime, use a SystemContext
+
+// Trait to encapsulate behaviour that should be simulated in tests
+trait SystemContext {
+    fn now_timestamp() -> Duration;
+}
 
 // Basic architecture:
 // One future listening to new jobs
