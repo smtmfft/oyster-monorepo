@@ -22,6 +22,17 @@ trait SystemContext {
     fn now_timestamp() -> Duration;
 }
 
+struct RealSystemContext {}
+
+impl SystemContext for RealSystemContext {
+    fn now_timestamp() -> Duration {
+        use std::time::SystemTime;
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+    }
+}
+
 // Basic architecture:
 // One future listening to new jobs
 // Each job has its own future managing its lifetime
