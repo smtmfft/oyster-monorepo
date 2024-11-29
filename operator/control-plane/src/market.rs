@@ -2285,8 +2285,6 @@ mod tests {
     // Tests for whitelist blacklist checks
     #[tokio::test]
     async fn test_whitelist_blacklist_check_no_list() {
-        let _ = market::START.set(Instant::now());
-
         let log = test::get_log(Action::Open,
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,market::now_timestamp().as_secs()).abi_encode_sequence()),
             B256::ZERO);
@@ -2302,8 +2300,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_whitelist_blacklist_check_whitelisted() {
-        let _ = market::START.set(Instant::now());
-
         let log = test::get_log(Action::Open,
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,market::now_timestamp().as_secs()).abi_encode_sequence()),
             B256::ZERO);
@@ -2322,8 +2318,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_whitelist_blacklist_check_not_whitelisted() {
-        let _ = market::START.set(Instant::now());
-
         let log = test::get_log(Action::Open,
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,market::now_timestamp().as_secs()).abi_encode_sequence()),
             B256::ZERO);
@@ -2342,8 +2336,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_whitelist_blacklist_check_blacklisted() {
-        let _ = market::START.set(Instant::now());
-
         let log = test::get_log(Action::Open,
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,market::now_timestamp().as_secs()).abi_encode_sequence()),
             B256::ZERO);
@@ -2362,8 +2354,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_whitelist_blacklist_check_not_blacklisted() {
-        let _ = market::START.set(Instant::now());
-
         let log = test::get_log(Action::Open,
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,market::now_timestamp().as_secs()).abi_encode_sequence()),
             B256::ZERO);
@@ -2382,8 +2372,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_whitelist_blacklist_check_neither() {
-        let _ = market::START.set(Instant::now());
-
         let log = test::get_log(Action::Open,
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,market::now_timestamp().as_secs()).abi_encode_sequence()),
             B256::ZERO);
@@ -2405,8 +2393,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_whitelist_blacklist_check_both() {
-        let _ = market::START.set(Instant::now());
-
         let log = test::get_log(Action::Open,
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,market::now_timestamp().as_secs()).abi_encode_sequence()),
             B256::ZERO);
