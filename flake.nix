@@ -91,7 +91,7 @@
         vet = initialization.vet.compressed;
         kernels = kernels.tuna;
       };
-      sdks.docker-enclave = import ./sdks/docker-enclave {
+      sdks.docker-enclave = nixpkgs.legacyPackages.${systemConfig.system}.callPackage ./sdks/docker-enclave {
         inherit nixpkgs systemConfig nitro-util;
         supervisord = external.supervisord.compressed;
         dnsproxy = external.dnsproxy.compressed;
