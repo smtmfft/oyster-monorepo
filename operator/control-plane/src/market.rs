@@ -1435,7 +1435,7 @@ mod tests {
         job_manager_params: JobManagerParams,
         test_results: TestResults,
     ) {
-        let _ = market::START.set(start_time);
+        let context = TestSystemContext { start: start_time };
 
         let job_num = B256::from_hex(&job_manager_params.job_id.id).unwrap();
         let job_logs: Vec<(u64, Log)> = logs
@@ -1454,6 +1454,7 @@ mod tests {
 
         let mut aws: TestAws = Default::default();
         let res = market::job_manager_once(
+            context,
             job_stream,
             &mut aws,
             job_manager_params.job_id,
