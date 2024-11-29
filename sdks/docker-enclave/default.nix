@@ -9,6 +9,7 @@
   attestation-server,
   vet,
   kernels,
+  compose ? ./. + "/docker-compose.yml",
 }: let
   system = systemConfig.system;
   nitro = nitro-util.lib.${system};
@@ -28,7 +29,6 @@
   init = kernels.init;
   setup = ./. + "/setup.sh";
   supervisorConf = ./. + "/supervisord.conf";
-  compose = ./. + "/docker-compose.yml";
   app = pkgs.runCommand "app" {} ''
 		echo Preparing the app folder
 		pwd
