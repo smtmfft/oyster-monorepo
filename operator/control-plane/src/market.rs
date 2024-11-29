@@ -468,6 +468,7 @@ async fn job_manager(
 
         let job_stream = std::pin::pin!(res.unwrap());
         let res = job_manager_once(
+            RealSystemContext {},
             job_stream,
             infra_provider.clone(),
             job_id.clone(),
@@ -1239,6 +1240,7 @@ impl<'a> JobState<'a> {
 // manage the complete lifecycle of a job
 // returns true if "done"
 async fn job_manager_once(
+    context: impl SystemContext + Send + Sync,
     mut job_stream: impl StreamExt<Item = Log> + Unpin,
     mut infra_provider: impl InfraProvider + Send + Sync,
     job_id: JobId,
@@ -1249,7 +1251,7 @@ async fn job_manager_once(
     address_whitelist: &[String],
     address_blacklist: &[String],
 ) -> i8 {
-    let mut state = JobState::new(job_id, aws_delay_duration, allowed_regions);
+    let mut state = JobState::new(&context, job_id, aws_delay_duration, allowed_regions);
 
     let res = 'event: loop {
         // compute time to insolvency
