@@ -1377,10 +1377,7 @@ async fn job_logs(
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-    use std::time::UNIX_EPOCH;
-
-    use alloy::hex::{FromHex, ToHexExt};
+    use alloy::hex::FromHex;
     use alloy::primitives::{Bytes, B256, U256};
     use alloy::rpc::types::eth::Log;
     use alloy::sol_types::SolValue;

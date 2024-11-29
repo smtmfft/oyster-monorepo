@@ -2,9 +2,7 @@ use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hasher};
 use std::str::FromStr;
 
-use alloy::hex::ToHexExt;
-use alloy::primitives::B128;
-use alloy::primitives::{keccak256, Address, Bytes, LogData, B256, B64, U256};
+use alloy::primitives::{keccak256, Address, Bytes, LogData, B256, U256};
 use alloy::providers::Provider;
 use alloy::pubsub::PubSubFrontend;
 use alloy::rpc::types::eth::Log;
