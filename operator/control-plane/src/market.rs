@@ -2027,88 +2027,67 @@ mod tests {
 
     #[tokio::test(start_paused = true)]
     async fn test_revise_rate_lower_higher() {
-        let _ = market::START.set(Instant::now());
+        let start_time = Instant::now();
+        let job_id = format!("{:064x}", 1);
 
-        let job_num = U256::from(1).into();
-        let job_logs: Vec<(u64, Log)> = vec![
+        let logs = vec![
             (0, Action::Open, ("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,market::now_timestamp().as_secs()).abi_encode_sequence()),
             (350, Action::ReviseRateInitiated, 29000000000000u64.abi_encode()),
             (400, Action::ReviseRateFinalized, 29000000000000u64.abi_encode()),
             (450, Action::ReviseRateInitiated, 31000000000000u64.abi_encode()),
             (500, Action::ReviseRateFinalized, 31000000000000u64.abi_encode()),
-        ].into_iter().map(|x| (x.0, test::get_log(x.1, Bytes::from(x.2), job_num))).collect();
+        ];
 
-        let start_time = Instant::now();
-        // pending stream appended so job stream never ends
-        let job_stream = std::pin::pin!(tokio_stream::iter(job_logs.into_iter())
-            .then(|(moment, log)| async move {
-                let delay = start_time + Duration::from_secs(moment) - Instant::now();
-                sleep(delay).await;
-                log
-            })
-            .chain(tokio_stream::pending()));
-        let mut aws: TestAws = Default::default();
-        let res = market::job_manager_once(
-            job_stream,
-            &mut aws,
-            market::JobId {
-                id: job_num.encode_hex_with_prefix(),
+        let job_manager_params = JobManagerParams {
+            job_id: market::JobId {
+                id: job_id.clone(),
                 operator: "abc".into(),
                 contract: "xyz".into(),
                 chain: "123".into(),
             },
-            &["ap-south-1".into()],
-            300,
-            &test::get_rates(),
-            &test::get_gb_rates(),
-            &Vec::new(),
-            &Vec::new(),
-        )
-        .await;
-
-        // job manager should have finished successfully
-        assert_eq!(res, 0);
-        let spin_up_tv_sec: Instant;
-        let instance_id: String;
-        if let TestAwsOutcome::SpinUp(out) = &aws.outcomes[0] {
-            spin_up_tv_sec = out.time;
-            instance_id = out.instance_id.clone();
-            assert!(B256::from_str(&out.job).unwrap() == job_num);
-            assert!(out.instance_type == "c6a.xlarge");
-            assert!(out.family == "salmon");
-            assert!(out.region == "ap-south-1");
-            assert!(out.req_mem == 4096);
-            assert!(out.req_vcpu == 2);
-            assert!(out.bandwidth == 76);
-            assert!(out.contract_address == "xyz");
-            assert!(out.chain_id == "123");
-        } else {
-            panic!();
+            allowed_regions: vec!["ap-south-1".to_owned()],
+            address_whitelist: vec![],
+            address_blacklist: vec![],
         };
 
-        if let TestAwsOutcome::RunEnclave(out) = &aws.outcomes[1] {
-            assert!(B256::from_str(&out.job).unwrap() == job_num);
-            assert!(out.instance_id == instance_id);
-            assert!(out.family == "salmon");
-            assert!(out.region == "ap-south-1");
-            assert!(out.req_mem == 4096);
-            assert!(out.req_vcpu == 2);
-            assert!(out.bandwidth == 76);
-            assert!(out.eif_url == "https://example.com/enclave.eif");
-            assert!(out.debug == false);
-        } else {
-            panic!();
+        let test_results = TestResults {
+            res: 0,
+            outcomes: vec![
+                TestAwsOutcome::SpinUp(test::SpinUpOutcome {
+                    time: start_time + Duration::from_secs(300),
+                    job: job_id.clone(),
+                    instance_type: "c6a.xlarge".into(),
+                    family: "salmon".into(),
+                    region: "ap-south-1".into(),
+                    req_mem: 4096,
+                    req_vcpu: 2,
+                    bandwidth: 76,
+                    contract_address: "xyz".into(),
+                    chain_id: "123".into(),
+                    instance_id: compute_instance_id(0),
+                }),
+                TestAwsOutcome::RunEnclave(test::RunEnclaveOutcome {
+                    time: start_time + Duration::from_secs(300),
+                    job: job_id.clone(),
+                    family: "salmon".into(),
+                    region: "ap-south-1".into(),
+                    req_mem: 4096,
+                    req_vcpu: 2,
+                    bandwidth: 76,
+                    instance_id: compute_instance_id(0),
+                    eif_url: "https://example.com/enclave.eif".into(),
+                    debug: false,
+                }),
+                TestAwsOutcome::SpinDown(test::SpinDownOutcome {
+                    time: start_time + Duration::from_secs(350),
+                    job: job_id,
+                    instance_id: compute_instance_id(0),
+                    region: "ap-south-1".into(),
+                }),
+            ],
         };
 
-        if let TestAwsOutcome::SpinDown(out) = &aws.outcomes[2] {
-            assert_eq!((out.time - spin_up_tv_sec).as_secs(), 50);
-            assert!(B256::from_str(&out.job).unwrap() == job_num);
-            assert!(out.region == *"ap-south-1");
-        } else {
-            panic!();
-        };
-
-        assert!(!aws.instances.contains_key(&job_num.to_string()))
+        run_test(start_time, logs, job_manager_params, test_results).await;
     }
 
     #[tokio::test(start_paused = true)]
