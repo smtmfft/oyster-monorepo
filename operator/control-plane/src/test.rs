@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hasher};
 use std::str::FromStr;
 
-use alloy::primitives::{keccak256, Address, Bytes, LogData, B256, U256};
+use alloy::primitives::{keccak256, Address, Bytes, FixedBytes, LogData, B256, U256};
 use alloy::providers::Provider;
 use alloy::pubsub::PubSubFrontend;
 use alloy::rpc::types::eth::Log;
@@ -94,6 +94,16 @@ pub fn compute_instance_ip(counter: u64) -> String {
         .map(|x| x.to_string())
         .reduce(|a, b| a + "." + &b)
         .unwrap()
+}
+
+pub fn compute_address(salt: &str) -> FixedBytes<32> {
+    let mut hasher = DefaultHasher::new();
+    hasher.write_u8(2);
+    hasher.write(salt.as_bytes());
+
+    let hash = hasher.finish();
+
+    FixedBytes::<32>::from_slice(hash.to_le_bytes().repeat(4).as_slice())
 }
 
 #[cfg(test)]
