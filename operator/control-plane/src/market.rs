@@ -2603,6 +2603,7 @@ mod tests {
         run_test(start_time, logs, job_manager_params, test_results).await;
     }
 
+    // TODO: Should this work like this?
     #[tokio::test(start_paused = true)]
     async fn test_metadata_update_event_with_no_updates_after_spin_up() {
         let start_time = Instant::now();
