@@ -96,7 +96,7 @@ pub fn compute_instance_ip(counter: u64) -> String {
         .unwrap()
 }
 
-pub fn compute_address(salt: &str) -> FixedBytes<32> {
+pub fn compute_address_word(salt: &str) -> FixedBytes<32> {
     let mut hasher = DefaultHasher::new();
     hasher.write_u8(2);
     hasher.write(salt.as_bytes());
@@ -368,8 +368,8 @@ pub fn get_log(topic: Action, data: Bytes, idx: B256) -> Log {
                 vec![
                     keccak256("JobOpened(bytes32,string,address,address,uint256,uint256,uint256)"),
                     idx,
-                    compute_address("owner"),
-                    compute_address("provider"),
+                    compute_address_word("owner"),
+                    compute_address_word("provider"),
                 ],
                 data,
             );
@@ -389,7 +389,7 @@ pub fn get_log(topic: Action, data: Bytes, idx: B256) -> Log {
                 vec![
                     keccak256("JobDeposited(bytes32,address,uint256)"),
                     idx,
-                    compute_address("depositor"),
+                    compute_address_word("depositor"),
                 ],
                 data,
             );
@@ -399,7 +399,7 @@ pub fn get_log(topic: Action, data: Bytes, idx: B256) -> Log {
                 vec![
                     keccak256("JobWithdrew(bytes32,address,uint256)"),
                     idx,
-                    compute_address("withdrawer"),
+                    compute_address_word("withdrawer"),
                 ],
                 data,
             );
