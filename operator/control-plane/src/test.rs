@@ -357,7 +357,7 @@ pub fn get_gb_rates() -> Vec<GBRateCard> {
 pub fn get_log(topic: Action, data: Bytes, idx: B256) -> Log {
     let mut log = Log {
         inner: alloy::primitives::Log {
-            address: Address::from_str("0x0F5F91BA30a00bD43Bd19466f020B3E5fc7a49ec").unwrap(),
+            address: Address::from_str("0x000000000000000000000000000000000000dead").unwrap(),
             data: LogData::new_unchecked(vec![], Bytes::new()),
         },
         ..Default::default()
@@ -368,8 +368,8 @@ pub fn get_log(topic: Action, data: Bytes, idx: B256) -> Log {
                 vec![
                     keccak256("JobOpened(bytes32,string,address,address,uint256,uint256,uint256)"),
                     idx,
-                    log.address().into_word(),
-                    log.address().into_word(),
+                    compute_address("owner"),
+                    compute_address("provider"),
                 ],
                 data,
             );
@@ -389,7 +389,7 @@ pub fn get_log(topic: Action, data: Bytes, idx: B256) -> Log {
                 vec![
                     keccak256("JobDeposited(bytes32,address,uint256)"),
                     idx,
-                    log.address().into_word(),
+                    compute_address("depositor"),
                 ],
                 data,
             );
@@ -399,7 +399,7 @@ pub fn get_log(topic: Action, data: Bytes, idx: B256) -> Log {
                 vec![
                     keccak256("JobWithdrew(bytes32,address,uint256)"),
                     idx,
-                    log.address().into_word(),
+                    compute_address("withdrawer"),
                 ],
                 data,
             );
