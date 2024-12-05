@@ -1377,7 +1377,7 @@ async fn job_logs(
 
 #[cfg(test)]
 mod tests {
-    use alloy::hex::FromHex;
+    use alloy::hex::{FromHex, ToHexExt};
     use alloy::primitives::{Bytes, B256, U256};
     use alloy::rpc::types::eth::Log;
     use alloy::sol_types::SolValue;
@@ -1385,7 +1385,9 @@ mod tests {
     use tokio_stream::StreamExt;
 
     use crate::market;
-    use crate::test::{self, compute_instance_id, Action, TestAws, TestAwsOutcome};
+    use crate::test::{
+        self, compute_address, compute_instance_id, Action, TestAws, TestAwsOutcome,
+    };
 
     use super::SystemContext;
 
@@ -2130,11 +2132,12 @@ mod tests {
                 chain: "123".into(),
             },
             allowed_regions: vec!["ap-south-1".to_owned()],
-            address_whitelist: vec![
-                "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ec".to_string(),
-            ],
+            address_whitelist: vec![compute_address("owner").encode_hex_with_prefix()],
             address_blacklist: vec![],
         };
+
+        // real owner of the job is compute_address("owner")
+        // expected to deploy
 
         let test_results = TestResults {
             res: 0,
@@ -2194,11 +2197,12 @@ mod tests {
                 chain: "123".into(),
             },
             allowed_regions: vec!["ap-south-1".to_owned()],
-            address_whitelist: vec![
-                "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ed".to_string(),
-            ],
+            address_whitelist: vec![compute_address("notowner").encode_hex_with_prefix()],
             address_blacklist: vec![],
         };
+
+        // real owner of the job is compute_address("owner")
+        // expected to not deploy
 
         let test_results = TestResults {
             res: 0,
@@ -2227,10 +2231,11 @@ mod tests {
             },
             allowed_regions: vec!["ap-south-1".to_owned()],
             address_whitelist: vec![],
-            address_blacklist: vec![
-                "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ec".to_string(),
-            ],
+            address_blacklist: vec![compute_address("owner").encode_hex_with_prefix()],
         };
+
+        // real owner of the job is compute_address("owner")
+        // expected to not deploy
 
         let test_results = TestResults {
             res: 0,
@@ -2259,10 +2264,11 @@ mod tests {
             },
             allowed_regions: vec!["ap-south-1".to_owned()],
             address_whitelist: vec![],
-            address_blacklist: vec![
-                "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ed".to_string(),
-            ],
+            address_blacklist: vec![compute_address("notowner").encode_hex_with_prefix()],
         };
+
+        // real owner of the job is compute_address("owner")
+        // expected to deploy
 
         let test_results = TestResults {
             res: 0,
@@ -2313,6 +2319,8 @@ mod tests {
         let address_whitelist = vec![];
         let address_blacklist = vec![];
 
+        // real owner of the job is compute_address("owner")
+
         assert!(market::whitelist_blacklist_check(
             log.clone(),
             &address_whitelist,
@@ -2326,10 +2334,12 @@ mod tests {
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,0).abi_encode_sequence()),
             B256::ZERO);
         let address_whitelist = vec![
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ec".to_string(),
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ed".to_string(),
+            compute_address("owner").encode_hex_with_prefix(),
+            compute_address("notowner").encode_hex_with_prefix(),
         ];
         let address_blacklist = vec![];
+
+        // real owner of the job is compute_address("owner")
 
         assert!(market::whitelist_blacklist_check(
             log.clone(),
@@ -2344,10 +2354,12 @@ mod tests {
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,0).abi_encode_sequence()),
             B256::ZERO);
         let address_whitelist = vec![
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49eb".to_string(),
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ed".to_string(),
+            compute_address("notownereither").encode_hex_with_prefix(),
+            compute_address("notowner").encode_hex_with_prefix(),
         ];
         let address_blacklist = vec![];
+
+        // real owner of the job is compute_address("owner")
 
         assert!(!market::whitelist_blacklist_check(
             log.clone(),
@@ -2363,9 +2375,11 @@ mod tests {
             B256::ZERO);
         let address_whitelist = vec![];
         let address_blacklist = vec![
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ec".to_string(),
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ed".to_string(),
+            compute_address("owner").encode_hex_with_prefix(),
+            compute_address("notowner").encode_hex_with_prefix(),
         ];
+
+        // real owner of the job is compute_address("owner")
 
         assert!(!market::whitelist_blacklist_check(
             log.clone(),
@@ -2381,9 +2395,11 @@ mod tests {
             B256::ZERO);
         let address_whitelist = vec![];
         let address_blacklist = vec![
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49eb".to_string(),
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ed".to_string(),
+            compute_address("notownereither").encode_hex_with_prefix(),
+            compute_address("notowner").encode_hex_with_prefix(),
         ];
+
+        // real owner of the job is compute_address("owner")
 
         assert!(market::whitelist_blacklist_check(
             log.clone(),
@@ -2398,13 +2414,15 @@ mod tests {
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,0).abi_encode_sequence()),
             B256::ZERO);
         let address_whitelist = vec![
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49eb".to_string(),
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ed".to_string(),
+            compute_address("notownereither").encode_hex_with_prefix(),
+            compute_address("notowner").encode_hex_with_prefix(),
         ];
         let address_blacklist = vec![
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ea".to_string(),
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ee".to_string(),
+            compute_address("definitelynotownereither").encode_hex_with_prefix(),
+            compute_address("definitelynotowner").encode_hex_with_prefix(),
         ];
+
+        // real owner of the job is compute_address("owner")
 
         assert!(!market::whitelist_blacklist_check(
             log.clone(),
@@ -2419,13 +2437,15 @@ mod tests {
             Bytes::from(("{\"region\":\"ap-south-1\",\"url\":\"https://example.com/enclave.eif\",\"instance\":\"c6a.xlarge\",\"memory\":4096,\"vcpu\":2}".to_string(),31000000000000u64,31000u64,0).abi_encode_sequence()),
             B256::ZERO);
         let address_whitelist = vec![
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ec".to_string(),
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ed".to_string(),
+            compute_address("owner").encode_hex_with_prefix(),
+            compute_address("notowner").encode_hex_with_prefix(),
         ];
         let address_blacklist = vec![
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49ec".to_string(),
-            "0x0000000000000000000000000f5f91ba30a00bd43bd19466f020b3e5fc7a49eb".to_string(),
+            compute_address("owner").encode_hex_with_prefix(),
+            compute_address("definitelynotowner").encode_hex_with_prefix(),
         ];
+
+        // real owner of the job is compute_address("owner")
 
         assert!(!market::whitelist_blacklist_check(
             log.clone(),
