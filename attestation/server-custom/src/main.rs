@@ -1,7 +1,94 @@
 use std::error::Error;
 
-use axum::{routing::get, Router};
+use axum::{extract::Query, http::StatusCode, routing::get, Router};
 use clap::Parser;
+use oyster_attestation_server_custom::{get_attestation_doc, get_hex_attestation_doc};
+
+async fn handle_raw(
+    public_key: Query<Option<String>>,
+    user_data: Query<Option<String>>,
+    nonce: Query<Option<String>>,
+) -> Result<Vec<u8>, (StatusCode, String)> {
+    let public_key = public_key
+        .as_ref()
+        .map(|x| hex::decode(x.as_bytes()))
+        .transpose()
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to decode public key: {e:?}"),
+            )
+        })?;
+    let user_data = user_data
+        .as_ref()
+        .map(|x| hex::decode(x.as_bytes()))
+        .transpose()
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to decode user data: {e:?}"),
+            )
+        })?;
+    let nonce = nonce
+        .as_ref()
+        .map(|x| hex::decode(x.as_bytes()))
+        .transpose()
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to decode nonce: {e:?}"),
+            )
+        })?;
+
+    Ok(get_attestation_doc(
+        public_key.as_deref(),
+        user_data.as_deref(),
+        nonce.as_deref(),
+    ))
+}
+
+async fn handle_hex(
+    public_key: Query<Option<String>>,
+    user_data: Query<Option<String>>,
+    nonce: Query<Option<String>>,
+) -> Result<String, (StatusCode, String)> {
+    let public_key = public_key
+        .as_ref()
+        .map(|x| hex::decode(x.as_bytes()))
+        .transpose()
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to decode public key: {e:?}"),
+            )
+        })?;
+    let user_data = user_data
+        .as_ref()
+        .map(|x| hex::decode(x.as_bytes()))
+        .transpose()
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to decode user data: {e:?}"),
+            )
+        })?;
+    let nonce = nonce
+        .as_ref()
+        .map(|x| hex::decode(x.as_bytes()))
+        .transpose()
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to decode nonce: {e:?}"),
+            )
+        })?;
+
+    Ok(get_hex_attestation_doc(
+        public_key.as_deref(),
+        user_data.as_deref(),
+        nonce.as_deref(),
+    ))
+}
 
 /// http server for handling attestation document requests
 #[derive(Parser)]
