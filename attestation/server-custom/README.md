@@ -58,9 +58,9 @@ Both endpoints accept query parameters which can be used to set the public key, 
 
 ##### Query params
 
-- `public_key`: Optional, hex encoded public key that is included in the `public_key` field of the attestation after being decoded into raw bytes
-- `user_data`: Optional, hex encoded user data that is included in the `user_data` field of the attestation after being decoded into raw bytes
-- `nonce`: Optional, hex encoded nonce that is included in the `nonce` field of the attestation after being decoded into raw bytes
+- `public_key`: Optional, hex encoded public key without the `0x` prefix that is included in the `public_key` field of the attestation after being decoded into raw bytes
+- `user_data`: Optional, hex encoded user data without the `0x` prefix that is included in the `user_data` field of the attestation after being decoded into raw bytes
+- `nonce`: Optional, hex encoded nonce without the `0x` prefix that is included in the `nonce` field of the attestation after being decoded into raw bytes
 
 While all query parameters are optional, any useful attestation will likely include at least the public key to extend the chain of trust.
 
@@ -101,9 +101,9 @@ $ curl <ip:port>/attestation/raw -vs | xxd
 
 ##### Query params
 
-- `public_key`: Optional, hex encoded public key that is included in the `public_key` field of the attestation after being decoded into raw bytes
-- `user_data`: Optional, hex encoded user data that is included in the `user_data` field of the attestation after being decoded into raw bytes
-- `nonce`: Optional, hex encoded nonce that is included in the `nonce` field of the attestation after being decoded into raw bytes
+- `public_key`: Optional, hex encoded public key without the `0x` prefix that is included in the `public_key` field of the attestation after being decoded into raw bytes
+- `user_data`: Optional, hex encoded user data without the `0x` prefix that is included in the `user_data` field of the attestation after being decoded into raw bytes
+- `nonce`: Optional, hex encoded nonce without the `0x` prefix that is included in the `nonce` field of the attestation after being decoded into raw bytes
 
 While all query parameters are optional, any useful attestation will likely include at least the public key to extend the chain of trust.
 
