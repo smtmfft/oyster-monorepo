@@ -35,6 +35,9 @@
       attestation.server = import ./attestation/server {
         inherit nixpkgs systemConfig fenix naersk;
       };
+      attestation.server-custom = import ./attestation/server-custom {
+        inherit nixpkgs systemConfig fenix naersk;
+      };
       attestation.verifier = import ./attestation/verifier {
         inherit nixpkgs systemConfig fenix naersk;
       };
