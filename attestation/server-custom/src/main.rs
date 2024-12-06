@@ -94,7 +94,7 @@ async fn handle_hex(
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
-    /// ip address of the server (e.g. 127.0.0.1:1350)
+    /// ip address of the server
     #[arg(short, long, default_value = "127.0.0.1:1350")]
     ip_addr: String,
 }
