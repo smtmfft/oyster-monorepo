@@ -5,39 +5,28 @@ use axum::{extract::Query, http::StatusCode, routing::get, Router};
 use clap::Parser;
 use oyster_attestation_server_custom::{get_attestation_doc, get_hex_attestation_doc};
 
+fn extract(
+    query: &HashMap<String, String>,
+    key: &str,
+) -> Result<Option<Vec<u8>>, (StatusCode, String)> {
+    query
+        .get(key)
+        .map(|x| hex::decode(x.as_bytes()))
+        .transpose()
+        .map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to decode {key}: {e:?}"),
+            )
+        })
+}
+
 async fn handle_raw(
     Query(query): Query<HashMap<String, String>>,
 ) -> Result<Vec<u8>, (StatusCode, String)> {
-    let public_key = query
-        .get("public_key")
-        .map(|x| hex::decode(x.as_bytes()))
-        .transpose()
-        .map_err(|e| {
-            (
-                StatusCode::BAD_REQUEST,
-                format!("Failed to decode public key: {e:?}"),
-            )
-        })?;
-    let user_data = query
-        .get("user_data")
-        .map(|x| hex::decode(x.as_bytes()))
-        .transpose()
-        .map_err(|e| {
-            (
-                StatusCode::BAD_REQUEST,
-                format!("Failed to decode user data: {e:?}"),
-            )
-        })?;
-    let nonce = query
-        .get("nonce")
-        .map(|x| hex::decode(x.as_bytes()))
-        .transpose()
-        .map_err(|e| {
-            (
-                StatusCode::BAD_REQUEST,
-                format!("Failed to decode nonce: {e:?}"),
-            )
-        })?;
+    let public_key = extract(&query, "public_key")?;
+    let user_data = extract(&query, "user_data")?;
+    let nonce = extract(&query, "nonce")?;
 
     get_attestation_doc(
         public_key.as_deref(),
@@ -55,36 +44,9 @@ async fn handle_raw(
 async fn handle_hex(
     Query(query): Query<HashMap<String, String>>,
 ) -> Result<String, (StatusCode, String)> {
-    let public_key = query
-        .get("public_key")
-        .map(|x| hex::decode(x.as_bytes()))
-        .transpose()
-        .map_err(|e| {
-            (
-                StatusCode::BAD_REQUEST,
-                format!("Failed to decode public key: {e:?}"),
-            )
-        })?;
-    let user_data = query
-        .get("user_data")
-        .map(|x| hex::decode(x.as_bytes()))
-        .transpose()
-        .map_err(|e| {
-            (
-                StatusCode::BAD_REQUEST,
-                format!("Failed to decode user data: {e:?}"),
-            )
-        })?;
-    let nonce = query
-        .get("nonce")
-        .map(|x| hex::decode(x.as_bytes()))
-        .transpose()
-        .map_err(|e| {
-            (
-                StatusCode::BAD_REQUEST,
-                format!("Failed to decode nonce: {e:?}"),
-            )
-        })?;
+    let public_key = extract(&query, "public_key")?;
+    let user_data = extract(&query, "user_data")?;
+    let nonce = extract(&query, "nonce")?;
 
     get_hex_attestation_doc(
         public_key.as_deref(),
