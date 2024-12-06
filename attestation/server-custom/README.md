@@ -67,10 +67,10 @@ While all query parameters are optional, any useful attestation will likely incl
 ##### Example
 
 ```
-$ curl <ip:port>/attestation/raw -vs | xxd
+$ curl '<ip:port>/attestation/raw?public_key=<public_key>&user_data=<user_data>&nonce=<nonce>' -vs | xxd
 *   Trying <ip:port>...
 * Connected to <ip> (<ip>) port <port> (#0)
-> GET /attestation/raw HTTP/1.1
+> GET /attestation/raw?public_key=<public_key>&user_data=<user_data>&nonce=<nonce> HTTP/1.1
 > Host: <ip:port>
 > User-Agent: curl/7.81.0
 > Accept: */*
@@ -110,10 +110,10 @@ While all query parameters are optional, any useful attestation will likely incl
 ##### Example
 
 ```
-$ curl <ip:port>/attestation/hex -vs
+$ curl '<ip:port>/attestation/hex?public_key=<public_key>&user_data=<user_data>&nonce=<nonce>' -vs | xxd
 *   Trying <ip:port>...
 * Connected to <ip> (<ip>) port <port> (#0)
-> GET /attestation/hex HTTP/1.1
+> GET /attestation/hex?public_key=<public_key>&user_data=<user_data>&nonce=<nonce> HTTP/1.1
 > Host: <ip:port>
 > User-Agent: curl/7.81.0
 > Accept: */*
