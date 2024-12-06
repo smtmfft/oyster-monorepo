@@ -1,5 +1,5 @@
 [package]
-name = "oyster-attestation-server-custom"
+name = "oyster-attestation-server-custom-mock"
 version = "1.0.0"
 edition = "2021"
 

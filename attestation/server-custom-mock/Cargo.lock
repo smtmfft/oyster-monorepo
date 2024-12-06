@@ -557,7 +557,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
-name = "oyster-attestation-server-custom"
+name = "oyster-attestation-server-custom-mock"
 version = "1.0.0"
 dependencies = [
  "aws-nitro-enclaves-nsm-api",

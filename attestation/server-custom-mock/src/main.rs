@@ -3,7 +3,7 @@ use std::error::Error;
 
 use axum::{extract::Query, http::StatusCode, routing::get, Router};
 use clap::Parser;
-use oyster_attestation_server_custom::{get_attestation_doc, get_hex_attestation_doc};
+use oyster_attestation_server_custom_mock::{get_attestation_doc, get_hex_attestation_doc};
 
 fn extract(
     query: &HashMap<String, String>,
