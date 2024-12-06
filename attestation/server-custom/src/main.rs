@@ -39,11 +39,17 @@ async fn handle_raw(
             )
         })?;
 
-    Ok(get_attestation_doc(
+    get_attestation_doc(
         public_key.as_deref(),
         user_data.as_deref(),
         nonce.as_deref(),
-    ))
+    )
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to generate attestation doc: {e:?}"),
+        )
+    })
 }
 
 async fn handle_hex(
@@ -82,11 +88,17 @@ async fn handle_hex(
             )
         })?;
 
-    Ok(get_hex_attestation_doc(
+    get_hex_attestation_doc(
         public_key.as_deref(),
         user_data.as_deref(),
         nonce.as_deref(),
-    ))
+    )
+    .map_err(|e| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to generate attestation doc: {e:?}"),
+        )
+    })
 }
 
 /// http server for handling attestation document requests
