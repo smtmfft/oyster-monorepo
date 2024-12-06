@@ -1,8 +1,10 @@
 ![Marlin Oyster Logo](./logo.svg)
 
-# Attestation Server
+# Attestation Server - Custom
 
-The attestation server generates attestations using the AWS Nitro Secure Module (NSM) API and makes them available using a HTTP server. It includes a public key that can be used to extend the chain of trust of the attestation by other enclave applications. Intended to be run inside an enclave.
+The custom attestation server generates attestations using the AWS Nitro Secure Module (NSM) API and makes them available using a HTTP server. It expects callers to provide one or more of a public key, user data and nonce which are included in the attestation.
+
+IMPORTANT: DO NOT expose this server to external access or untrusted enclave components unless you really know what you are doing, it is meant to be exposed purely to trusted applications inside the enclave as a way of accessing the NSM API over HTTP. Otherwise, it breaks the security model assumed by most enclaves since attestations can potentially be generated with public keys corresponding to private keys external to the enclave as well as with secrets which should never be exposed outside the enclave.
 
 ## Build
 
@@ -15,7 +17,7 @@ cargo build --release
 Reproducible builds can be done using Nix. The monorepo provides a Nix flake which includes this project and can be used to trigger builds:
 
 ```bash
-nix build -v .#<flavor>.attestation.server.<output>
+nix build -v .#<flavor>.attestation.server-custom.<output>
 ```
 
 Supported flavors:
@@ -30,27 +32,37 @@ Supported outputs:
 ## Usage
 
 ```
-$ ./target/release/oyster-attestation-server --help
+$ ./target/release/oyster-attestation-server-custom --help
 http server for handling attestation document requests
 
-Usage: oyster-attestation-server --ip-addr <IP_ADDR> --pub-key <PUB_KEY>
+Usage: oyster-attestation-server-custom [OPTIONS]
 
 Options:
-  -i, --ip-addr <IP_ADDR>  ip address of the server (e.g. 127.0.0.1:1300)
-  -p, --pub-key <PUB_KEY>  path to public key file (e.g. /app/id.pub)
+  -i, --ip-addr <IP_ADDR>  ip address of the server [default: 127.0.0.1:1350]
   -h, --help               Print help
   -V, --version            Print version
+
 ```
 
 ## Endpoints
 
 The attestation server exposes attestations through two endpoints which encode the attestation in one of two format - raw and hex. The raw format is a binary format with the raw bytes of the attestation. The hex format is the same attestation, simply hex encoded. Therefore, the raw format is about half the size of the other while the hex format is ASCII letters and numbers only.
 
+Both endpoints accept query parameters which can be used to set the public key, user data and nonce in the attestation document.
+
 ### Raw
 
 ##### Endpoint
 
 `/attestation/raw`
+
+##### Query params
+
+- `public_key`: Optional, hex encoded public key that is included in the `public_key` field of the attestation after being decoded into raw bytes
+- `user_data`: Optional, hex encoded user data that is included in the `user_data` field of the attestation after being decoded into raw bytes
+- `nonce`: Optional, hex encoded nonce that is included in the `nonce` field of the attestation after being decoded into raw bytes
+
+While all query parameters are optional, any useful attestation will likely include at least the public key to extend the chain of trust.
 
 ##### Example
 
@@ -86,6 +98,14 @@ $ curl <ip:port>/attestation/raw -vs | xxd
 ##### Endpoint
 
 `/attestation/hex`
+
+##### Query params
+
+- `public_key`: Optional, hex encoded public key that is included in the `public_key` field of the attestation after being decoded into raw bytes
+- `user_data`: Optional, hex encoded user data that is included in the `user_data` field of the attestation after being decoded into raw bytes
+- `nonce`: Optional, hex encoded nonce that is included in the `nonce` field of the attestation after being decoded into raw bytes
+
+While all query parameters are optional, any useful attestation will likely include at least the public key to extend the chain of trust.
 
 ##### Example
 
