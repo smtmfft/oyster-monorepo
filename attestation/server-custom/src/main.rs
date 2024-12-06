@@ -53,12 +53,10 @@ async fn handle_raw(
 }
 
 async fn handle_hex(
-    public_key: Query<Option<String>>,
-    user_data: Query<Option<String>>,
-    nonce: Query<Option<String>>,
+    Query(query): Query<HashMap<String, String>>,
 ) -> Result<String, (StatusCode, String)> {
-    let public_key = public_key
-        .as_ref()
+    let public_key = query
+        .get("public_key")
         .map(|x| hex::decode(x.as_bytes()))
         .transpose()
         .map_err(|e| {
@@ -67,8 +65,8 @@ async fn handle_hex(
                 format!("Failed to decode public key: {e:?}"),
             )
         })?;
-    let user_data = user_data
-        .as_ref()
+    let user_data = query
+        .get("user_data")
         .map(|x| hex::decode(x.as_bytes()))
         .transpose()
         .map_err(|e| {
@@ -77,8 +75,8 @@ async fn handle_hex(
                 format!("Failed to decode user data: {e:?}"),
             )
         })?;
-    let nonce = nonce
-        .as_ref()
+    let nonce = query
+        .get("nonce")
         .map(|x| hex::decode(x.as_bytes()))
         .transpose()
         .map_err(|e| {
