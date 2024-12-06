@@ -2,13 +2,19 @@ use aws_nitro_enclaves_nsm_api::api::{Request, Response};
 use aws_nitro_enclaves_nsm_api::driver as nsm_driver;
 use serde_bytes::ByteBuf;
 
-pub fn get_attestation_doc(pub_key: &[u8]) -> Vec<u8> {
-    let public_key = ByteBuf::from(pub_key);
+pub fn get_attestation_doc(
+    public_key: Option<&[u8]>,
+    user_data: Option<&[u8]>,
+    nonce: Option<&[u8]>,
+) -> Vec<u8> {
+    let public_key = public_key.map(ByteBuf::from);
+    let user_data = user_data.map(ByteBuf::from);
+    let nonce = nonce.map(ByteBuf::from);
 
     let request = Request::Attestation {
-        public_key: Some(public_key),
-        user_data: None,
-        nonce: None,
+        public_key,
+        user_data,
+        nonce,
     };
 
     let nsm_fd = nsm_driver::nsm_init();
@@ -21,7 +27,11 @@ pub fn get_attestation_doc(pub_key: &[u8]) -> Vec<u8> {
     }
 }
 
-pub fn get_hex_attestation_doc(pub_key: &[u8]) -> String {
-    let attestation = get_attestation_doc(pub_key);
+pub fn get_hex_attestation_doc(
+    public_key: Option<&[u8]>,
+    user_data: Option<&[u8]>,
+    nonce: Option<&[u8]>,
+) -> String {
+    let attestation = get_attestation_doc(public_key, user_data, nonce);
     return hex::encode(attestation);
 }
