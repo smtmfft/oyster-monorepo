@@ -6,7 +6,7 @@ pub fn get_attestation_doc(
     public_key: Option<&[u8]>,
     user_data: Option<&[u8]>,
     nonce: Option<&[u8]>,
-) -> Vec<u8> {
+) -> Result<Vec<u8>, String> {
     let public_key = public_key.map(ByteBuf::from);
     let user_data = user_data.map(ByteBuf::from);
     let nonce = nonce.map(ByteBuf::from);
@@ -22,8 +22,11 @@ pub fn get_attestation_doc(
     nsm_driver::nsm_exit(nsm_fd);
 
     match response {
-        Response::Attestation { document } => document,
-        _ => panic!("nsm driver returned invalid response: {:?}", response),
+        Response::Attestation { document } => Ok(document),
+        _ => Err(format!(
+            "nsm driver returned invalid response: {:?}",
+            response
+        )),
     }
 }
 
@@ -31,7 +34,7 @@ pub fn get_hex_attestation_doc(
     public_key: Option<&[u8]>,
     user_data: Option<&[u8]>,
     nonce: Option<&[u8]>,
-) -> String {
+) -> Result<String, String> {
     let attestation = get_attestation_doc(public_key, user_data, nonce);
-    return hex::encode(attestation);
+    attestation.map(hex::encode)
 }
