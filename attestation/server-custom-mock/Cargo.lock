@@ -742,6 +742,7 @@ dependencies = [
  "clap",
  "hex",
  "p384",
+ "sec1",
  "serde_bytes",
  "tokio",
 ]
