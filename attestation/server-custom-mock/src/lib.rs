@@ -130,10 +130,10 @@ pub fn get_attestation_doc(
     attestation[offset..offset + 11].copy_from_slice(b"\x6apublic_key");
     offset += 11;
     offset += encode(&mut attestation[offset..], public_key);
-    attestation[offset..offset + 10].copy_from_slice(b"\x6auser_data");
+    attestation[offset..offset + 10].copy_from_slice(b"\x69user_data");
     offset += 10;
     offset += encode(&mut attestation[offset..], user_data);
-    attestation[offset..offset + 6].copy_from_slice(b"\x6anonce");
+    attestation[offset..offset + 6].copy_from_slice(b"\x65nonce");
     offset += 6;
     offset += encode(&mut attestation[offset..], nonce);
 
