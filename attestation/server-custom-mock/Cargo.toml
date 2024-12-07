@@ -11,6 +11,7 @@ hex = "0.4.3"
 p384 = { version = "0.13.0", features = ["ecdsa-core"] }
 sec1 = "0.7.3"
 serde_bytes = "0.11"
+sha2 = "0.10.8"
 tokio = { version = "1", features = ["full"] }
 
 [profile.release]

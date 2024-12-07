@@ -744,6 +744,7 @@ dependencies = [
  "p384",
  "sec1",
  "serde_bytes",
+ "sha2",
  "tokio",
 ]
 
