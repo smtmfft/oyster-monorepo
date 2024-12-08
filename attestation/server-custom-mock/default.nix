@@ -40,7 +40,7 @@ in rec {
     '';
 
   docker = pkgs.dockerTools.buildImage {
-    name = "marlinorg/attestation-server-mock";
+    name = "marlinorg/attestation-server-custom-mock";
     copyToRoot = pkgs.buildEnv {
       name = "image-root";
       paths = [ uncompressed ];
