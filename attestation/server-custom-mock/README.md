@@ -224,3 +224,7 @@ Certificate:
         f8:4f:26:f5:57:55:5a:8b:e7:e8:ed:b4:82:6a:4e:d0:f2:58:
         70:8b:42:50:a8:4c:b5:fa:b4:ff:72:14:09:8e
 ```
+
+## License
+
+This project is licensed under the Apache License, Version 2.0. See [LICENSE.txt](./LICENSE.txt).
