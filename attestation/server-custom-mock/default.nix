@@ -39,5 +39,18 @@ in rec {
       upx $out/bin/*
     '';
 
+  docker = pkgs.dockerTools.buildImage {
+    name = "attestation-server-mock";
+    copyToRoot = pkgs.buildEnv {
+      name = "image-root";
+      paths = [ uncompressed ];
+      pathsToLink = [ "/bin" ];
+    };
+    config = {
+      Entrypoint = "/bin/oyster-attestation-server-custom-mock";
+      Cmd = [ "--ip-addr" "0.0.0.0:1350" ];
+    };
+  };
+
   default = compressed;
 }
