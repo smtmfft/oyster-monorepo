@@ -47,7 +47,7 @@ in rec {
       pathsToLink = [ "/bin" ];
     };
     config = {
-      Entrypoint = "/bin/oyster-attestation-server-custom-mock";
+      Entrypoint = [ "/bin/oyster-attestation-server-custom-mock" ];
       Cmd = [ "--ip-addr" "0.0.0.0:1350" ];
     };
   };
