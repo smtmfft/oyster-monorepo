@@ -28,6 +28,7 @@ Supported outputs:
 - `default`, same as `compressed`
 - `uncompressed`
 - `compressed`, using `upx`
+- `docker`, `uncompressed` binary packaged into a docker tar
 
 ## Usage
 
