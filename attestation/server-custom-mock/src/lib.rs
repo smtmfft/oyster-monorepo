@@ -4,9 +4,9 @@ use p384::ecdsa::SigningKey;
 use sec1::DecodeEcPrivateKey;
 use sha2::Digest;
 
-static ROOT_CERT: &'static [u8; 404] = include_bytes!("./root.crt");
-static LEAF_CERT: &'static [u8; 466] = include_bytes!("./leaf.crt");
-static LEAF_KEY: &'static [u8; 167] = include_bytes!("./leaf.key");
+static ROOT_CERT: &'static [u8; 404] = include_bytes!("./certs/root.crt");
+static LEAF_CERT: &'static [u8; 466] = include_bytes!("./certs/leaf.crt");
+static LEAF_KEY: &'static [u8; 167] = include_bytes!("./certs/leaf.key");
 
 pub fn get_attestation_doc(
     public_key: Option<&[u8]>,
