@@ -13,15 +13,15 @@ pub fn get_attestation_doc(
     user_data: Option<&[u8]>,
     nonce: Option<&[u8]>,
 ) -> Result<Vec<u8>, String> {
-    if public_key.map_or(0, <[u8]>::len) > 65535 {
+    if public_key.map_or(0, <[u8]>::len) > u16::MAX as usize {
         return Err("public key is too long, maximum of 65535".into());
     }
 
-    if user_data.map_or(0, <[u8]>::len) > 65535 {
+    if user_data.map_or(0, <[u8]>::len) > u16::MAX as usize {
         return Err("user_data is too long, maximum of 65535".into());
     }
 
-    if nonce.map_or(0, <[u8]>::len) > 65535 {
+    if nonce.map_or(0, <[u8]>::len) > u16::MAX as usize {
         return Err("nonce is too long, maximum of 65535".into());
     }
 
@@ -70,7 +70,7 @@ pub fn get_attestation_doc(
         + nonce.map_or(1, |x| encoded_len(x.len()));
     let total_size = payload_size + 108;
 
-    if total_size > 65535 {
+    if total_size > u16::MAX as usize {
         return Err("Payload too big".into());
     }
 
