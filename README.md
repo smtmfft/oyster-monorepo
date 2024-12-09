@@ -29,7 +29,7 @@ In addition, some external projects are used which are described in [external](.
 
 ## Project guidelines
 
-Each project is expected to be owned, managed and licensed individually. Here's a quick checklist of items that are expected of every project:
+Each project is expected to be owned, managed and licensed independently. Here's a quick checklist of items that are expected of every project:
 
 - MUST have a README.md with detailed instructions
   - MUST cover what the project is about
