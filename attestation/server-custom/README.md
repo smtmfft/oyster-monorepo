@@ -127,3 +127,7 @@ $ curl '<ip:port>/attestation/hex?public_key=<public_key>&user_data=<user_data>&
 8444a1013822a0591106a9696d6f64756c655f69647827692d3066316364...
 ...
 ```
+
+## License
+
+This project is licensed under the Apache License, Version 2.0. See [LICENSE.txt](./LICENSE.txt).
