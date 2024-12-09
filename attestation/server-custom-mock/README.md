@@ -135,7 +135,7 @@ The attestations include one root certificate in the `cabundle` field that is se
 
 While verifying, the expected root public key is `0x6c79411ebaae7489a4e8355545c0346784b31df5d08cb1f7c0097836a82f67240f2a7201862880a1d09a0bb326637188fbbafab47a10abe3630fcf8c18d35d96532184985e582c0dce3dace8441f37b9cc9211dff935baae69e4872cc3494410`. You can match it against the root certificate below.
 
-The certificates were generated using [certstrap](https://github.com/square/certstrap).
+The certificates were generated using [certstrap](https://github.com/square/certstrap) and can be found in the [certs](./src/certs) directory.
 
 ## Root certificate
 
