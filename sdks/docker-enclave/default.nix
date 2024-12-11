@@ -30,12 +30,6 @@
   init = kernels.init;
   setup = ./. + "/setup.sh";
   supervisorConf = ./. + "/supervisord.conf";
-  dockerImagesDir = pkgs.runCommand "docker-images" {} ''
-    mkdir -p $out
-    ${if builtins.length dockerImages == 0 
-      then "# No docker images provided"
-      else builtins.concatStringsSep "\n" (map (img: "cp ${img} $out/") dockerImages)}
-  '';
   app = pkgs.runCommand "app" {} ''
 		echo Preparing the app folder
 		pwd
@@ -55,7 +49,9 @@
 		cp ${supervisorConf} $out/etc/supervisord.conf
 		cp ${compose} $out/app/docker-compose.yml
     mkdir -p $out/app/docker-images
-    cp -r ${dockerImagesDir}/* $out/app/docker-images/
+    ${if builtins.length dockerImages == 0 
+      then "# No docker images provided"
+      else builtins.concatStringsSep "\n" (map (img: "cp ${img} $out/app/docker-images/") dockerImages)}
   '';
   # kinda hacky, my nix-fu is not great, figure out a better way
   initPerms = pkgs.runCommand "initPerms" {} ''
