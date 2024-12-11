@@ -10,6 +10,7 @@
   vet,
   kernels,
   compose ? ./. + "/docker-compose.yml",
+  dockerImages ? [],
 }: let
   system = systemConfig.system;
   nitro = nitro-util.lib.${system};
@@ -35,6 +36,7 @@
 		mkdir -p $out
 		mkdir -p $out/app
 		mkdir -p $out/etc
+    mkdir -p $out/app/docker-images
 		cp ${supervisord'} $out/app/supervisord
 		cp ${keygenEd25519} $out/app/keygen-ed25519
 		cp ${itvroProxy} $out/app/ip-to-vsock-raw-outgoing
@@ -47,6 +49,9 @@
 		chmod +x $out/app/*
 		cp ${supervisorConf} $out/etc/supervisord.conf
 		cp ${compose} $out/app/docker-compose.yml
+    ${if builtins.length dockerImages == 0 
+      then "# No docker images provided"
+      else builtins.concatStringsSep "\n" (map (img: "cp ${img} $out/app/docker-images/") dockerImages)}
   '';
   # kinda hacky, my nix-fu is not great, figure out a better way
   initPerms = pkgs.runCommand "initPerms" {} ''
