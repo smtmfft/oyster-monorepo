@@ -22,16 +22,18 @@ fn main() {
     let args = Args::parse();
 
     // Query attestation from the given url
-    let mut attestation = Vec::new();
+    let mut attest_hex_str = Vec::new();
     ureq::get(&args.url)
         .call()
         .unwrap()
         .into_reader()
-        .read_to_end(&mut attestation)
+        .read_to_end(&mut attest_hex_str)
         .unwrap();
 
-    println!("Attestation size: {}", attestation.len());
+    println!("Attestation size: {}", attest_hex_str.len());
+    println!("Attestation data[..16]: {:?}", &attest_hex_str[..16]);
 
+    let attestation = hex::decode(attest_hex_str).expect("fail to parse attestation hex string.");
     let env = ExecutorEnv::builder()
         .write_slice(&attestation)
         .build()
